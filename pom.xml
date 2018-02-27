@@ -30,19 +30,6 @@
         </dependency>
     </dependencies>
 
-    <distributionManagement>
-        <!--
-        <repository>
-            <id>releases</id>
-            <url>http://192.168.16.174:7071/nexus/content/repositories/releases</url>
-        </repository>
-        -->
-        <repository>
-            <id>snapshots</id>
-            <url>http://192.168.16.174:7071/nexus/content/repositories/snapshots</url>
-        </repository>
-    </distributionManagement>
-
     <build>
         <plugins>
             <plugin>

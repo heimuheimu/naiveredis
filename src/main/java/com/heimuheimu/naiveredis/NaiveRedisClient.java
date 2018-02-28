@@ -36,16 +36,50 @@ import java.io.Closeable;
  */
 public interface NaiveRedisClient extends Closeable {
 
+    /**
+     * 获取 Key 对应的值，如果 Key 不存在，则返回 {@code null}。
+     *
+     * @param key Redis key，不允许 {@code null} 或空
+     * @param <T> Value 类型
+     * @return Key 对应的值
+     * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
+     * @throws TimeoutException 如果操作超时，将会抛出此异常
+     * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
+     */
     <T> T get(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
+    /**
+     * 将 Key 和 Value 存储至 Redis 中，不设置过期时间。
+     *
+     * @param key Redis key，不允许 {@code null} 或空
+     * @param value Redis value，不允许 {@code null}
+     * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalArgumentException 如果 Value 为 {@code null}，将会抛出此异常
+     * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
+     * @throws TimeoutException 如果操作超时，将会抛出此异常
+     * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
+     */
     void set(String key, Object value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
+    /**
+     * 将 Key 和 Value 存储至 Redis 中，并指定过期时间。
+     *
+     * @param key Redis key，不允许 {@code null} 或空
+     * @param value Redis value，不允许 {@code null}
+     * @param expiry 过期时间，单位：秒，如果小于等于 0，则为永久保存
+     * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalArgumentException 如果 Value 为 {@code null}，将会抛出此异常
+     * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
+     * @throws TimeoutException 如果操作超时，将会抛出此异常
+     * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
+     */
     void set(String key, Object value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
      * 设置 Key 对应的过期时间。
      *
-     * @param key Redis key
+     * @param key Redis key，不允许 {@code null} 或空
      * @param expiry 过期时间，单位：秒，不允许小于等于 0
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalArgumentException 如果 expiry 小于等于 0，将会抛出此异常
@@ -58,7 +92,7 @@ public interface NaiveRedisClient extends Closeable {
     /**
      * 获得 Key 对应的计数值，如果 Key 不存在，则返回 {@code null}。
      *
-     * @param key Redis key
+     * @param key Redis key，不允许 {@code null} 或空
      * @return 计数值
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
@@ -70,7 +104,7 @@ public interface NaiveRedisClient extends Closeable {
     /**
      * 对 Key 对应的 long 数值执行原子加（或减）操作，并返回操作后的结果值。如果 Key 不存在，会初始化为 0 后再进行操作。
      *
-     * @param key Redis key
+     * @param key Redis key，不允许 {@code null} 或空
      * @param delta 需要增加的值，如果为负数，则为减少的值
      * @param expiry 过期时间，单位：秒，如果小于等于 0，则为永久保存
      * @return 操作后的结果值

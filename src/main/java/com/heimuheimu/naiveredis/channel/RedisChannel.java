@@ -127,7 +127,7 @@ public class RedisChannel implements Closeable {
      *
      * @param host Redis 地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
      * @param configuration {@link Socket} 配置信息，如果传 {@code null}，将会使用 {@link SocketConfiguration#DEFAULT} 配置信息
-     * @param pingPeriod PING 命令发送时间间隔，单位：秒。用于心跳检测。如果该值小于等于 0，则不进行心跳检测
+     * @param pingPeriod PING 命令发送时间间隔，单位：秒，用于心跳检测，如果该值小于等于 0，则不进行心跳检测
      * @throws IllegalArgumentException 如果 Redis 地址不符合规则，将会抛出此异常
      * @throws BuildSocketException 如果创建 {@link Socket} 过程中发生错误，将会抛出此异常
      */

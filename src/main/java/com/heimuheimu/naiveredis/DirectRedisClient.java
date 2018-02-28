@@ -35,6 +35,7 @@ import com.heimuheimu.naiveredis.data.RedisData;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 import com.heimuheimu.naiveredis.monitor.ExecutionMonitorFactory;
+import com.heimuheimu.naiveredis.net.BuildSocketException;
 import com.heimuheimu.naiveredis.net.SocketConfiguration;
 import com.heimuheimu.naiveredis.transcoder.SimpleTranscoder;
 import com.heimuheimu.naiveredis.transcoder.Transcoder;
@@ -46,7 +47,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
+/**
+ * Redis 直连客户端。可访问以下网站来获得更多 Redis 信息：<a href="https://redis.io">https://redis.io</a>
+ *
+ * <p><strong>说明：</strong>{@code DirectRedisClient} 类是线程安全的，可在多个线程中使用同一个实例。</p>
+ *
+ * @author heimuheimu
+ */
 public class DirectRedisClient implements NaiveRedisClient {
 
     /**
@@ -94,8 +103,60 @@ public class DirectRedisClient implements NaiveRedisClient {
      */
     private final ExecutionMonitor executionMonitor;
 
+    /**
+     * 构造一个 Redis 直连客户端。
+     *
+     * @param host Redis 地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
+     * @throws IllegalArgumentException 如果 Redis 地址不符合规则，将会抛出此异常
+     * @throws BuildSocketException 如果创建 {@link java.net.Socket} 过程中发生错误，将会抛出此异常
+     */
+    public DirectRedisClient(String host) throws IllegalArgumentException, BuildSocketException {
+        this(host, null, 5000, 64 * 1024, 50, 30);
+    }
+
+    /**
+     * 构造一个 Redis 直连客户端。
+     *
+     * @param host Redis 地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
+     * @param configuration {@link java.net.Socket} 配置信息，如果传 {@code null}，将会使用 {@link SocketConfiguration#DEFAULT} 配置信息
+     * @param timeout Redis 操作超时时间，单位：毫秒，不能小于等于 0
+     * @param compressionThreshold 最小压缩字节数，当 Value 字节数小于或等于该值，不进行压缩，不能小于等于0
+     * @param slowExecutionThreshold Redis 操作过慢最小时间，单位：毫秒，不能小于等于 0
+     * @param pingPeriod PING 命令发送时间间隔，单位：秒，用于心跳检测，如果该值小于等于 0，则不进行心跳检测
+     * @throws IllegalArgumentException 如果 Redis 地址不符合规则，将会抛出此异常
+     * @throws IllegalArgumentException 如果 Redis 操作超时时间小于等于 0，将会抛出此异常
+     * @throws IllegalArgumentException 如果最小压缩字节数小于等于 0，将会抛出此异常
+     * @throws IllegalArgumentException 如果 Redis 操作过慢最小时间小于等于 0，将会抛出此异常
+     * @throws BuildSocketException 如果创建 {@link java.net.Socket} 过程中发生错误，将会抛出此异常
+     */
     public DirectRedisClient(String host, SocketConfiguration configuration, int timeout, int compressionThreshold,
-                             int slowExecutionThreshold, int pingPeriod) {
+                             int slowExecutionThreshold, int pingPeriod) throws IllegalArgumentException, BuildSocketException {
+        if (timeout <= 0) {
+            LOG.error("Create DirectRedisClient failed: `timeout could not be equal or less than 0`. Host: `" + host + "`. SocketConfiguration: `"
+                    + configuration + "`. Timeout: `" + timeout + "`. CompressionThreshold: `" + compressionThreshold +
+                    "`. SlowExecutionThreshold: `" + slowExecutionThreshold + "`. PingPeriod: `" + pingPeriod + "`.");
+            throw new IllegalArgumentException("Create DirectRedisClient failed: `timeout could not be equal or less than 0`. Host: `" + host + "`. SocketConfiguration: `"
+                    + configuration + "`. Timeout: `" + timeout + "`. CompressionThreshold: `" + compressionThreshold +
+                    "`. SlowExecutionThreshold: `" + slowExecutionThreshold + "`. PingPeriod: `" + pingPeriod + "`.");
+        }
+        if (compressionThreshold <= 0) {
+            LOG.error("Create DirectRedisClient failed: `compressionThreshold could not be equal or less than 0`. Host: `"
+                    + host + "`. SocketConfiguration: `" + configuration + "`. Timeout: `" + timeout
+                    + "`. CompressionThreshold: `" + compressionThreshold + "`. SlowExecutionThreshold: `"
+                    + slowExecutionThreshold + "`. PingPeriod: `" + pingPeriod + "`.");
+            throw new IllegalArgumentException("Create DirectRedisClient failed: `compressionThreshold could not be equal or less than 0`. Host: `"
+                    + host + "`. SocketConfiguration: `" + configuration + "`. Timeout: `" + timeout + "`. CompressionThreshold: `"
+                    + compressionThreshold + "`. SlowExecutionThreshold: `" + slowExecutionThreshold + "`. PingPeriod: `" + pingPeriod + "`.");
+        }
+        if (slowExecutionThreshold <= 0) {
+            LOG.error("Create DirectRedisClient failed: `slowExecutionThreshold could not be equal or less than 0`. Host: `"
+                    + host + "`. SocketConfiguration: `" + configuration + "`. Timeout: `" + timeout
+                    + "`. CompressionThreshold: `" + compressionThreshold + "`. SlowExecutionThreshold: `"
+                    + slowExecutionThreshold + "`. PingPeriod: `" + pingPeriod + "`.");
+            throw new IllegalArgumentException("Create DirectRedisClient failed: `slowExecutionThreshold could not be equal or less than 0`. Host: `"
+                    + host + "`. SocketConfiguration: `" + configuration + "`. Timeout: `" + timeout + "`. CompressionThreshold: `"
+                    + compressionThreshold + "`. SlowExecutionThreshold: `" + slowExecutionThreshold + "`. PingPeriod: `" + pingPeriod + "`.");
+        }
         this.redisChannel = new RedisChannel(host, configuration, pingPeriod);
         this.redisChannel.init();
         this.host = host;
@@ -115,7 +176,16 @@ public class DirectRedisClient implements NaiveRedisClient {
 
         checkParameter(opName, "key", paramMap, paramValue -> paramValue == null || ((String) paramValue).isEmpty());
 
-        return (T) execute(opName, paramMap, () -> new GetCommand(key), response -> transcoder.decode(response.getValueBytes()));
+        return (T) execute(opName, paramMap, () -> new GetCommand(key), response -> {
+            if (response.getValueBytes() == null) { // Key 不存在
+                NAIVEREDIS_ERROR_LOG.warn("[{}] `Host`:`{}`. `Error`:`key not found`.{}",
+                        opName, host, LogBuildUtil.build(paramMap));
+                executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_KEY_NOT_FOUND);
+                return null;
+            } else {
+                return transcoder.decode(response.getValueBytes());
+            }
+        });
     }
 
     @Override
@@ -199,11 +269,6 @@ public class DirectRedisClient implements NaiveRedisClient {
         redisChannel.close();
     }
 
-    private interface ParameterChecker {
-
-        boolean isIllegal(Object paramValue);
-    }
-
     private interface CommandBuilder {
 
         Command build() throws Exception;
@@ -214,9 +279,10 @@ public class DirectRedisClient implements NaiveRedisClient {
         Object parse(RedisData response) throws Exception;
     }
 
-    private void checkParameter(String opName, String paramName, Map<String, Object> paramMap, ParameterChecker checker) {
-        Object paramValue = paramMap.get(paramName);
-        if ( checker.isIllegal(paramValue) ) {
+    @SuppressWarnings("unchecked")
+    private <T> void checkParameter(String opName, String paramName, Map<String, Object> paramMap, Predicate<T> predicate) {
+        T paramValue = (T) paramMap.get(paramName);
+        if ( predicate.test(paramValue) ) {
             String parametersLog = LogBuildUtil.build(paramMap);
             NAIVEREDIS_ERROR_LOG.error("[{}] `Host`:`{}`. `Error`:`invalid {}`.{}", opName, host, paramName, parametersLog);
             executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_INVALID_ARGUMENT);
@@ -255,12 +321,13 @@ public class DirectRedisClient implements NaiveRedisClient {
             throw e;
         } catch (Exception e) { // should not happen, for bug detection
             String parametersLog = LogBuildUtil.build(paramMap);
-            NAIVEREDIS_ERROR_LOG.error("[{}] `Host`:`{}`. `Error`:`{}`.{}", opName, host, e.getMessage(), parametersLog);
-            LOG.error("[" + opName + "] Redis command execute failed: `" + e.getMessage() + "`. `Host`:`" + host + "`."
+            String causeErrorMessage = e.getMessage() != null ? e.getMessage() : "unexpected error";
+            NAIVEREDIS_ERROR_LOG.error("[{}] `Host`:`{}`. `Error`:`{}`.{}", opName, host, causeErrorMessage, parametersLog);
+            LOG.error("[" + opName + "] Redis command execute failed: `" + causeErrorMessage + "`. `Host`:`" + host + "`."
                     + parametersLog, e);
             executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_UNEXPECTED_ERROR);
             throw new RedisException(RedisException.CODE_UNEXPECTED_ERROR, "[" + opName + "] Redis command execute failed: `"
-                    + e.getMessage() + "`. `Host`:`" + host + "`." + parametersLog, e);
+                    + causeErrorMessage + "`. `Host`:`" + host + "`." + parametersLog, e);
         } finally {
             long executedNanoTime = System.nanoTime() - startTime;
             if (executedNanoTime > slowExecutionThreshold) {

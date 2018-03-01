@@ -34,6 +34,7 @@ import com.heimuheimu.naiveredis.command.regular.SetCommand;
 import com.heimuheimu.naiveredis.data.RedisData;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
+import com.heimuheimu.naiveredis.facility.UnusableServiceNotifier;
 import com.heimuheimu.naiveredis.monitor.ExecutionMonitorFactory;
 import com.heimuheimu.naiveredis.net.BuildSocketException;
 import com.heimuheimu.naiveredis.net.SocketConfiguration;
@@ -104,14 +105,28 @@ public class DirectRedisClient implements NaiveRedisClient {
     private final ExecutionMonitor executionMonitor;
 
     /**
-     * 构造一个 Redis 直连客户端。
+     * 构造一个 Redis 直连客户端，{@link java.net.Socket} 配置信息使用 {@link SocketConfiguration#DEFAULT}，Redis 操作超时时间设置为 5 秒，
+     * 最小压缩字节数设置为 64 KB，Redis 操作过慢最小时间设置为 50 毫秒，心跳检测时间设置为 30 秒。
      *
      * @param host Redis 地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
      * @throws IllegalArgumentException 如果 Redis 地址不符合规则，将会抛出此异常
      * @throws BuildSocketException 如果创建 {@link java.net.Socket} 过程中发生错误，将会抛出此异常
      */
     public DirectRedisClient(String host) throws IllegalArgumentException, BuildSocketException {
-        this(host, null, 5000, 64 * 1024, 50, 30);
+        this(host, null);
+    }
+
+    /**
+     * 构造一个 Redis 直连客户端，{@link java.net.Socket} 配置信息使用 {@link SocketConfiguration#DEFAULT}，Redis 操作超时时间设置为 5 秒，
+     * 最小压缩字节数设置为 64 KB，Redis 操作过慢最小时间设置为 50 毫秒，心跳检测时间设置为 30 秒。
+     *
+     * @param host Redis 地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
+     * @param unusableServiceNotifier {@code DirectRedisClient} 不可用通知器，允许为 {@code null}
+     * @throws IllegalArgumentException 如果 Redis 地址不符合规则，将会抛出此异常
+     * @throws BuildSocketException 如果创建 {@link java.net.Socket} 过程中发生错误，将会抛出此异常
+     */
+    public DirectRedisClient(String host, UnusableServiceNotifier<DirectRedisClient> unusableServiceNotifier) throws IllegalArgumentException, BuildSocketException {
+        this(host, null, 5000, 64 * 1024, 50, 30, unusableServiceNotifier);
     }
 
     /**
@@ -123,14 +138,15 @@ public class DirectRedisClient implements NaiveRedisClient {
      * @param compressionThreshold 最小压缩字节数，当 Value 字节数小于或等于该值，不进行压缩，不能小于等于0
      * @param slowExecutionThreshold Redis 操作过慢最小时间，单位：毫秒，不能小于等于 0
      * @param pingPeriod PING 命令发送时间间隔，单位：秒，用于心跳检测，如果该值小于等于 0，则不进行心跳检测
+     * @param unusableServiceNotifier {@code DirectRedisClient} 不可用通知器，允许为 {@code null}
      * @throws IllegalArgumentException 如果 Redis 地址不符合规则，将会抛出此异常
      * @throws IllegalArgumentException 如果 Redis 操作超时时间小于等于 0，将会抛出此异常
      * @throws IllegalArgumentException 如果最小压缩字节数小于等于 0，将会抛出此异常
      * @throws IllegalArgumentException 如果 Redis 操作过慢最小时间小于等于 0，将会抛出此异常
      * @throws BuildSocketException 如果创建 {@link java.net.Socket} 过程中发生错误，将会抛出此异常
      */
-    public DirectRedisClient(String host, SocketConfiguration configuration, int timeout, int compressionThreshold,
-                             int slowExecutionThreshold, int pingPeriod) throws IllegalArgumentException, BuildSocketException {
+    public DirectRedisClient(String host, SocketConfiguration configuration, int timeout, int compressionThreshold, int slowExecutionThreshold,
+        int pingPeriod, UnusableServiceNotifier<DirectRedisClient> unusableServiceNotifier) throws IllegalArgumentException, BuildSocketException {
         if (timeout <= 0) {
             LOG.error("Create DirectRedisClient failed: `timeout could not be equal or less than 0`. Host: `" + host + "`. SocketConfiguration: `"
                     + configuration + "`. Timeout: `" + timeout + "`. CompressionThreshold: `" + compressionThreshold +
@@ -157,7 +173,11 @@ public class DirectRedisClient implements NaiveRedisClient {
                     + host + "`. SocketConfiguration: `" + configuration + "`. Timeout: `" + timeout + "`. CompressionThreshold: `"
                     + compressionThreshold + "`. SlowExecutionThreshold: `" + slowExecutionThreshold + "`. PingPeriod: `" + pingPeriod + "`.");
         }
-        this.redisChannel = new RedisChannel(host, configuration, pingPeriod);
+        this.redisChannel = new RedisChannel(host, configuration, pingPeriod, channel -> {
+            if (unusableServiceNotifier != null) {
+                unusableServiceNotifier.onClosed(DirectRedisClient.this);
+            }
+        });
         this.redisChannel.init();
         this.host = host;
         this.timeout = timeout;
@@ -267,6 +287,17 @@ public class DirectRedisClient implements NaiveRedisClient {
     @Override
     public void close() {
         redisChannel.close();
+    }
+
+    @Override
+    public String toString() {
+        return "DirectRedisClient{" +
+                "host='" + host + '\'' +
+                ", timeout=" + timeout +
+                ", slowExecutionThreshold=" + slowExecutionThreshold +
+                ", redisChannel=" + redisChannel +
+                ", transcoder=" + transcoder +
+                '}';
     }
 
     private interface CommandBuilder {

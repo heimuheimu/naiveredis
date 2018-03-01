@@ -31,6 +31,7 @@ import com.heimuheimu.naiveredis.constant.BeanStatusEnum;
 import com.heimuheimu.naiveredis.data.RedisData;
 import com.heimuheimu.naiveredis.data.RedisDataReader;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
+import com.heimuheimu.naiveredis.facility.UnusableServiceNotifier;
 import com.heimuheimu.naiveredis.monitor.SocketMonitorFactory;
 import com.heimuheimu.naiveredis.net.BuildSocketException;
 import com.heimuheimu.naiveredis.net.SocketBuilder;
@@ -93,6 +94,11 @@ public class RedisChannel implements Closeable {
     private final int pingPeriod;
 
     /**
+     * {@code RedisChannel} 不可用通知器，允许为 {@code null}
+     */
+    private final UnusableServiceNotifier<RedisChannel> unusableServiceNotifier;
+
+    /**
      * 当前数据交互管道使用的 Socket 信息监控器
      */
     private final SocketMonitor socketMonitor;
@@ -128,14 +134,26 @@ public class RedisChannel implements Closeable {
      * @param host Redis 地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
      * @param configuration {@link Socket} 配置信息，如果传 {@code null}，将会使用 {@link SocketConfiguration#DEFAULT} 配置信息
      * @param pingPeriod PING 命令发送时间间隔，单位：秒，用于心跳检测，如果该值小于等于 0，则不进行心跳检测
+     * @param unusableServiceNotifier {@code RedisChannel} 不可用通知器，允许为 {@code null}
      * @throws IllegalArgumentException 如果 Redis 地址不符合规则，将会抛出此异常
      * @throws BuildSocketException 如果创建 {@link Socket} 过程中发生错误，将会抛出此异常
      */
-    public RedisChannel(String host, SocketConfiguration configuration, int pingPeriod) throws IllegalArgumentException, BuildSocketException {
+    public RedisChannel(String host, SocketConfiguration configuration, int pingPeriod,
+                        UnusableServiceNotifier<RedisChannel> unusableServiceNotifier) throws IllegalArgumentException, BuildSocketException {
         this.host = host;
         this.socket = SocketBuilder.create(host, configuration);
         this.pingPeriod = pingPeriod;
+        this.unusableServiceNotifier = unusableServiceNotifier;
         this.socketMonitor = SocketMonitorFactory.get(host);
+    }
+
+    /**
+     * 获得 Redis 地址，由主机名和端口组成，":"符号分割，例如：localhost:6379。
+     *
+     * @return Redis 地址
+     */
+    public String getHost() {
+        return host;
     }
 
     /**
@@ -225,8 +243,24 @@ public class RedisChannel implements Closeable {
                 REDIS_CONNECTION_LOG.error("Close RedisChannel failed: `{}`. Host: `{}`.", e.getMessage(), host);
                 LOG.error("Close RedisChannel failed: `" + e.getMessage() + "`. Host: `" + host + "`. Socket: `"
                         + socket + "`.", e);
+            } finally {
+                if (unusableServiceNotifier != null) {
+                    unusableServiceNotifier.onClosed(this);
+                }
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RedisChannel{" +
+                "host='" + host + '\'' +
+                ", socket=" + socket +
+                ", pingPeriod=" + pingPeriod +
+                ", state=" + state +
+                ", continuousTimeoutExceptionTimes=" + continuousTimeoutExceptionTimes +
+                ", lastTimeoutExceptionTime=" + lastTimeoutExceptionTime +
+                '}';
     }
 
     private class RedisIOTask extends Thread {

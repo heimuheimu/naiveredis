@@ -24,12 +24,16 @@
 
 package com.heimuheimu.naiveredis.replication;
 
+import com.heimuheimu.naiveredis.DirectRedisClient;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 
 import java.io.IOException;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class SmartRedisReplicationClient implements NaiveRedisReplicationClient {
+
+    private final CopyOnWriteArrayList<DirectRedisClient> clientList = new CopyOnWriteArrayList<>();
 
     public SmartRedisReplicationClient(String masterHost, String[] slaveHosts) {
 

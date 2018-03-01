@@ -22,42 +22,22 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.util;
+package com.heimuheimu.naiveredis.facility.parameter;
 
-import java.util.Map;
+import java.util.function.Predicate;
 
 /**
- * 日志信息输出构造器。
+ * 方法执行参数非法回调接口。
  *
  * @author heimuheimu
+ * @see MethodParameterChecker
  */
-public class LogBuildUtil {
+public interface IllegalMethodParameterCallback {
 
     /**
-     * 生成方法执行错误日志文本信息。
+     * 当 {@link MethodParameterChecker#check(String, String, Predicate)} 方法检查参数不通过时，将会回调此接口进行通知。
      *
-     * @param methodName 方法名称
-     * @param errorMessage 错误信息
-     * @param parameterMap 方法执行参数 {@code Map}，允许为 {@code null}
-     * @return 方法执行错误日志文本信息
+     * @param parameterName 参数名称
      */
-    public static String buildMethodExecuteFailedLog(String methodName, String errorMessage, Map<String, Object> parameterMap) {
-        return "Execute `" + methodName + "` failed: `" + errorMessage +  "`." + LogBuildUtil.build(parameterMap);
-    }
-
-    /**
-     * 根据 {@code Map} 信息构造一个供日志输出使用的文本信息。
-     *
-     * @param data {@code Map} 信息
-     * @return 供日志输出使用的文本信息
-     */
-    public static String build(Map<String, Object> data) {
-        StringBuilder buffer = new StringBuilder();
-        if (data != null && !data.isEmpty()) {
-            for (String key : data.keySet()) {
-                buffer.append(" `").append(key).append("`:`").append(data.get(key)).append("`.");
-            }
-        }
-        return buffer.toString();
-    }
+    void call(String parameterName);
 }

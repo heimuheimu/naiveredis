@@ -175,7 +175,7 @@ public class RedisChannel implements Closeable {
         if (state == BeanStatusEnum.NORMAL) {
             commandQueue.add(command);
         } else {
-            throw new IllegalStateException("Send redis command failed: `illegal channel state`. Host: `" + host
+            throw new IllegalStateException("Send redis command failed: `channel has been closed`. Host: `" + host
                     + "`. Timeout: `" + timeout + "ms`. State: `" + state + "`. Command: `" + command + "`.");
         }
         try {

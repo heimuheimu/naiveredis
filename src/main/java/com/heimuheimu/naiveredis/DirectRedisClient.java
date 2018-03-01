@@ -35,6 +35,9 @@ import com.heimuheimu.naiveredis.data.RedisData;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 import com.heimuheimu.naiveredis.facility.UnusableServiceNotifier;
+import com.heimuheimu.naiveredis.facility.parameter.ConstructorParameterChecker;
+import com.heimuheimu.naiveredis.facility.parameter.MethodParameterChecker;
+import com.heimuheimu.naiveredis.facility.parameter.Parameters;
 import com.heimuheimu.naiveredis.monitor.ExecutionMonitorFactory;
 import com.heimuheimu.naiveredis.net.BuildSocketException;
 import com.heimuheimu.naiveredis.net.SocketConfiguration;
@@ -44,11 +47,8 @@ import com.heimuheimu.naiveredis.util.LogBuildUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 /**
  * Redis 直连客户端。可访问以下网站来获得更多 Redis 信息：<a href="https://redis.io">https://redis.io</a>
@@ -147,32 +147,18 @@ public class DirectRedisClient implements NaiveRedisClient {
      */
     public DirectRedisClient(String host, SocketConfiguration configuration, int timeout, int compressionThreshold, int slowExecutionThreshold,
         int pingPeriod, UnusableServiceNotifier<DirectRedisClient> unusableServiceNotifier) throws IllegalArgumentException, BuildSocketException {
-        if (timeout <= 0) {
-            LOG.error("Create DirectRedisClient failed: `timeout could not be equal or less than 0`. Host: `" + host + "`. SocketConfiguration: `"
-                    + configuration + "`. Timeout: `" + timeout + "`. CompressionThreshold: `" + compressionThreshold +
-                    "`. SlowExecutionThreshold: `" + slowExecutionThreshold + "`. PingPeriod: `" + pingPeriod + "`.");
-            throw new IllegalArgumentException("Create DirectRedisClient failed: `timeout could not be equal or less than 0`. Host: `" + host + "`. SocketConfiguration: `"
-                    + configuration + "`. Timeout: `" + timeout + "`. CompressionThreshold: `" + compressionThreshold +
-                    "`. SlowExecutionThreshold: `" + slowExecutionThreshold + "`. PingPeriod: `" + pingPeriod + "`.");
-        }
-        if (compressionThreshold <= 0) {
-            LOG.error("Create DirectRedisClient failed: `compressionThreshold could not be equal or less than 0`. Host: `"
-                    + host + "`. SocketConfiguration: `" + configuration + "`. Timeout: `" + timeout
-                    + "`. CompressionThreshold: `" + compressionThreshold + "`. SlowExecutionThreshold: `"
-                    + slowExecutionThreshold + "`. PingPeriod: `" + pingPeriod + "`.");
-            throw new IllegalArgumentException("Create DirectRedisClient failed: `compressionThreshold could not be equal or less than 0`. Host: `"
-                    + host + "`. SocketConfiguration: `" + configuration + "`. Timeout: `" + timeout + "`. CompressionThreshold: `"
-                    + compressionThreshold + "`. SlowExecutionThreshold: `" + slowExecutionThreshold + "`. PingPeriod: `" + pingPeriod + "`.");
-        }
-        if (slowExecutionThreshold <= 0) {
-            LOG.error("Create DirectRedisClient failed: `slowExecutionThreshold could not be equal or less than 0`. Host: `"
-                    + host + "`. SocketConfiguration: `" + configuration + "`. Timeout: `" + timeout
-                    + "`. CompressionThreshold: `" + compressionThreshold + "`. SlowExecutionThreshold: `"
-                    + slowExecutionThreshold + "`. PingPeriod: `" + pingPeriod + "`.");
-            throw new IllegalArgumentException("Create DirectRedisClient failed: `slowExecutionThreshold could not be equal or less than 0`. Host: `"
-                    + host + "`. SocketConfiguration: `" + configuration + "`. Timeout: `" + timeout + "`. CompressionThreshold: `"
-                    + compressionThreshold + "`. SlowExecutionThreshold: `" + slowExecutionThreshold + "`. PingPeriod: `" + pingPeriod + "`.");
-        }
+        ConstructorParameterChecker parameterChecker = new ConstructorParameterChecker("DirectRedisClient", LOG);
+        parameterChecker.addParameter("host", host);
+        parameterChecker.addParameter("socketConfiguration", configuration);
+        parameterChecker.addParameter("timeout", timeout);
+        parameterChecker.addParameter("compressionThreshold", compressionThreshold);
+        parameterChecker.addParameter("slowExecutionThreshold", slowExecutionThreshold);
+        parameterChecker.addParameter("pingPeriod", pingPeriod);
+
+        parameterChecker.check("timeout", "isEqualOrLessThanZero", Parameters::isEqualOrLessThanZero);
+        parameterChecker.check("compressionThreshold", "isEqualOrLessThanZero", Parameters::isEqualOrLessThanZero);
+        parameterChecker.check("slowExecutionThreshold", "isEqualOrLessThanZero", Parameters::isEqualOrLessThanZero);
+
         this.redisChannel = new RedisChannel(host, configuration, pingPeriod, channel -> {
             if (unusableServiceNotifier != null) {
                 unusableServiceNotifier.onClosed(DirectRedisClient.this);
@@ -189,17 +175,15 @@ public class DirectRedisClient implements NaiveRedisClient {
     @SuppressWarnings("unchecked")
     @Override
     public <T> T get(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String opName = "get";
+        String methodName = "DirectRedisClient#get(String key)";
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
 
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("key", key);
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
 
-        checkParameter(opName, "key", paramMap, paramValue -> paramValue == null || ((String) paramValue).isEmpty());
-
-        return (T) execute(opName, paramMap, () -> new GetCommand(key), response -> {
+        return (T) execute(methodName, parameterChecker.getParameterMap(), () -> new GetCommand(key), response -> {
             if (response.getValueBytes() == null) { // Key 不存在
-                NAIVEREDIS_ERROR_LOG.warn("[{}] `Host`:`{}`. `Error`:`key not found`.{}",
-                        opName, host, LogBuildUtil.build(paramMap));
+                NAIVEREDIS_ERROR_LOG.warn(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "key not found", parameterChecker.getParameterMap()));
                 executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_KEY_NOT_FOUND);
                 return null;
             } else {
@@ -215,46 +199,43 @@ public class DirectRedisClient implements NaiveRedisClient {
 
     @Override
     public void set(String key, Object value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String opName = "set";
+        String methodName = "DirectRedisClient#set(String key, Object value, int expiry)";
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("value", value);
+        parameterChecker.addParameter("expiry", expiry);
 
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("key", key);
-        paramMap.put("value", value);
-        paramMap.put("expiry", expiry);
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+        parameterChecker.check("value", "isNull", Parameters::isNull);
 
-        checkParameter(opName, "key", paramMap, paramValue -> paramValue == null || ((String) paramValue).isEmpty());
-        checkParameter(opName, "value", paramMap, Objects::isNull);
 
-        execute(opName, paramMap, () -> new SetCommand(key, transcoder.encode(value), expiry), null);
+        execute(methodName, parameterChecker.getParameterMap(), () -> new SetCommand(key, transcoder.encode(value), expiry), null);
     }
 
     @Override
     public void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String opName = "expire";
+        String methodName = "DirectRedisClient#expire(String key, int expiry)";
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("expiry", expiry);
 
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("key", key);
-        paramMap.put("expiry", expiry);
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+        parameterChecker.check("expiry", "isEqualOrLessThanZero", Parameters::isEqualOrLessThanZero);
 
-        checkParameter(opName, "key", paramMap, paramValue -> paramValue == null || ((String) paramValue).isEmpty());
-        checkParameter(opName, "expiry", paramMap, paramValue -> (Integer) paramValue <= 0);
-
-        execute(opName, paramMap, () -> new ExpireCommand(key, expiry), null);
+        execute(methodName, parameterChecker.getParameterMap(), () -> new ExpireCommand(key, expiry), null);
     }
 
     @Override
     public Long getCount(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String opName = "get-count";
+        String methodName = "DirectRedisClient#getCount(String key)";
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
 
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("key", key);
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
 
-        checkParameter(opName, "key", paramMap, paramValue -> paramValue == null || ((String) paramValue).isEmpty());
-
-        return (Long) execute(opName, paramMap, () -> new GetCommand(key), response -> {
+        return (Long) execute(methodName, parameterChecker.getParameterMap(), () -> new GetCommand(key), response -> {
             if (response.getValueBytes() == null) { // Key 不存在
-                NAIVEREDIS_ERROR_LOG.warn("[{}] `Host`:`{}`. `Error`:`key not found`.{}",
-                        opName, host, LogBuildUtil.build(paramMap));
+                NAIVEREDIS_ERROR_LOG.warn(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "key not found", parameterChecker.getParameterMap()));
                 executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_KEY_NOT_FOUND);
                 return null;
             } else {
@@ -265,17 +246,16 @@ public class DirectRedisClient implements NaiveRedisClient {
 
     @Override
     public long addAndGet(String key, long delta, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String opName = "add-and-get";
+        String methodName = "DirectRedisClient#addAndGet(String key, long delta, int expiry)";
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("delta", delta);
+        parameterChecker.addParameter("expiry", expiry);
 
-        Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put("key", key);
-        paramMap.put("delta", delta);
-        paramMap.put("expiry", expiry);
-
-        checkParameter(opName, "key", paramMap, paramValue -> paramValue == null || ((String) paramValue).isEmpty());
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
 
         //noinspection ConstantConditions
-        return (Long) execute(opName, paramMap, () -> new IncrByCommand(key, delta), response -> {
+        return (Long) execute(methodName, parameterChecker.getParameterMap(), () -> new IncrByCommand(key, delta), response -> {
             long value = Long.valueOf(response.getText());
             if (expiry > 0 && value == delta) { // 如果是该 Key 的第一次操作，则进行过期时间设置
                 expire(key, expiry);
@@ -310,27 +290,20 @@ public class DirectRedisClient implements NaiveRedisClient {
         Object parse(RedisData response) throws Exception;
     }
 
-    @SuppressWarnings("unchecked")
-    private <T> void checkParameter(String opName, String paramName, Map<String, Object> paramMap, Predicate<T> predicate) {
-        T paramValue = (T) paramMap.get(paramName);
-        if ( predicate.test(paramValue) ) {
-            String parametersLog = LogBuildUtil.build(paramMap);
-            NAIVEREDIS_ERROR_LOG.error("[{}] `Host`:`{}`. `Error`:`invalid {}`.{}", opName, host, paramName, parametersLog);
-            executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_INVALID_ARGUMENT);
-            throw new IllegalArgumentException("[" + opName + "] Redis command execute failed: `invalid " + paramName +
-                    "`. `Host`:`" + host + "`." + parametersLog);
-        }
+    private MethodParameterChecker buildRedisCommandMethodParameterChecker(String methodName) {
+        MethodParameterChecker checker = new MethodParameterChecker(methodName, NAIVEREDIS_ERROR_LOG, parameterName -> executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_INVALID_ARGUMENT));
+        checker.addParameter("host", host);
+        return checker;
     }
 
-    private Object execute(String opName, Map<String, Object> paramMap, CommandBuilder builder, ResponseParser parser) {
+    private Object execute(String methodName, Map<String, Object> paramMap, CommandBuilder builder, ResponseParser parser) {
         long startTime = System.nanoTime();
         try {
             Command command = builder.build();
             RedisData response = redisChannel.send(command, timeout);
             if (response.isError()) { // 判断 Redis 服务是否返回错误信息
                 String errorMessage = response.getText();
-                NAIVEREDIS_ERROR_LOG.error("[{}] `Host`:`{}`. `Error`:`{}`.{}", opName, host,
-                        errorMessage, LogBuildUtil.build(paramMap));
+                NAIVEREDIS_ERROR_LOG.error(LogBuildUtil.buildMethodExecuteFailedLog(methodName, errorMessage, paramMap));
                 executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_REDIS_ERROR);
                 throw new RedisException(RedisException.CODE_REDIS_SERVER, errorMessage);
             }
@@ -342,27 +315,23 @@ public class DirectRedisClient implements NaiveRedisClient {
         } catch (RedisException e) {
             throw e;
         } catch (IllegalStateException e) {
-            NAIVEREDIS_ERROR_LOG.error("[{}] `Host`:`{}`. `Error`:`illegal state`.{}", opName, host, LogBuildUtil.build(paramMap));
+            NAIVEREDIS_ERROR_LOG.error(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "client has been closed", paramMap));
             executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_ILLEGAL_STATE);
             throw e;
         } catch (TimeoutException e) {
-            NAIVEREDIS_ERROR_LOG.error("[{}] `Host`:`{}`. `Error`:`wait response timeout`. `Timeout`:`{}ms`.{}",
-                    opName, host, timeout, LogBuildUtil.build(paramMap));
+            NAIVEREDIS_ERROR_LOG.error(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "wait response timeout (" + timeout + "ms)", paramMap));
             executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_TIMEOUT);
             throw e;
         } catch (Exception e) { // should not happen, for bug detection
-            String parametersLog = LogBuildUtil.build(paramMap);
-            String causeErrorMessage = e.getMessage() != null ? e.getMessage() : "unexpected error";
-            NAIVEREDIS_ERROR_LOG.error("[{}] `Host`:`{}`. `Error`:`{}`.{}", opName, host, causeErrorMessage, parametersLog);
-            LOG.error("[" + opName + "] Redis command execute failed: `" + causeErrorMessage + "`. `Host`:`" + host + "`."
-                    + parametersLog, e);
+            String errorLog = LogBuildUtil.buildMethodExecuteFailedLog(methodName, "unexpected error", paramMap);
+            NAIVEREDIS_ERROR_LOG.error(errorLog);
+            LOG.error(errorLog, e);
             executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_UNEXPECTED_ERROR);
-            throw new RedisException(RedisException.CODE_UNEXPECTED_ERROR, "[" + opName + "] Redis command execute failed: `"
-                    + causeErrorMessage + "`. `Host`:`" + host + "`." + parametersLog, e);
+            throw new RedisException(RedisException.CODE_UNEXPECTED_ERROR, errorLog, e);
         } finally {
             long executedNanoTime = System.nanoTime() - startTime;
             if (executedNanoTime > slowExecutionThreshold) {
-                NAIVEREDIS_SLOW_EXECUTION_LOG.info("[{}] `Cost`:`{}ns ({}ms)`. `Host`:`{}`.{}", opName, executedNanoTime,
+                NAIVEREDIS_SLOW_EXECUTION_LOG.info("`Method`:`{}`. `Cost`:`{}ns ({}ms)`. `Host`:`{}`.{}", methodName, executedNanoTime,
                         TimeUnit.MILLISECONDS.convert(executedNanoTime, TimeUnit.NANOSECONDS), host, LogBuildUtil.build(paramMap));
             }
             executionMonitor.onExecuted(startTime);

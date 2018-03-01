@@ -25,7 +25,6 @@
 package com.heimuheimu.naiveredis.transcoder;
 
 import com.heimuheimu.naivemonitor.monitor.CompressionMonitor;
-import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.monitor.CompressionMonitorFactory;
 import com.heimuheimu.naiveredis.transcoder.compression.LZFUtil;
 
@@ -114,8 +113,7 @@ public class SimpleTranscoder implements Transcoder {
             ObjectInputStream ois = new ObjectInputStream(valueBis);
             return (T) ois.readObject();
         } else {
-            throw new RedisException(RedisException.CODE_UNEXPECTED_ERROR,
-                    "Decode java object failed: `unknown magic byte " + src[0] + "`.");
+            throw new IllegalArgumentException("Decode java object failed: `unknown magic byte " + src[0] + "`.");
         }
     }
 }

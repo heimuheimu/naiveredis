@@ -22,20 +22,37 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.facility;
+package com.heimuheimu.naiveredis.facility.clients;
 
 /**
- * 服务不可用通知接口。
+ * Redis 直连客户端列表事件监听器，可监听集群列表中 {@code DirectRedisClient} 的创建、关闭、恢复等事件。
  *
- * @param <T> 服务类型
+ * <p>
+ *     <strong>说明：</strong>监听器的实现类必须是线程安全的。
+ * </p>
+ *
+ * @author heimuheimu
  */
-@FunctionalInterface
-public interface UnusableServiceNotifier<T> {
+public interface DirectRedisClientListListener {
 
     /**
-     * 当服务关闭时，通过此接口进行通知。
+     * 当 {@code DirectRedisClient} 在 {@code DirectRedisClientList} 初始化过程被创建成功时，将会触发此事件。
      *
-     * @param target 提供服务的目标类
+     * @param host Redis 地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
      */
-    void onClosed(T target);
+    void onCreated(String host);
+
+    /**
+     * 当 {@code DirectRedisClient} 恢复时，将会触发此事件。
+     *
+     * @param host Redis 地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
+     */
+    void onRecovered(String host);
+
+    /**
+     * 当 {@code DirectRedisClient} 关闭时，将会触发此事件。
+     *
+     * @param host Redis 地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
+     */
+    void onClosed(String host);
 }

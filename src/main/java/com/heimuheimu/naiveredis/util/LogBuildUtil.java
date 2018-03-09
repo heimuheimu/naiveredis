@@ -24,6 +24,7 @@
 
 package com.heimuheimu.naiveredis.util;
 
+import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -55,7 +56,30 @@ public class LogBuildUtil {
         StringBuilder buffer = new StringBuilder();
         if (data != null && !data.isEmpty()) {
             for (String key : data.keySet()) {
-                buffer.append(" `").append(key).append("`:`").append(data.get(key)).append("`.");
+                buffer.append(" `").append(key).append("`:`");
+                Object value = data.get(key);
+                if (value != null && value.getClass().isArray()) {
+                    if (value.getClass() == int[].class) {
+                        buffer.append(Arrays.toString((int[]) value));
+                    } else if (value.getClass() == long[].class) {
+                        buffer.append(Arrays.toString((long[]) value));
+                    } else if (value.getClass() == double[].class) {
+                        buffer.append(Arrays.toString((double[]) value));
+                    } else if (value.getClass() == byte[].class) {
+                        buffer.append(Arrays.toString((byte[]) value));
+                    } else if (value.getClass() == short[].class) {
+                        buffer.append(Arrays.toString((short[]) value));
+                    } else if (value.getClass() == boolean[].class) {
+                        buffer.append(Arrays.toString((boolean[]) value));
+                    } else if (value.getClass() == float[].class) {
+                        buffer.append(Arrays.toString((float[]) value));
+                    } else {
+                        buffer.append(Arrays.toString((Object[]) value));
+                    }
+                } else {
+                    buffer.append(value);
+                }
+                buffer.append("`.");
             }
         }
         return buffer.toString();

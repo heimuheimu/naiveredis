@@ -32,6 +32,7 @@ import java.util.function.Predicate;
  * @author heimuheimu
  * @see MethodParameterChecker
  */
+@FunctionalInterface
 public interface IllegalMethodParameterCallback {
 
     /**

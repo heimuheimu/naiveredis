@@ -157,6 +157,15 @@ public class RedisChannel implements Closeable {
     }
 
     /**
+     * 判断当前与 Redis 服务进行数据交互的管道是否可用。
+     *
+     * @return 管道是否可用
+     */
+    public boolean isAvailable() {
+        return state == BeanStatusEnum.NORMAL;
+    }
+
+    /**
      * 发送一个 Redis 命令，并返回响应数据。
      *
      * @param command Redis 命令

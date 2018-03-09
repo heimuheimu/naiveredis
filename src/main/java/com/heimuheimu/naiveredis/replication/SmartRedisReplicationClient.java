@@ -33,10 +33,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class SmartRedisReplicationClient implements NaiveRedisReplicationClient {
 
+    private final String[] hosts;
+
     private final CopyOnWriteArrayList<DirectRedisClient> clientList = new CopyOnWriteArrayList<>();
 
-    public SmartRedisReplicationClient(String masterHost, String[] slaveHosts) {
+    private final CopyOnWriteArrayList<DirectRedisClient> aliveClientList = new CopyOnWriteArrayList<>();
 
+    public SmartRedisReplicationClient(String masterHost, String[] slaveHosts) {
+        hosts = new String[slaveHosts.length + 1];
+        hosts[0] = masterHost;
+        System.arraycopy(slaveHosts, 0, hosts, 1, slaveHosts.length);
     }
 
     @Override

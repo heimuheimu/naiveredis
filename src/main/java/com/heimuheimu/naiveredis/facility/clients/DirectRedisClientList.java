@@ -221,6 +221,8 @@ public class DirectRedisClientList implements Closeable {
                 LOG.debug("DirectRedisClient is unavailable. `clientIndex`:`{}`. `host`:`{}`.", clientIndex, hosts[clientIndex]);
                 removeUnavailableClient(redisClient);
                 redisClient = null;
+            } else {
+                LOG.debug("Choose DirectRedisClient success. `clientIndex`:`{}`. `host`:`{}`.", clientIndex, hosts[clientIndex]);
             }
         } else {
             LOG.debug("DirectRedisClient is null. `clientIndex`:`{}`. `host`:`{}`.", clientIndex, hosts[clientIndex]);

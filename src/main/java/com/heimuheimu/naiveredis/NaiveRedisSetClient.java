@@ -24,13 +24,5 @@
 
 package com.heimuheimu.naiveredis;
 
-import java.io.Closeable;
-
-/**
- * Redis 客户端。可访问以下网站来获得更多 Redis 信息：<a href="https://redis.io">https://redis.io</a>
- *
- * <p><strong>说明：</strong>{@code NaiveRedisClient} 的实现类必须是线程安全的。</p>
- */
-public interface NaiveRedisClient extends NaiveRedisStorageClient, NaiveRedisCountClient, Closeable {
-
+public interface NaiveRedisSetClient {
 }

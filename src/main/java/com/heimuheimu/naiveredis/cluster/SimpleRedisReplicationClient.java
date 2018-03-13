@@ -134,16 +134,16 @@ public class SimpleRedisReplicationClient extends AbstractRedisClusterClient {
 
     @Override
     protected DirectRedisClient getClient(RedisClientMethod method, Map<String, Object> parameterMap) {
-        boolean useMaster = method != RedisClientMethod.GET;
+        boolean useSlave = method == RedisClientMethod.GET || method == RedisClientMethod.GET_COUNT;
         DirectRedisClient client;
-        if (useMaster) { // 获取 Master 直连客户端
-            client = directRedisClientList.get(0);
-        } else { // 获取 Slave 直连客户端
+        if (useSlave) { // 获取 Slave 直连客户端
             int clientIndex = (int) (Math.abs(count.incrementAndGet()) % slaveHosts.length) + 1;
             client = directRedisClientList.orAvailableClient(clientIndex, 0);
+        } else { // 获取 Master 直连客户端
+            client = directRedisClientList.get(0);
         }
         if (client == null || !client.isAvailable()) {
-            parameterMap.put("useMaster", useMaster);
+            parameterMap.put("useSlave", useSlave);
             String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog("SimpleRedisReplicationClient" + method.getMethodName(),
                     "no available client", parameterMap);
             NAIVEREDIS_ERROR_LOG.error(errorMessage);

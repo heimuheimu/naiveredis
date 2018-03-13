@@ -24,13 +24,28 @@
 
 package com.heimuheimu.naiveredis;
 
-import java.io.Closeable;
+import com.heimuheimu.naiveredis.exception.RedisException;
+import com.heimuheimu.naiveredis.exception.TimeoutException;
 
 /**
- * Redis 客户端。可访问以下网站来获得更多 Redis 信息：<a href="https://redis.io">https://redis.io</a>
+ * Redis 最精简的客户端，仅包含 expire、delete 等多种不同类型客户端通用的方法。
  *
- * <p><strong>说明：</strong>{@code NaiveRedisClient} 的实现类必须是线程安全的。</p>
+ * <p><strong>说明：</strong>{@code NaiveRedisMinimalClient} 的实现类必须是线程安全的。</p>
+ *
+ * @author heimuheimu
  */
-public interface NaiveRedisClient extends NaiveRedisStorageClient, NaiveRedisCountClient, Closeable {
+public interface NaiveRedisMinimalClient {
 
+    /**
+     * 设置 Key 对应的过期时间。
+     *
+     * @param key Redis key，不允许 {@code null} 或空
+     * @param expiry 过期时间，单位：秒，不允许小于等于 0
+     * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalArgumentException 如果 expiry 小于等于 0，将会抛出此异常
+     * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
+     * @throws TimeoutException 如果操作超时，将会抛出此异常
+     * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
+     */
+    void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 }

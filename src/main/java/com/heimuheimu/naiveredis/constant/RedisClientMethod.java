@@ -22,9 +22,52 @@
  * SOFTWARE.
  */
 
+package com.heimuheimu.naiveredis.constant;
+
 /**
- * 提供支持 Redis master-slave 复制模式的客户端。
+ * Redis 客户端方法定义枚举类。
  *
  * @author heimuheimu
  */
-package com.heimuheimu.naiveredis.replication;
+public enum RedisClientMethod {
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#get(String)
+     */
+    GET("#get(String key)"),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#set(String, Object)
+     */
+    SET("#set(String key, Object value)"),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#set(String, Object, int)
+     */
+    SET_WITH_EXPIRE("#set(String key, Object value, int expiry)"),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#expire(String, int)
+     */
+    EXPIRE("#expire(String key, int expiry)"),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#getCount(String)
+     */
+    GET_COUNT("#getCount(String key)"),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#addAndGet(String, long, int)
+     */
+    ADD_AND_GET("#addAndGet(String key, long delta, int expiry)");
+
+    private final String methodName;
+
+    RedisClientMethod(String methodName) {
+        this.methodName = methodName;
+    }
+
+    public String getMethodName() {
+        return methodName;
+    }
+}

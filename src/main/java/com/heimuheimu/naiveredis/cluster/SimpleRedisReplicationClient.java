@@ -22,11 +22,10 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.replication;
+package com.heimuheimu.naiveredis.cluster;
 
 import com.heimuheimu.naiveredis.DirectRedisClient;
-import com.heimuheimu.naiveredis.exception.RedisException;
-import com.heimuheimu.naiveredis.exception.TimeoutException;
+import com.heimuheimu.naiveredis.constant.RedisClientMethod;
 import com.heimuheimu.naiveredis.facility.clients.DirectRedisClientList;
 import com.heimuheimu.naiveredis.facility.clients.DirectRedisClientListListener;
 import com.heimuheimu.naiveredis.facility.parameter.ConstructorParameterChecker;
@@ -37,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -49,14 +47,14 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author heimuheimu
  */
-public class SmartRedisReplicationClient implements NaiveRedisReplicationClient {
+public class SimpleRedisReplicationClient extends AbstractRedisClusterClient {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SimpleRedisReplicationClient.class);
 
     /**
      * Redis 命令执行错误日志
      */
     private static final Logger NAIVEREDIS_ERROR_LOG = LoggerFactory.getLogger("NAIVEREDIS_ERROR_LOG");
-
-    private static final Logger LOG = LoggerFactory.getLogger(SmartRedisReplicationClient.class);
 
     /**
      * 记录已获取 Slave {@code DirectRedisClient} 的次数，用于做负载均衡
@@ -89,12 +87,14 @@ public class SmartRedisReplicationClient implements NaiveRedisReplicationClient 
      * @param slowExecutionThreshold Redis 操作过慢最小时间，单位：毫秒，不能小于等于 0
      * @param pingPeriod PING 命令发送时间间隔，单位：秒，用于心跳检测，如果该值小于等于 0，则不进行心跳检测
      * @param listener Redis 直连客户端列表事件监听器，允许为 {@code null}
+     * @throws IllegalArgumentException 如果 Redis master 地址为 {@code null} 或空字符串
+     * @throws IllegalArgumentException 如果 Redis slave 地址数组为 {@code null} 或空数组
      * @throws IllegalStateException 如果所有 Redis 直连客户端均不可用，将会抛出此异常
      */
-    public SmartRedisReplicationClient(String masterHost, String[] slaveHosts, SocketConfiguration configuration,
-                                       int timeout, int compressionThreshold, int slowExecutionThreshold, int pingPeriod,
-                                       DirectRedisClientListListener listener) throws IllegalStateException {
-        ConstructorParameterChecker parameterChecker = new ConstructorParameterChecker("SmartRedisReplicationClient", LOG);
+    public SimpleRedisReplicationClient(String masterHost, String[] slaveHosts, SocketConfiguration configuration,
+                                        int timeout, int compressionThreshold, int slowExecutionThreshold, int pingPeriod,
+                                        DirectRedisClientListListener listener) throws IllegalArgumentException, IllegalStateException {
+        ConstructorParameterChecker parameterChecker = new ConstructorParameterChecker("SimpleRedisReplicationClient", LOG);
         parameterChecker.addParameter("masterHost", masterHost);
         parameterChecker.addParameter("slaveHosts", slaveHosts);
         parameterChecker.addParameter("socketConfiguration", configuration);
@@ -113,87 +113,18 @@ public class SmartRedisReplicationClient implements NaiveRedisReplicationClient 
         String[] hosts = new String[slaveHosts.length + 1];
         hosts[0] = masterHost;
         System.arraycopy(slaveHosts, 0, hosts, 1, slaveHosts.length);
-        this.directRedisClientList = new DirectRedisClientList("SmartRedisReplicationClient", hosts, configuration,
+        this.directRedisClientList = new DirectRedisClientList("SimpleRedisReplicationClient", hosts, configuration,
                 timeout, compressionThreshold, slowExecutionThreshold, pingPeriod, listener);
     }
 
     @Override
-    public <T> T get(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return get(key, false);
-    }
-
-    @Override
-    public <T> T get(String key, boolean useMaster) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "SmartRedisReplicationClient#get(String key, boolean useMaster)";
-
-        Map<String, Object> parameterMap = new LinkedHashMap<>();
-        parameterMap.put("key", key);
-        parameterMap.put("useMaster", useMaster);
-
-        return getClient(useMaster, methodName, parameterMap).get(key);
-    }
-
-    @Override
-    public void set(String key, Object value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "SmartRedisReplicationClient#set(String key, Object value)";
-
-        Map<String, Object> parameterMap = new LinkedHashMap<>();
-        parameterMap.put("key", key);
-        parameterMap.put("value", value);
-        parameterMap.put("useMaster", true);
-
-        getClient(true, methodName, parameterMap).set(key, value);
-    }
-
-    @Override
-    public void set(String key, Object value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "SmartRedisReplicationClient#set(String key, Object value, int expiry)";
-
-        Map<String, Object> parameterMap = new LinkedHashMap<>();
-        parameterMap.put("key", key);
-        parameterMap.put("value", value);
-        parameterMap.put("expiry", expiry);
-        parameterMap.put("useMaster", true);
-
-        getClient(true, methodName, parameterMap).set(key, value, expiry);
-    }
-
-    @Override
-    public void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "SmartRedisReplicationClient#expire(String key, int expiry)";
-
-        Map<String, Object> parameterMap = new LinkedHashMap<>();
-        parameterMap.put("key", key);
-        parameterMap.put("expiry", expiry);
-
-        getClient(true, methodName, parameterMap).expire(key, expiry);
-    }
-
-    @Override
-    public Long getCount(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "SmartRedisReplicationClient#getCount(String key)";
-
-        Map<String, Object> parameterMap = new LinkedHashMap<>();
-        parameterMap.put("key", key);
-
-        return getClient(true, methodName, parameterMap).getCount(key);
-    }
-
-    @Override
-    public long addAndGet(String key, long delta, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "SmartRedisReplicationClient#addAndGet(String key, long delta, int expiry)";
-
-        Map<String, Object> parameterMap = new LinkedHashMap<>();
-        parameterMap.put("key", key);
-        parameterMap.put("delta", delta);
-        parameterMap.put("expiry", expiry);
-
-        return getClient(true, methodName, parameterMap).addAndGet(key, delta, expiry);
+    public void close() {
+        directRedisClientList.close();
     }
 
     @Override
     public String toString() {
-        return "SmartRedisReplicationClient{" +
+        return "SimpleRedisReplicationClient{" +
                 "count=" + count +
                 ", masterHost='" + masterHost + '\'' +
                 ", slaveHosts=" + Arrays.toString(slaveHosts) +
@@ -201,7 +132,9 @@ public class SmartRedisReplicationClient implements NaiveRedisReplicationClient 
                 '}';
     }
 
-    private DirectRedisClient getClient(boolean useMaster, String methodName, Map<String, Object> paramMap) {
+    @Override
+    protected DirectRedisClient getClient(RedisClientMethod method, Map<String, Object> parameterMap) {
+        boolean useMaster = method != RedisClientMethod.GET;
         DirectRedisClient client;
         if (useMaster) { // 获取 Master 直连客户端
             client = directRedisClientList.get(0);
@@ -210,15 +143,12 @@ public class SmartRedisReplicationClient implements NaiveRedisReplicationClient 
             client = directRedisClientList.orAvailableClient(clientIndex, 0);
         }
         if (client == null || !client.isAvailable()) {
-            String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog(methodName, "no available client", paramMap);
+            parameterMap.put("useMaster", useMaster);
+            String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog("SimpleRedisReplicationClient" + method.getMethodName(),
+                    "no available client", parameterMap);
             NAIVEREDIS_ERROR_LOG.error(errorMessage);
             throw new IllegalStateException(errorMessage);
         }
         return client;
-    }
-
-    @Override
-    public void close() {
-        directRedisClientList.close();
     }
 }

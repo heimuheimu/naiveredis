@@ -32,6 +32,7 @@ import com.heimuheimu.naiveredis.util.LogBuildUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -56,7 +57,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author heimuheimu
  */
-public class DirectRedisClientList {
+public class DirectRedisClientList implements Closeable {
 
     private static final Logger REDIS_CONNECTION_LOG = LoggerFactory.getLogger("NAIVEREDIS_CONNECTION_LOG");
 
@@ -141,9 +142,10 @@ public class DirectRedisClientList {
      * @param slowExecutionThreshold Redis 操作过慢最小时间，单位：毫秒，不能小于等于 0
      * @param pingPeriod PING 命令发送时间间隔，单位：秒，用于心跳检测，如果该值小于等于 0，则不进行心跳检测
      * @param listener Redis 直连客户端列表事件监听器，允许为 {@code null}
+     * @throws IllegalStateException 如果所有 Redis 直连客户端均不可用，将会抛出此异常
      */
     public DirectRedisClientList(String name, String[] hosts, SocketConfiguration configuration, int timeout, int compressionThreshold,
-                                 int slowExecutionThreshold, int pingPeriod, DirectRedisClientListListener listener) {
+                                 int slowExecutionThreshold, int pingPeriod, DirectRedisClientListListener listener) throws IllegalStateException {
         this.name = name;
         this.hosts = hosts;
         this.configuration = configuration;
@@ -170,6 +172,17 @@ public class DirectRedisClientList {
             LOG.error("There is no available `DirectRedisClient`. `name`:`" + name + "`. hosts:`" + Arrays.toString(hosts) + "`.");
             throw new IllegalStateException("There is no available `DirectRedisClient`. `name`:`" + name + "`. hosts:`" + Arrays.toString(hosts) + "`.");
         }
+    }
+
+    /**
+     * 获得 Redis 地址数组，不会返回 {@code null} 或空数组。
+     *
+     * @return Redis 地址数组
+     */
+    public String[] getHosts() {
+        String[] copyHosts = new String[hosts.length];
+        System.arraycopy(hosts, 0, copyHosts, 0, hosts.length);
+        return copyHosts;
     }
 
     /**
@@ -205,10 +218,12 @@ public class DirectRedisClientList {
         DirectRedisClient redisClient = clientList.get(clientIndex);
         if (redisClient != null) {
             if (!redisClient.isAvailable()) {
+                LOG.debug("DirectRedisClient is unavailable. `clientIndex`:`{}`. `host`:`{}`.", clientIndex, hosts[clientIndex]);
                 removeUnavailableClient(redisClient);
                 redisClient = null;
             }
         } else {
+            LOG.debug("DirectRedisClient is null. `clientIndex`:`{}`. `host`:`{}`.", clientIndex, hosts[clientIndex]);
             startRescueTask(); // make sure rescue task is running
         }
         return redisClient;
@@ -226,6 +241,7 @@ public class DirectRedisClientList {
             boolean isExcludeIndex = false;
             for (int excludeClientIndex : excludeClientIndices) {
                 if (i == excludeClientIndex) {
+                    LOG.debug("Exclude client index. `clientIndex`:`{}`. `host`:`{}`.", i, hosts[i]);
                     isExcludeIndex = true;
                     break;
                 }
@@ -234,14 +250,50 @@ public class DirectRedisClientList {
                 DirectRedisClient client = clientList.get(i);
                 if (client != null && client.isAvailable()) {
                     availableClientList.add(client);
+                    LOG.debug("Add to available client list. `clientIndex`:`{}`. `host`:`{}`.", i, hosts[i]);
+                } else {
+                    LOG.debug("Unavailable client. `clientIndex`:`{}`. `host`:`{}`.", i, hosts[i]);
                 }
             }
         }
         if (!availableClientList.isEmpty()) {
-            return availableClientList.get(new Random().nextInt(availableClientList.size()));
+            DirectRedisClient availableClient = availableClientList.get(new Random().nextInt(availableClientList.size()));
+            LOG.debug("Choose random available client success. `host`:`{}`.", availableClient.getHost());
+            return availableClient;
         } else {
+            LOG.debug("Choose random available client failed: `there is no available client`.");
             return null;
         }
+    }
+
+    @Override
+    public synchronized void close() {
+        if (state != BeanStatusEnum.CLOSED) {
+            state = BeanStatusEnum.CLOSED;
+            for (DirectRedisClient client : clientList) {
+                if (client != null) {
+                    client.close();
+                }
+            }
+            REDIS_CONNECTION_LOG.info("DirectRedisClientList has been closed. `name`:`{}`. `hosts`:`{}`.", name, hosts);
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "DirectRedisClientList{" +
+                "name='" + name + '\'' +
+                ", hosts=" + Arrays.toString(hosts) +
+                ", configuration=" + configuration +
+                ", timeout=" + timeout +
+                ", compressionThreshold=" + compressionThreshold +
+                ", slowExecutionThreshold=" + slowExecutionThreshold +
+                ", pingPeriod=" + pingPeriod +
+                ", listener=" + listener +
+                ", clientList=" + clientList +
+                ", isRescueTaskRunning=" + isRescueTaskRunning +
+                ", state=" + state +
+                '}';
     }
 
     /**
@@ -265,6 +317,7 @@ public class DirectRedisClientList {
                 } else {
                     clientList.set(clientIndex, client);
                 }
+                LOG.debug("Add `DirectRedisClient` to client list success." + LogBuildUtil.build(getParameterMap(clientIndex, host)));
                 return true;
             } else {
                 if (clientIndex < 0) {
@@ -272,7 +325,7 @@ public class DirectRedisClientList {
                 } else {
                     clientList.set(clientIndex, null);
                 }
-                LOG.error("Create `DirectRedisClient` failed." + LogBuildUtil.build(getParameterMap(clientIndex, host)));
+                LOG.error("Add `DirectRedisClient` to client list failed." + LogBuildUtil.build(getParameterMap(clientIndex, host)));
                 return false;
             }
         }
@@ -284,6 +337,10 @@ public class DirectRedisClientList {
      * @param unavailableClient 不可用的 Redis 直连客户端
      */
     private void removeUnavailableClient(DirectRedisClient unavailableClient) {
+        if (unavailableClient == null) { //should not happen, just for bug detection
+            throw new NullPointerException("Remove unavailable client failed: `null client`." +
+                    LogBuildUtil.build(getParameterMap(-1, null)));
+        }
         boolean isRemoveSuccess = false;
         int clientIndex = -1;
         synchronized (clientListUpdateLock) {
@@ -291,6 +348,7 @@ public class DirectRedisClientList {
             if (clientIndex >= 0) {
                 clientList.set(clientIndex, null);
                 isRemoveSuccess = true;
+                LOG.debug("Remove `DirectRedisClient` from client list success." + LogBuildUtil.build(getParameterMap(clientIndex, unavailableClient.getHost())));
             }
         }
         if (isRemoveSuccess) {

@@ -22,31 +22,45 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.command.regular;
+package com.heimuheimu.naiveredis.command.storage;
 
 import com.heimuheimu.naiveredis.command.AbstractCommand;
 import com.heimuheimu.naiveredis.data.RedisArray;
 import com.heimuheimu.naiveredis.data.RedisBulkString;
 import com.heimuheimu.naiveredis.data.RedisData;
+import com.heimuheimu.naiveredis.facility.parameter.ConstructorParameterChecker;
+import com.heimuheimu.naiveredis.facility.parameter.Parameters;
 
 /**
- * Redis PING 命令。命令定义请参考文档：
- * <a href="https://redis.io/commands/ping">https://redis.io/commands/ping</a>
+ * Redis GET 命令。命令定义请参考文档：
+ * <a href="https://redis.io/commands/get">https://redis.io/commands/get</a>
  *
- * <p><strong>说明：</strong>{@code PingCommand} 类是线程安全的，可在多个线程中使用同一个实例。</p>
+ * <p><strong>说明：</strong>{@code GetCommand} 类是线程安全的，可在多个线程中使用同一个实例。</p>
  */
-public class PingCommand extends AbstractCommand {
+public class GetCommand extends AbstractCommand {
 
-    private static final byte[] REQUEST_BYTE_ARRAY;
+    private final byte[] requestByteArray;
 
-    static {
-        RedisData[] pingCommandDataArray = new RedisData[1];
-        pingCommandDataArray[0] = new RedisBulkString("PING".getBytes(RedisData.UTF8));
-        REQUEST_BYTE_ARRAY = new RedisArray(pingCommandDataArray).getRespByteArray();
+    /**
+     * 构造一个 Redis GET 命令。
+     *
+     * @param key Redis key，不允许为 {@code null} 或空字符串
+     * @throws IllegalArgumentException 如果 Redis key 为 {@code null} 或空字符串，将抛出此异常
+     */
+    public GetCommand(String key) throws IllegalArgumentException {
+        ConstructorParameterChecker checker = new ConstructorParameterChecker("GetCommand", null);
+        checker.addParameter("key", key);
+
+        checker.check("key", "isEmpty", Parameters::isEmpty);
+
+        RedisData[] commandDataArray = new RedisData[2];
+        commandDataArray[0] = new RedisBulkString("GET".getBytes(RedisData.UTF8));
+        commandDataArray[1] = new RedisBulkString(key.getBytes(RedisData.UTF8));
+        this.requestByteArray = new RedisArray(commandDataArray).getRespByteArray();
     }
 
     @Override
     public byte[] getRequestByteArray() {
-        return REQUEST_BYTE_ARRAY;
+        return requestByteArray;
     }
 }

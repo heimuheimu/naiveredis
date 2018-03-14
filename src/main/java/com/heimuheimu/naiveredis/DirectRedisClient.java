@@ -27,10 +27,11 @@ package com.heimuheimu.naiveredis;
 import com.heimuheimu.naivemonitor.monitor.ExecutionMonitor;
 import com.heimuheimu.naiveredis.channel.RedisChannel;
 import com.heimuheimu.naiveredis.command.Command;
-import com.heimuheimu.naiveredis.command.regular.ExpireCommand;
-import com.heimuheimu.naiveredis.command.regular.GetCommand;
-import com.heimuheimu.naiveredis.command.regular.IncrByCommand;
-import com.heimuheimu.naiveredis.command.regular.SetCommand;
+import com.heimuheimu.naiveredis.command.count.IncrByCommand;
+import com.heimuheimu.naiveredis.command.minimal.DeleteCommand;
+import com.heimuheimu.naiveredis.command.minimal.ExpireCommand;
+import com.heimuheimu.naiveredis.command.storage.GetCommand;
+import com.heimuheimu.naiveredis.command.storage.SetCommand;
 import com.heimuheimu.naiveredis.data.RedisData;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
@@ -190,6 +191,30 @@ public class DirectRedisClient implements NaiveRedisClient {
         return redisChannel.isAvailable();
     }
 
+    @Override
+    public void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = "DirectRedisClient#expire(String key, int expiry)";
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("expiry", expiry);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+        parameterChecker.check("expiry", "isEqualOrLessThanZero", Parameters::isEqualOrLessThanZero);
+
+        execute(methodName, parameterChecker.getParameterMap(), () -> new ExpireCommand(key, expiry), null);
+    }
+
+    @Override
+    public void delete(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = "DirectRedisClient#delete(String key)";
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        execute(methodName, parameterChecker.getParameterMap(), () -> new DeleteCommand(key), null);
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <T> T get(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
@@ -228,19 +253,6 @@ public class DirectRedisClient implements NaiveRedisClient {
 
 
         execute(methodName, parameterChecker.getParameterMap(), () -> new SetCommand(key, transcoder.encode(value), expiry), null);
-    }
-
-    @Override
-    public void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "DirectRedisClient#expire(String key, int expiry)";
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-        parameterChecker.addParameter("expiry", expiry);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-        parameterChecker.check("expiry", "isEqualOrLessThanZero", Parameters::isEqualOrLessThanZero);
-
-        execute(methodName, parameterChecker.getParameterMap(), () -> new ExpireCommand(key, expiry), null);
     }
 
     @Override

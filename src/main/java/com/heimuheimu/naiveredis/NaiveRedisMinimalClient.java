@@ -48,4 +48,16 @@ public interface NaiveRedisMinimalClient {
      * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
      */
     void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
+
+    /**
+     * 从 Redis 中删除指定的 Key
+     *
+     * @param key Redis key，不允许 {@code null} 或空
+     * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalArgumentException 如果 expiry 小于等于 0，将会抛出此异常
+     * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
+     * @throws TimeoutException 如果操作超时，将会抛出此异常
+     * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
+     */
+    void delete(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 }

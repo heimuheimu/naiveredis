@@ -23,8 +23,8 @@
  */
 
 /**
- * 提供 Redis 常用命令。
+ * 提供不同类型客户端通用的 Redis 命令。
  *
  * @author heimuheimu
  */
-package com.heimuheimu.naiveredis.command.regular;
+package com.heimuheimu.naiveredis.command.minimal;

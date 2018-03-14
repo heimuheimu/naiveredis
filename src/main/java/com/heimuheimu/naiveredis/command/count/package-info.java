@@ -22,10 +22,9 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis;
-
 /**
+ * 提供 Redis 计数器客户端使用的命令。
  *
+ * @author heimuheimu
  */
-public interface NaiveRedisSetClient {
-}
+package com.heimuheimu.naiveredis.command.count;

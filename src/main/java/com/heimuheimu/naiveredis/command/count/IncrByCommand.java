@@ -22,39 +22,43 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.command.regular;
+package com.heimuheimu.naiveredis.command.count;
 
 import com.heimuheimu.naiveredis.command.AbstractCommand;
 import com.heimuheimu.naiveredis.data.RedisArray;
 import com.heimuheimu.naiveredis.data.RedisBulkString;
 import com.heimuheimu.naiveredis.data.RedisData;
+import com.heimuheimu.naiveredis.facility.parameter.ConstructorParameterChecker;
+import com.heimuheimu.naiveredis.facility.parameter.Parameters;
 
 /**
- * Redis EXPIRE 命令。命令定义请参考文档：
- * <a href="https://redis.io/commands/expire">https://redis.io/commands/expire</a>
+ * Redis INCRBY 命令。命令定义请参考文档：
+ * <a href="https://redis.io/commands/incrby">https://redis.io/commands/incrby</a>
  *
- * <p><strong>说明：</strong>{@code ExpireCommand} 类是线程安全的，可在多个线程中使用同一个实例。</p>
+ * <p><strong>说明：</strong>{@code IncrByCommand} 类是线程安全的，可在多个线程中使用同一个实例。</p>
  */
-public class ExpireCommand extends AbstractCommand {
+public class IncrByCommand extends AbstractCommand {
 
     private final byte[] requestByteArray;
 
     /**
-     * 构造一个 Redis EXPIRE 命令。
+     * 构造一个 Redis INCRBY 命令。
      *
      * @param key Redis key，不允许为 {@code null} 或空字符串
-     * @param seconds 有效时间，单位：秒
+     * @param delta 需要增加的值
      * @throws IllegalArgumentException 如果 Redis key 为 {@code null} 或空字符串，将抛出此异常
      */
-    public ExpireCommand(String key, int seconds) throws IllegalArgumentException {
-        if (key == null || key.isEmpty()) {
-            throw new IllegalArgumentException("Create ExpireCommand failed: `invalid key`. Key: `" + key + "`. Seconds: `"
-                + seconds + "`.");
-        }
+    public IncrByCommand(String key, long delta) throws IllegalArgumentException {
+        ConstructorParameterChecker checker = new ConstructorParameterChecker("IncrByCommand", null);
+        checker.addParameter("key", key);
+        checker.addParameter("delta", delta);
+
+        checker.check("key", "isEmpty", Parameters::isEmpty);
+
         RedisData[] commandDataArray = new RedisData[3];
-        commandDataArray[0] = new RedisBulkString("EXPIRE".getBytes(RedisData.UTF8));
+        commandDataArray[0] = new RedisBulkString("INCRBY".getBytes(RedisData.UTF8));
         commandDataArray[1] = new RedisBulkString(key.getBytes(RedisData.UTF8));
-        commandDataArray[2] = new RedisBulkString(String.valueOf(seconds).getBytes(RedisData.UTF8));
+        commandDataArray[2] = new RedisBulkString(String.valueOf(delta).getBytes(RedisData.UTF8));
         this.requestByteArray = new RedisArray(commandDataArray).getRespByteArray();
     }
 

@@ -22,12 +22,14 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.command.regular;
+package com.heimuheimu.naiveredis.command.storage;
 
 import com.heimuheimu.naiveredis.command.AbstractCommand;
 import com.heimuheimu.naiveredis.data.RedisArray;
 import com.heimuheimu.naiveredis.data.RedisBulkString;
 import com.heimuheimu.naiveredis.data.RedisData;
+import com.heimuheimu.naiveredis.facility.parameter.ConstructorParameterChecker;
+import com.heimuheimu.naiveredis.facility.parameter.Parameters;
 
 /**
  * Redis SET 命令。命令定义请参考文档：
@@ -48,9 +50,11 @@ public class SetCommand extends AbstractCommand {
      * @throws IllegalArgumentException 如果 Redis key 为 {@code null} 或空字符串，将抛出此异常
      */
     public SetCommand(String key, byte[] value, int seconds) throws IllegalArgumentException {
-        if (key == null || key.isEmpty()) {
-            throw new IllegalArgumentException("Create SetCommand failed: `invalid key`. Key: `" + key + "`.");
-        }
+        ConstructorParameterChecker checker = new ConstructorParameterChecker("SetCommand", null);
+        checker.addParameter("key", key);
+
+        checker.check("key", "isEmpty", Parameters::isEmpty);
+
         int commandDataArrayLength = seconds > 0 ? 5 : 3;
         RedisData[] commandDataArray = new RedisData[commandDataArrayLength];
         commandDataArray[0] = new RedisBulkString("SET".getBytes(RedisData.UTF8));

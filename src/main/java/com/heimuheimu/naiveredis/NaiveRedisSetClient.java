@@ -43,7 +43,7 @@ public interface NaiveRedisSetClient extends NaiveRedisMinimalClient {
      * 将成员添加到指定的 Set 集合中，并返回成功（集合中尚不存在该成员）添加的个数。
      *
      * @param key Set Key，不允许 {@code null} 或空
-     * @param member 需要添加的成员
+     * @param member 需要添加的成员，不允许为 {@code null}
      * @return 成功（集合中尚不存在该成员）添加的个数
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
@@ -56,7 +56,7 @@ public interface NaiveRedisSetClient extends NaiveRedisMinimalClient {
      * 将列表中的成员均添加到指定的 Set 集合中，并返回成功（集合中尚不存在该成员）添加的个数。
      *
      * @param key Set Key，不允许 {@code null} 或空
-     * @param members 需要添加的成员列表
+     * @param members 需要添加的成员列表，成员不允许为 {@code null}
      * @return 成功（集合中尚不存在该成员）添加的个数
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
@@ -69,7 +69,7 @@ public interface NaiveRedisSetClient extends NaiveRedisMinimalClient {
      * 将一个成员从指定的 Set 集合中移除。
      *
      * @param key Set Key，不允许 {@code null} 或空
-     * @param member 需要移除的成员
+     * @param member 需要移除的成员，不允许为 {@code null}
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
      * @throws TimeoutException 如果操作超时，将会抛出此异常
@@ -81,7 +81,7 @@ public interface NaiveRedisSetClient extends NaiveRedisMinimalClient {
      * 判断成员是否在指定的 Set 集合中存在。
      *
      * @param key Set Key，不允许 {@code null} 或空
-     * @param member 成员
+     * @param member 成员，不允许为 {@code null}
      * @return 是否在指定的 Set 集合中存在
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常

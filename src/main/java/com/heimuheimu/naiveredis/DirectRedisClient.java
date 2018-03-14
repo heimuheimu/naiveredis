@@ -312,6 +312,14 @@ public class DirectRedisClient implements NaiveRedisClient {
         parameterChecker.addParameter("members", members);
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+        parameterChecker.check("members", "members could not contain null member", parameterValue -> {
+            for (String member : (Collection<String>) parameterValue) {
+                if (member == null) {
+                    return true;
+                }
+            }
+            return false;
+        });
 
         return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new SAddCommand(key, members),
                 response -> Integer.valueOf(response.getText()));
@@ -326,6 +334,7 @@ public class DirectRedisClient implements NaiveRedisClient {
         parameterChecker.addParameter("member", member);
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+        parameterChecker.check("member", "isNull", Parameters::isNull);
 
         execute(methodName, parameterChecker.getParameterMap(), () -> new SRemCommand(key, Collections.singleton(member)), null);
     }
@@ -339,6 +348,7 @@ public class DirectRedisClient implements NaiveRedisClient {
         parameterChecker.addParameter("member", member);
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+        parameterChecker.check("member", "isNull", Parameters::isNull);
 
         return (boolean) execute(methodName, parameterChecker.getParameterMap(), () -> new SIsMemberCommand(key, member),
                 response -> Integer.valueOf(response.getText()) == 1);

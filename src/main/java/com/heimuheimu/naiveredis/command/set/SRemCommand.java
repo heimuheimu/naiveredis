@@ -72,6 +72,7 @@ public class SRemCommand extends AbstractCommand {
             } else {
                 commandDataArray[memberIndex] = new RedisBulkString(member.getBytes(RedisData.UTF8));
             }
+            memberIndex++;
         }
         this.requestByteArray = new RedisArray(commandDataArray).getRespByteArray();
     }

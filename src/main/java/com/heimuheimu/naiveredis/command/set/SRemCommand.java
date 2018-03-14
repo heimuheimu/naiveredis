@@ -60,6 +60,14 @@ public class SRemCommand extends AbstractCommand {
 
         checker.check("key", "isEmpty", Parameters::isEmpty);
         checker.check("members", "isEmpty", Parameters::isEmpty);
+        checker.check("members", "members could not contain null member", parameterValue -> {
+            for (String member : (Collection<String>) parameterValue) {
+                if (member == null) {
+                    return true;
+                }
+            }
+            return false;
+        });
 
         int commandDataArrayLength = 2 + members.size();
         RedisData[] commandDataArray = new RedisData[commandDataArrayLength];
@@ -67,12 +75,7 @@ public class SRemCommand extends AbstractCommand {
         commandDataArray[1] = new RedisBulkString(key.getBytes(RedisData.UTF8));
         int memberIndex = 2;
         for (String member : members) {
-            if (member == null) {
-                commandDataArray[memberIndex] = new RedisBulkString(null);
-            } else {
-                commandDataArray[memberIndex] = new RedisBulkString(member.getBytes(RedisData.UTF8));
-            }
-            memberIndex++;
+            commandDataArray[memberIndex++] = new RedisBulkString(member.getBytes(RedisData.UTF8));
         }
         this.requestByteArray = new RedisArray(commandDataArray).getRespByteArray();
     }

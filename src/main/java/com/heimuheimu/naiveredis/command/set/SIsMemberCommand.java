@@ -47,7 +47,7 @@ public class SIsMemberCommand extends AbstractCommand {
      * 构造一个 Redis SISMEMBER 命令。
      *
      * @param key Redis key，不允许为 {@code null} 或空字符串
-     * @param member 成员
+     * @param member 成员，不允许为 {@code null}
      * @throws IllegalArgumentException 如果 Redis key 为 {@code null} 或空字符串，将抛出此异常
      */
     public SIsMemberCommand(String key, String member) throws IllegalArgumentException {
@@ -56,6 +56,7 @@ public class SIsMemberCommand extends AbstractCommand {
         checker.addParameter("member", member);
 
         checker.check("key", "isEmpty", Parameters::isEmpty);
+        checker.check("member", "isNull", Parameters::isNull);
 
         RedisData[] commandDataArray = new RedisData[3];
         commandDataArray[0] = new RedisBulkString("SISMEMBER".getBytes(RedisData.UTF8));

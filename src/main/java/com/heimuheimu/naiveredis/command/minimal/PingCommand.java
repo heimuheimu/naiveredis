@@ -34,6 +34,8 @@ import com.heimuheimu.naiveredis.data.RedisData;
  * <a href="https://redis.io/commands/ping">https://redis.io/commands/ping</a>
  *
  * <p><strong>说明：</strong>{@code PingCommand} 类是线程安全的，可在多个线程中使用同一个实例。</p>
+ *
+ * @author heimuheimu
  */
 public class PingCommand extends AbstractCommand {
 

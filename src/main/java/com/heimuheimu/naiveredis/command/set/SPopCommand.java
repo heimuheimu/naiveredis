@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.command.minimal;
+package com.heimuheimu.naiveredis.command.set;
 
 import com.heimuheimu.naiveredis.command.AbstractCommand;
 import com.heimuheimu.naiveredis.data.RedisArray;
@@ -32,32 +32,38 @@ import com.heimuheimu.naiveredis.facility.parameter.ConstructorParameterChecker;
 import com.heimuheimu.naiveredis.facility.parameter.Parameters;
 
 /**
- * Redis DEL 命令。命令定义请参考文档：
- * <a href="https://redis.io/commands/del">https://redis.io/commands/del</a>
+ * Redis SPOP 命令。命令定义请参考文档：
+ * <a href="https://redis.io/commands/spop">https://redis.io/commands/spop</a>
  *
- * <p><strong>说明：</strong>{@code DeleteCommand} 类是线程安全的，可在多个线程中使用同一个实例。</p>
+ * <p><strong>说明：</strong>{@code SPopCommand} 类是线程安全的，可在多个线程中使用同一个实例。</p>
  *
  * @author heimuheimu
  */
-public class DeleteCommand extends AbstractCommand  {
+public class SPopCommand extends AbstractCommand {
 
     private final byte[] requestByteArray;
 
     /**
-     * 构造一个 Redis DEL 命令。
+     * 构造一个 Redis SPOP 命令。
      *
      * @param key Redis key，不允许为 {@code null} 或空字符串
+     * @param count 获取的成员个数
      * @throws IllegalArgumentException 如果 Redis key 为 {@code null} 或空字符串，将抛出此异常
+     * @throws IllegalArgumentException 如果 {@code count} 小于等于 0，将会抛出此异常
      */
-    public DeleteCommand(String key) throws IllegalArgumentException {
-        ConstructorParameterChecker checker = new ConstructorParameterChecker("DeleteCommand", null);
+    public SPopCommand(String key, int count) throws IllegalArgumentException {
+        ConstructorParameterChecker checker = new ConstructorParameterChecker("SPopCommand", null);
         checker.addParameter("key", key);
+        checker.addParameter("count", count);
 
         checker.check("key", "isEmpty", Parameters::isEmpty);
+        checker.check("count", "isEqualOrLessThanZero", Parameters::isEqualOrLessThanZero);
 
-        RedisData[] commandDataArray = new RedisData[2];
-        commandDataArray[0] = new RedisBulkString("DEL".getBytes(RedisData.UTF8));
+        RedisData[] commandDataArray = new RedisData[3];
+        commandDataArray[0] = new RedisBulkString("SPOP".getBytes(RedisData.UTF8));
         commandDataArray[1] = new RedisBulkString(key.getBytes(RedisData.UTF8));
+        commandDataArray[2] = new RedisBulkString(String.valueOf(count).getBytes(RedisData.UTF8));
+
         this.requestByteArray = new RedisArray(commandDataArray).getRespByteArray();
     }
 

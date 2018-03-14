@@ -31,6 +31,6 @@ import java.io.Closeable;
  *
  * <p><strong>说明：</strong>{@code NaiveRedisClient} 的实现类必须是线程安全的。</p>
  */
-public interface NaiveRedisClient extends NaiveRedisStorageClient, NaiveRedisCountClient, Closeable {
+public interface NaiveRedisClient extends NaiveRedisStorageClient, NaiveRedisCountClient, NaiveRedisSetClient, Closeable {
 
 }

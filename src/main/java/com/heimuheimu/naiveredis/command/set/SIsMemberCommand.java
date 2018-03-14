@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.command.minimal;
+package com.heimuheimu.naiveredis.command.set;
 
 import com.heimuheimu.naiveredis.command.AbstractCommand;
 import com.heimuheimu.naiveredis.data.RedisArray;
@@ -32,32 +32,39 @@ import com.heimuheimu.naiveredis.facility.parameter.ConstructorParameterChecker;
 import com.heimuheimu.naiveredis.facility.parameter.Parameters;
 
 /**
- * Redis DEL 命令。命令定义请参考文档：
- * <a href="https://redis.io/commands/del">https://redis.io/commands/del</a>
+ * Redis SISMEMBER 命令。命令定义请参考文档：
+ * <a href="https://redis.io/commands/sismember">https://redis.io/commands/sismember</a>
  *
- * <p><strong>说明：</strong>{@code DeleteCommand} 类是线程安全的，可在多个线程中使用同一个实例。</p>
+ * <p><strong>说明：</strong>{@code SRemCommand} 类是线程安全的，可在多个线程中使用同一个实例。</p>
  *
  * @author heimuheimu
  */
-public class DeleteCommand extends AbstractCommand  {
+public class SIsMemberCommand extends AbstractCommand {
 
     private final byte[] requestByteArray;
 
     /**
-     * 构造一个 Redis DEL 命令。
+     * 构造一个 Redis SISMEMBER 命令。
      *
      * @param key Redis key，不允许为 {@code null} 或空字符串
+     * @param member 成员
      * @throws IllegalArgumentException 如果 Redis key 为 {@code null} 或空字符串，将抛出此异常
      */
-    public DeleteCommand(String key) throws IllegalArgumentException {
-        ConstructorParameterChecker checker = new ConstructorParameterChecker("DeleteCommand", null);
+    public SIsMemberCommand(String key, String member) throws IllegalArgumentException {
+        ConstructorParameterChecker checker = new ConstructorParameterChecker("SIsMemberCommand", null);
         checker.addParameter("key", key);
+        checker.addParameter("member", member);
 
         checker.check("key", "isEmpty", Parameters::isEmpty);
 
-        RedisData[] commandDataArray = new RedisData[2];
-        commandDataArray[0] = new RedisBulkString("DEL".getBytes(RedisData.UTF8));
+        RedisData[] commandDataArray = new RedisData[3];
+        commandDataArray[0] = new RedisBulkString("SISMEMBER".getBytes(RedisData.UTF8));
         commandDataArray[1] = new RedisBulkString(key.getBytes(RedisData.UTF8));
+        if (member == null) {
+            commandDataArray[2] = new RedisBulkString(null);
+        } else {
+            commandDataArray[2] = new RedisBulkString(member.getBytes(RedisData.UTF8));
+        }
         this.requestByteArray = new RedisArray(commandDataArray).getRespByteArray();
     }
 

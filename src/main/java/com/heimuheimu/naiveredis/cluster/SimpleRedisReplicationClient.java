@@ -134,7 +134,7 @@ public class SimpleRedisReplicationClient extends AbstractRedisClusterClient {
 
     @Override
     protected DirectRedisClient getClient(RedisClientMethod method, Map<String, Object> parameterMap) {
-        boolean useSlave = method == RedisClientMethod.GET || method == RedisClientMethod.GET_COUNT;
+        boolean useSlave = method.isReadOnly();
         DirectRedisClient client;
         if (useSlave) { // 获取 Slave 直连客户端
             int clientIndex = (int) (Math.abs(count.incrementAndGet()) % slaveHosts.length) + 1;

@@ -37,19 +37,21 @@ import java.util.Collection;
  * Redis SADD 命令。命令定义请参考文档：
  * <a href="https://redis.io/commands/sadd">https://redis.io/commands/sadd</a>
  *
- * <p><strong>说明：</strong>{@code SetCommand} SAddCommand，可在多个线程中使用同一个实例。</p>
+ * <p><strong>说明：</strong>{@code SetCommand} 类是线程安全的，可在多个线程中使用同一个实例。</p>
+ *
+ * @author heimuheimu
  */
 public class SAddCommand extends AbstractCommand {
 
     private final byte[] requestByteArray;
 
     /**
-     * 构造一个 Redis SET 命令。
+     * 构造一个 Redis SADD 命令。
      *
      * @param key Redis key，不允许为 {@code null} 或空字符串
-     * @param members Redis member 列表，不允许为 {@code null} 或空数组
+     * @param members Redis member 列表，不允许为 {@code null} 或空列表
      * @throws IllegalArgumentException 如果 Redis key 为 {@code null} 或空字符串，将抛出此异常
-     * @throws IllegalArgumentException 如果 {@code members} 为 {@code null} 或空数组，将抛出此异常
+     * @throws IllegalArgumentException 如果 {@code members} 为 {@code null} 或空列表，将抛出此异常
      */
     public SAddCommand(String key, Collection<String> members) throws IllegalArgumentException {
         ConstructorParameterChecker checker = new ConstructorParameterChecker("SAddCommand", null);

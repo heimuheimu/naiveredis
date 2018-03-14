@@ -30,6 +30,7 @@ import com.heimuheimu.naiveredis.command.Command;
 import com.heimuheimu.naiveredis.command.count.IncrByCommand;
 import com.heimuheimu.naiveredis.command.minimal.DeleteCommand;
 import com.heimuheimu.naiveredis.command.minimal.ExpireCommand;
+import com.heimuheimu.naiveredis.command.set.*;
 import com.heimuheimu.naiveredis.command.storage.GetCommand;
 import com.heimuheimu.naiveredis.command.storage.SetCommand;
 import com.heimuheimu.naiveredis.data.RedisData;
@@ -48,7 +49,7 @@ import com.heimuheimu.naiveredis.util.LogBuildUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -291,6 +292,128 @@ public class DirectRedisClient implements NaiveRedisClient {
                 expire(key, expiry);
             }
             return value;
+        });
+    }
+
+    @Override
+    public int addToSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return addToSet(key, Collections.singleton(member));
+    }
+
+    @Override
+    public int addToSet(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        if (members == null || members.isEmpty()) {
+            return 0;
+        }
+        String methodName = "DirectRedisClient#addToSet(String key, Collection<String> members)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("members", members);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new SAddCommand(key, members),
+                response -> Integer.valueOf(response.getText()));
+    }
+
+    @Override
+    public void removeFromSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = "DirectRedisClient#removeFromSet(String key, String member)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("member", member);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        execute(methodName, parameterChecker.getParameterMap(), () -> new SRemCommand(key, Collections.singleton(member)), null);
+    }
+
+    @Override
+    public boolean isMemberInSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = "DirectRedisClient#isMemberInSet(String key, String member)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("member", member);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (boolean) execute(methodName, parameterChecker.getParameterMap(), () -> new SIsMemberCommand(key, member),
+                response -> Integer.valueOf(response.getText()) == 1);
+    }
+
+    @Override
+    public int getSizeOfSet(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = "DirectRedisClient#getSizeOfSet(String key)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new SCardCommand(key),
+                response -> Integer.valueOf(response.getText()));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<String> getMembersFromSet(String key, int count) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = "DirectRedisClient#getMembersFromSet(String key, int count)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("count", count);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (List<String>) execute(methodName, parameterChecker.getParameterMap(), () -> new SRandMemberCommand(key, count), response -> {
+            List<String> members = new ArrayList<>();
+            for (int i = 0; i < response.size(); i++) {
+                members.add(response.get(i).getText());
+            }
+            return members;
+        });
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<String> popMembersFromSet(String key, int count) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = "DirectRedisClient#popMembersFromSet(String key, int count)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("count", count);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+        parameterChecker.check("count", "isEqualOrLessThanZero", Parameters::isEqualOrLessThanZero);
+
+        return (List<String>) execute(methodName, parameterChecker.getParameterMap(), () -> new SPopCommand(key, count), response -> {
+            List<String> members = new ArrayList<>();
+            for (int i = 0; i < response.size(); i++) {
+                members.add(response.get(i).getText());
+            }
+            return members;
+        });
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<String> getAllMembersFromSet(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = "DirectRedisClient#getAllMembersFromSet(String key)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (List<String>) execute(methodName, parameterChecker.getParameterMap(), () -> new SMembersCommand(key), response -> {
+            List<String> members = new ArrayList<>();
+            for (int i = 0; i < response.size(); i++) {
+                members.add(response.get(i).getText());
+            }
+            return members;
         });
     }
 

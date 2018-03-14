@@ -36,6 +36,8 @@ import com.heimuheimu.naiveredis.facility.parameter.Parameters;
  * <a href="https://redis.io/commands/expire">https://redis.io/commands/expire</a>
  *
  * <p><strong>说明：</strong>{@code ExpireCommand} 类是线程安全的，可在多个线程中使用同一个实例。</p>
+ *
+ * @author heimuheimu
  */
 public class ExpireCommand extends AbstractCommand {
 

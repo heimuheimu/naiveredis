@@ -36,6 +36,8 @@ import com.heimuheimu.naiveredis.facility.parameter.Parameters;
  * <a href="https://redis.io/commands/incrby">https://redis.io/commands/incrby</a>
  *
  * <p><strong>说明：</strong>{@code IncrByCommand} 类是线程安全的，可在多个线程中使用同一个实例。</p>
+ *
+ * @author heimuheimu
  */
 public class IncrByCommand extends AbstractCommand {
 

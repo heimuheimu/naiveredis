@@ -48,7 +48,7 @@ public class ExecutionMonitorFactory {
     /**
      * Redis 客户端操作执行错误码：参数不正确
      */
-    public static final int ERROR_CODE_INVALID_ARGUMENT = -1;
+    public static final int ERROR_CODE_ILLEGAL_ARGUMENT = -1;
 
     /**
      * Redis 客户端操作执行错误码：管道或命令已关闭

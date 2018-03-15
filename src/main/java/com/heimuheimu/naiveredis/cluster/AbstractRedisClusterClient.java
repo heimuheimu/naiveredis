@@ -29,6 +29,7 @@ import com.heimuheimu.naiveredis.NaiveRedisClient;
 import com.heimuheimu.naiveredis.constant.RedisClientMethod;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
+import com.heimuheimu.naiveredis.monitor.ClusterMonitor;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -41,6 +42,8 @@ import java.util.Map;
  * @author heimuheimu
  */
 public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
+
+    protected ClusterMonitor clusterMonitor = ClusterMonitor.getInstance();
 
     @Override
     public void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {

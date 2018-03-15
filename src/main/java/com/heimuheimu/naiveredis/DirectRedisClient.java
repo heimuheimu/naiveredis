@@ -454,7 +454,7 @@ public class DirectRedisClient implements NaiveRedisClient {
     }
 
     private MethodParameterChecker buildRedisCommandMethodParameterChecker(String methodName) {
-        MethodParameterChecker checker = new MethodParameterChecker(methodName, NAIVEREDIS_ERROR_LOG, parameterName -> executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_INVALID_ARGUMENT));
+        MethodParameterChecker checker = new MethodParameterChecker(methodName, NAIVEREDIS_ERROR_LOG, parameterName -> executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_ILLEGAL_ARGUMENT));
         checker.addParameter("host", host);
         return checker;
     }

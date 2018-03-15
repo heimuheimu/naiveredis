@@ -161,11 +161,11 @@ public class DirectRedisClientList implements Closeable {
                 hasAvailableClient = true;
                 REDIS_CONNECTION_LOG.info("Add `{}` to `{}` is success. Hosts: `{}`.", host, name, hosts);
                 Methods.invokeIfNotNull("DirectRedisClientListListener#onCreated(String host)", getParameterMap(-1, host),
-                        listener, () -> listener.onCreated(host));
+                        listener, () -> listener.onCreated(name, host));
             } else {
                 REDIS_CONNECTION_LOG.error("Add `{}` to `{}` failed. Hosts: `{}`.", host, name, hosts);
                 Methods.invokeIfNotNull("DirectRedisClientListListener#onClosed(String host)", getParameterMap(-1, host),
-                        listener, () -> listener.onClosed(host));
+                        listener, () -> listener.onClosed(name, host));
             }
         }
         if ( !hasAvailableClient ) {
@@ -356,7 +356,7 @@ public class DirectRedisClientList implements Closeable {
         if (isRemoveSuccess) {
             startRescueTask();
             Methods.invokeIfNotNull("DirectRedisClientListListener#onClosed(String host)", getParameterMap(clientIndex, unavailableClient.getHost()),
-                    listener, () -> listener.onClosed(unavailableClient.getHost()));
+                    listener, () -> listener.onClosed(name, unavailableClient.getHost()));
         }
     }
 
@@ -403,7 +403,7 @@ public class DirectRedisClientList implements Closeable {
                                             if (isSuccess) {
                                                 REDIS_CONNECTION_LOG.info("Rescue `{}` success. `name`:`{}`. `hosts`:`{}`.", host, name, Arrays.toString(hosts));
                                                 Methods.invokeIfNotNull("DirectRedisClientListListener#onRecovered(String host)", getParameterMap(i, host),
-                                                        listener, () -> listener.onRecovered(host));
+                                                        listener, () -> listener.onRecovered(name, host));
                                             } else {
                                                 hasRecovered = false;
                                                 REDIS_CONNECTION_LOG.warn("Rescue `{}` failed. `name`:`{}`. `hosts`:`{}`.", host, name, Arrays.toString(hosts));

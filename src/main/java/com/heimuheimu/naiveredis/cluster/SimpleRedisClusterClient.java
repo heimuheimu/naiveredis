@@ -107,6 +107,7 @@ public class SimpleRedisClusterClient extends AbstractRedisClusterClient {
             String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog("SimpleRedisClusterClient" + method.getMethodName(),
                     "no available client", parameterMap);
             NAIVEREDIS_ERROR_LOG.error(errorMessage);
+            clusterMonitor.onUnavailable();
             throw new IllegalStateException(errorMessage);
         }
         return client;

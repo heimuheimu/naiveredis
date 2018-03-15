@@ -38,21 +38,24 @@ public interface DirectRedisClientListListener {
     /**
      * 当 {@code DirectRedisClient} 在 {@code DirectRedisClientList} 初始化过程被创建成功时，将会触发此事件。
      *
+     * @param listName Redis 直连客户端列表名称
      * @param host Redis 地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
      */
-    void onCreated(String host);
+    void onCreated(String listName, String host);
 
     /**
      * 当 {@code DirectRedisClient} 恢复时，将会触发此事件。
      *
+     * @param listName Redis 直连客户端列表名称
      * @param host Redis 地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
      */
-    void onRecovered(String host);
+    void onRecovered(String listName, String host);
 
     /**
      * 当 {@code DirectRedisClient} 关闭时，将会触发此事件。
      *
+     * @param listName Redis 直连客户端列表名称
      * @param host Redis 地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
      */
-    void onClosed(String host);
+    void onClosed(String listName, String host);
 }

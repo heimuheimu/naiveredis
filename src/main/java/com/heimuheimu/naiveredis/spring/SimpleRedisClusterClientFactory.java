@@ -84,4 +84,8 @@ public class SimpleRedisClusterClientFactory implements FactoryBean<SimpleRedisC
     public boolean isSingleton() {
         return true;
     }
+
+    public void close() {
+        this.client.close();
+    }
 }

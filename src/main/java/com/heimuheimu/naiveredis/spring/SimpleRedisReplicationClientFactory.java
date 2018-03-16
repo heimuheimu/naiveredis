@@ -89,4 +89,8 @@ public class SimpleRedisReplicationClientFactory implements FactoryBean<SimpleRe
     public boolean isSingleton() {
         return true;
     }
+
+    public void close() {
+        this.client.close();
+    }
 }

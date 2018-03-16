@@ -67,6 +67,19 @@ public class SimpleRedisClusterClient extends AbstractRedisClusterClient {
     private final ConsistentHashLocator consistentHashLocator = new ConsistentHashLocator();
 
     /**
+     * 构造一个简单的 Redis 集群客户端，连接多个 Redis 服务，根据 Key 进行 Hash 选择。创建直连客户端的 {@link java.net.Socket}
+     * 配置信息使用 {@link SocketConfiguration#DEFAULT}，Redis 操作超时时间设置为 5 秒，最小压缩字节数设置为 64 KB，
+     * Redis 操作过慢最小时间设置为 50 毫秒，心跳检测时间设置为 30 秒。
+     *
+     * @param hosts Redis 地址数组，不允许为 {@code null} 或空数组
+     * @param listener Redis 直连客户端列表事件监听器，允许为 {@code null}
+     * @throws IllegalStateException 如果所有 Redis 直连客户端均不可用，将会抛出此异常
+     */
+    public SimpleRedisClusterClient(String[] hosts, DirectRedisClientListListener listener) throws IllegalStateException {
+        this(hosts, null, 5000, 64 * 1024, 50, 30, listener);
+    }
+
+    /**
      * 构造一个简单的 Redis 集群客户端，连接多个 Redis 服务，根据 Key 进行 Hash 选择。
      *
      * @param hosts Redis 地址数组，不允许为 {@code null} 或空数组
@@ -76,9 +89,11 @@ public class SimpleRedisClusterClient extends AbstractRedisClusterClient {
      * @param slowExecutionThreshold Redis 操作过慢最小时间，单位：毫秒，不能小于等于 0
      * @param pingPeriod PING 命令发送时间间隔，单位：秒，用于心跳检测，如果该值小于等于 0，则不进行心跳检测
      * @param listener Redis 直连客户端列表事件监听器，允许为 {@code null}
+     * @throws IllegalStateException 如果所有 Redis 直连客户端均不可用，将会抛出此异常
      */
-    public SimpleRedisClusterClient(String[] hosts, SocketConfiguration configuration, int timeout, int compressionThreshold,
-                                    int slowExecutionThreshold, int pingPeriod, DirectRedisClientListListener listener) {
+    public SimpleRedisClusterClient(String[] hosts, SocketConfiguration configuration, int timeout,
+                                    int compressionThreshold, int slowExecutionThreshold, int pingPeriod,
+                                    DirectRedisClientListListener listener) throws IllegalStateException {
         this.hosts = hosts;
         this.directRedisClientList = new DirectRedisClientList("SimpleRedisClusterClient", hosts, configuration,
                 timeout, compressionThreshold, slowExecutionThreshold, pingPeriod, listener);

@@ -77,6 +77,23 @@ public class SimpleRedisReplicationClient extends AbstractRedisClusterClient {
     private final DirectRedisClientList directRedisClientList;
 
     /**
+     * 构造一个支持 Redis master-slave 复制模式的客户端。创建直连客户端的 {@link java.net.Socket}配置信息使用
+     * {@link SocketConfiguration#DEFAULT}，Redis 操作超时时间设置为 5 秒，最小压缩字节数设置为 64 KB，
+     * Redis 操作过慢最小时间设置为 50 毫秒，心跳检测时间设置为 30 秒。
+     *
+     * @param masterHost Redis master 地址，Redis 地址由主机名和端口组成，":"符号分割，例如：localhost:6379
+     * @param slaveHosts Redis slave 地址数组，不允许为 {@code null} 或空数组
+     * @param listener Redis 直连客户端列表事件监听器，允许为 {@code null}
+     * @throws IllegalArgumentException 如果 Redis master 地址为 {@code null} 或空字符串
+     * @throws IllegalArgumentException 如果 Redis slave 地址数组为 {@code null} 或空数组
+     * @throws IllegalStateException 如果所有 Redis 直连客户端均不可用，将会抛出此异常
+     */
+    public SimpleRedisReplicationClient(String masterHost, String[] slaveHosts, DirectRedisClientListListener listener)
+            throws IllegalArgumentException, IllegalStateException {
+        this(masterHost, slaveHosts, null, 5000, 64 * 1024, 50, 30, listener);
+    }
+
+    /**
      * 构造一个支持 Redis master-slave 复制模式的客户端。
      *
      * @param masterHost Redis master 地址，Redis 地址由主机名和端口组成，":"符号分割，例如：localhost:6379

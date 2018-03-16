@@ -34,7 +34,7 @@ import com.heimuheimu.naiveredis.exception.TimeoutException;
  *
  * @author heimuheimu
  */
-public interface NaiveRedisStorageClient extends NaiveRedisMinimalClient {
+public interface NaiveRedisStorageClient extends NaiveRedisKeysClient {
 
     /**
      * 获取 Key 对应的值，如果 Key 不存在，则返回 {@code null}。

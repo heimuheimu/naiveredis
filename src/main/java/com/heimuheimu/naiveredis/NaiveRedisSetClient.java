@@ -37,7 +37,7 @@ import java.util.List;
  *
  * @author heimuheimu
  */
-public interface NaiveRedisSetClient extends NaiveRedisMinimalClient {
+public interface NaiveRedisSetClient extends NaiveRedisKeysClient {
 
     /**
      * 将成员添加到指定的 Set 集合中，并返回成功（集合中尚不存在该成员）添加的个数。

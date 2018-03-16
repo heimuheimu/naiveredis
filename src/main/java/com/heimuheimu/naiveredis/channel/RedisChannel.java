@@ -26,7 +26,7 @@ package com.heimuheimu.naiveredis.channel;
 
 import com.heimuheimu.naivemonitor.monitor.SocketMonitor;
 import com.heimuheimu.naiveredis.command.Command;
-import com.heimuheimu.naiveredis.command.minimal.PingCommand;
+import com.heimuheimu.naiveredis.command.keys.PingCommand;
 import com.heimuheimu.naiveredis.constant.BeanStatusEnum;
 import com.heimuheimu.naiveredis.data.RedisData;
 import com.heimuheimu.naiveredis.data.RedisDataReader;

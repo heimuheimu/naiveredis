@@ -22,9 +22,7 @@
  * SOFTWARE.
  */
 
-/**
- * 提供不同类型客户端通用的 Redis 命令。
- *
- * @author heimuheimu
- */
-package com.heimuheimu.naiveredis.command.minimal;
+package com.heimuheimu.naiveredis;
+
+public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
+}

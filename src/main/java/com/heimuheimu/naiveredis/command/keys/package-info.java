@@ -22,33 +22,9 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.command.minimal;
-
-import com.heimuheimu.naiveredis.command.AbstractCommand;
-import com.heimuheimu.naiveredis.data.RedisArray;
-import com.heimuheimu.naiveredis.data.RedisBulkString;
-import com.heimuheimu.naiveredis.data.RedisData;
-
 /**
- * Redis PING 命令。命令定义请参考文档：
- * <a href="https://redis.io/commands/ping">https://redis.io/commands/ping</a>
- *
- * <p><strong>说明：</strong>{@code PingCommand} 类是线程安全的，可在多个线程中使用同一个实例。</p>
+ * 提供对 Redis Key 进行操作的相关命令，更多信息可参考文档：<a href="https://redis.io/commands#generic">https://redis.io/commands#generic</a>
  *
  * @author heimuheimu
  */
-public class PingCommand extends AbstractCommand {
-
-    private static final byte[] REQUEST_BYTE_ARRAY;
-
-    static {
-        RedisData[] pingCommandDataArray = new RedisData[1];
-        pingCommandDataArray[0] = new RedisBulkString("PING".getBytes(RedisData.UTF8));
-        REQUEST_BYTE_ARRAY = new RedisArray(pingCommandDataArray).getRespByteArray();
-    }
-
-    @Override
-    public byte[] getRequestByteArray() {
-        return REQUEST_BYTE_ARRAY;
-    }
-}
+package com.heimuheimu.naiveredis.command.keys;

@@ -28,13 +28,13 @@ import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 
 /**
- * Redis 最精简的客户端，仅包含 expire、delete 等多种不同类型客户端通用的方法。
+ * Redis Keys 客户端，提供对 Redis Key 进行操作的相关方法。
  *
- * <p><strong>说明：</strong>{@code NaiveRedisMinimalClient} 的实现类必须是线程安全的。</p>
+ * <p><strong>说明：</strong>{@code NaiveRedisKeysClient} 的实现类必须是线程安全的。</p>
  *
  * @author heimuheimu
  */
-public interface NaiveRedisMinimalClient {
+public interface NaiveRedisKeysClient {
 
     /**
      * 设置 Key 对应的过期时间。
@@ -50,7 +50,7 @@ public interface NaiveRedisMinimalClient {
     void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 从 Redis 中删除指定的 Key
+     * 从 Redis 中删除指定的 Key。
      *
      * @param key Redis key，不允许 {@code null} 或空
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常

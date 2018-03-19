@@ -31,6 +31,11 @@ import com.heimuheimu.naiveredis.exception.TimeoutException;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Redis SET 客户端代理接口。
+ *
+ * @author heimuheimu
+ */
 public interface NaiveRedisSetClientDelegate extends NaiveRedisSetClient {
 
     NaiveRedisSetClient getNaiveRedisSetClient();

@@ -22,33 +22,9 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.clients.delegate;
-
-import com.heimuheimu.naiveredis.NaiveRedisStorageClient;
-import com.heimuheimu.naiveredis.exception.RedisException;
-import com.heimuheimu.naiveredis.exception.TimeoutException;
-
 /**
- * Redis 存储客户端代理接口。
+ * 请勿使用此包下的类或接口。
  *
  * @author heimuheimu
  */
-public interface NaiveRedisStorageClientDelegate extends NaiveRedisStorageClient {
-
-    NaiveRedisStorageClient getNaiveRedisStorageClient();
-
-    @Override
-    default <T> T get(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return getNaiveRedisStorageClient().get(key);
-    }
-
-    @Override
-    default void set(String key, Object value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        getNaiveRedisStorageClient().set(key, value);
-    }
-
-    @Override
-    default void set(String key, Object value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        getNaiveRedisStorageClient().set(key, value, expiry);
-    }
-}
+package com.heimuheimu.naiveredis.clients.delegate;

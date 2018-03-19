@@ -27,6 +27,11 @@ package com.heimuheimu.naiveredis.clients.delegate;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 
+/**
+ * Redis 客户端代理接口。
+ *
+ * @author heimuheimu
+ */
 public interface NaiveRedisClientDelegate extends NaiveRedisStorageClientDelegate, NaiveRedisCountClientDelegate, NaiveRedisSetClientDelegate {
 
     @Override

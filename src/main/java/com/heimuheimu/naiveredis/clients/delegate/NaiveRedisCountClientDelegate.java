@@ -28,6 +28,11 @@ import com.heimuheimu.naiveredis.NaiveRedisCountClient;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 
+/**
+ * Redis 计数器客户端代理接口。
+ *
+ * @author heimuheimu
+ */
 public interface NaiveRedisCountClientDelegate extends NaiveRedisCountClient {
 
     NaiveRedisCountClient getNaiveRedisCountClient();

@@ -23,7 +23,7 @@
  */
 
 /**
- * Redis 直连客户端请使用 {@link com.heimuheimu.naiveredis.DirectRedisClient}，请勿使用此包下的 Redis 客户端类。
+ * Redis 直连客户端请使用 {@link com.heimuheimu.naiveredis.DirectRedisClient}，请勿使用此包下的类或接口。
  *
  * @author heimuheimu
  */

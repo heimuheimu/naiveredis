@@ -78,6 +78,7 @@ public class ConstructorParameterChecker {
      * @param predicate 参数检查器
      * @param <T> 参数值类型
      */
+    @SuppressWarnings("unchecked")
     public <T> void check(String parameterName, String errorMessage, Predicate<T> predicate) {
         boolean isIllegalArgument;
         try {

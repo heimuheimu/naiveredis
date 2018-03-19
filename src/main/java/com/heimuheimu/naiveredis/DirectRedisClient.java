@@ -24,32 +24,20 @@
 
 package com.heimuheimu.naiveredis;
 
-import com.heimuheimu.naivemonitor.monitor.ExecutionMonitor;
 import com.heimuheimu.naiveredis.channel.RedisChannel;
-import com.heimuheimu.naiveredis.command.Command;
-import com.heimuheimu.naiveredis.command.count.IncrByCommand;
-import com.heimuheimu.naiveredis.command.keys.DeleteCommand;
-import com.heimuheimu.naiveredis.command.keys.ExpireCommand;
-import com.heimuheimu.naiveredis.command.set.*;
-import com.heimuheimu.naiveredis.command.storage.GetCommand;
-import com.heimuheimu.naiveredis.command.storage.SetCommand;
-import com.heimuheimu.naiveredis.data.RedisData;
-import com.heimuheimu.naiveredis.exception.RedisException;
-import com.heimuheimu.naiveredis.exception.TimeoutException;
+import com.heimuheimu.naiveredis.clients.DirectRedisCountClient;
+import com.heimuheimu.naiveredis.clients.DirectRedisSetClient;
+import com.heimuheimu.naiveredis.clients.DirectRedisStorageClient;
+import com.heimuheimu.naiveredis.clients.delegate.NaiveRedisClientDelegate;
 import com.heimuheimu.naiveredis.facility.UnusableServiceNotifier;
 import com.heimuheimu.naiveredis.facility.parameter.ConstructorParameterChecker;
-import com.heimuheimu.naiveredis.facility.parameter.MethodParameterChecker;
 import com.heimuheimu.naiveredis.facility.parameter.Parameters;
-import com.heimuheimu.naiveredis.monitor.ExecutionMonitorFactory;
 import com.heimuheimu.naiveredis.net.BuildSocketException;
 import com.heimuheimu.naiveredis.net.SocketConfiguration;
-import com.heimuheimu.naiveredis.transcoder.SimpleTranscoder;
-import com.heimuheimu.naiveredis.transcoder.Transcoder;
-import com.heimuheimu.naiveredis.util.LogBuildUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -59,17 +47,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author heimuheimu
  */
-public class DirectRedisClient implements NaiveRedisClient {
-
-    /**
-     * Redis 命令执行错误日志
-     */
-    private static final Logger NAIVEREDIS_ERROR_LOG = LoggerFactory.getLogger("NAIVEREDIS_ERROR_LOG");
-
-    /**
-     * Redis 命令慢执行日志
-     */
-    private static final Logger NAIVEREDIS_SLOW_EXECUTION_LOG = LoggerFactory.getLogger("NAIVEREDIS_SLOW_EXECUTION_LOG");
+public class DirectRedisClient implements NaiveRedisClientDelegate, Closeable {
 
     /**
      * {@code DirectRedisClient} 使用的错误日志
@@ -87,7 +65,7 @@ public class DirectRedisClient implements NaiveRedisClient {
     private final int timeout;
 
     /**
-     * 执行 Redis 命令过慢最小时间，单位：纳秒，不能小于等于0，执行 Redis 命令时间大于该值时，将进行慢执行日志打印
+     * 执行 Redis 命令过慢最小时间，单位：纳秒，不能小于等于 0，执行 Redis 命令时间大于该值时，将进行慢执行日志打印
      */
     private final long slowExecutionThreshold;
 
@@ -97,14 +75,19 @@ public class DirectRedisClient implements NaiveRedisClient {
     private final RedisChannel redisChannel;
 
     /**
-     * Java 对象与字节数组转换器
+     * Redis 存储客户端
      */
-    private final Transcoder transcoder;
+    private final NaiveRedisStorageClient naiveRedisStorageClient;
 
     /**
-     * 当前 Redis 客户端使用的操作执行信息监控器
+     * Redis 计数器客户端
      */
-    private final ExecutionMonitor executionMonitor;
+    private final NaiveRedisCountClient naiveRedisCountClient;
+
+    /**
+     * Redis SET 客户端
+     */
+    private final NaiveRedisSetClient naiveRedisSetClient;
 
     /**
      * 构造一个 Redis 直连客户端，{@link java.net.Socket} 配置信息使用 {@link SocketConfiguration#DEFAULT}，Redis 操作超时时间设置为 5 秒，
@@ -169,9 +152,26 @@ public class DirectRedisClient implements NaiveRedisClient {
         this.redisChannel.init();
         this.host = host;
         this.timeout = timeout;
-        this.transcoder = new SimpleTranscoder(compressionThreshold);
         this.slowExecutionThreshold = TimeUnit.NANOSECONDS.convert(slowExecutionThreshold, TimeUnit.MILLISECONDS); //将毫秒转换为纳秒
-        this.executionMonitor = ExecutionMonitorFactory.get(host);
+
+        this.naiveRedisStorageClient = new DirectRedisStorageClient(redisChannel, timeout, this.slowExecutionThreshold, compressionThreshold);
+        this.naiveRedisCountClient = new DirectRedisCountClient(redisChannel, timeout, this.slowExecutionThreshold);
+        this.naiveRedisSetClient = new DirectRedisSetClient(redisChannel, timeout, this.slowExecutionThreshold);
+    }
+
+    @Override
+    public NaiveRedisStorageClient getNaiveRedisStorageClient() {
+        return naiveRedisStorageClient;
+    }
+
+    @Override
+    public NaiveRedisCountClient getNaiveRedisCountClient() {
+        return naiveRedisCountClient;
+    }
+
+    @Override
+    public NaiveRedisSetClient getNaiveRedisSetClient() {
+        return naiveRedisSetClient;
     }
 
     /**
@@ -193,241 +193,6 @@ public class DirectRedisClient implements NaiveRedisClient {
     }
 
     @Override
-    public void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "DirectRedisClient#expire(String key, int expiry)";
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-        parameterChecker.addParameter("expiry", expiry);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-        parameterChecker.check("expiry", "isEqualOrLessThanZero", Parameters::isEqualOrLessThanZero);
-
-        execute(methodName, parameterChecker.getParameterMap(), () -> new ExpireCommand(key, expiry), null);
-    }
-
-    @Override
-    public void delete(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "DirectRedisClient#delete(String key)";
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-
-        execute(methodName, parameterChecker.getParameterMap(), () -> new DeleteCommand(key), null);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> T get(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "DirectRedisClient#get(String key)";
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-
-        return (T) execute(methodName, parameterChecker.getParameterMap(), () -> new GetCommand(key), response -> {
-            if (response.getValueBytes() == null) { // Key 不存在
-                NAIVEREDIS_ERROR_LOG.warn(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "key not found", parameterChecker.getParameterMap()));
-                executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_KEY_NOT_FOUND);
-                return null;
-            } else {
-                return transcoder.decode(response.getValueBytes());
-            }
-        });
-    }
-
-    @Override
-    public void set(String key, Object value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        set(key, value, -1);
-    }
-
-    @Override
-    public void set(String key, Object value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "DirectRedisClient#set(String key, Object value, int expiry)";
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-        parameterChecker.addParameter("value", value);
-        parameterChecker.addParameter("expiry", expiry);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-        parameterChecker.check("value", "isNull", Parameters::isNull);
-
-
-        execute(methodName, parameterChecker.getParameterMap(), () -> new SetCommand(key, transcoder.encode(value), expiry), null);
-    }
-
-    @Override
-    public Long getCount(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "DirectRedisClient#getCount(String key)";
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-
-        return (Long) execute(methodName, parameterChecker.getParameterMap(), () -> new GetCommand(key), response -> {
-            if (response.getValueBytes() == null) { // Key 不存在
-                NAIVEREDIS_ERROR_LOG.warn(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "key not found", parameterChecker.getParameterMap()));
-                executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_KEY_NOT_FOUND);
-                return null;
-            } else {
-                return Long.valueOf(response.getText());
-            }
-        });
-    }
-
-    @Override
-    public long addAndGet(String key, long delta, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "DirectRedisClient#addAndGet(String key, long delta, int expiry)";
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-        parameterChecker.addParameter("delta", delta);
-        parameterChecker.addParameter("expiry", expiry);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-
-        //noinspection ConstantConditions
-        return (Long) execute(methodName, parameterChecker.getParameterMap(), () -> new IncrByCommand(key, delta), response -> {
-            long value = Long.valueOf(response.getText());
-            if (expiry > 0 && value == delta) { // 如果是该 Key 的第一次操作，则进行过期时间设置
-                expire(key, expiry);
-            }
-            return value;
-        });
-    }
-
-    @Override
-    public int addToSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return addToSet(key, Collections.singleton(member));
-    }
-
-    @Override
-    public int addToSet(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        if (members == null || members.isEmpty()) {
-            return 0;
-        }
-        String methodName = "DirectRedisClient#addToSet(String key, Collection<String> members)";
-
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-        parameterChecker.addParameter("members", members);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-        parameterChecker.check("members", "members could not contain null member", parameterValue -> {
-            for (String member : (Collection<String>) parameterValue) {
-                if (member == null) {
-                    return true;
-                }
-            }
-            return false;
-        });
-
-        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new SAddCommand(key, members),
-                response -> Integer.valueOf(response.getText()));
-    }
-
-    @Override
-    public void removeFromSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "DirectRedisClient#removeFromSet(String key, String member)";
-
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-        parameterChecker.addParameter("member", member);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-        parameterChecker.check("member", "isNull", Parameters::isNull);
-
-        execute(methodName, parameterChecker.getParameterMap(), () -> new SRemCommand(key, Collections.singleton(member)), null);
-    }
-
-    @Override
-    public boolean isMemberInSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "DirectRedisClient#isMemberInSet(String key, String member)";
-
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-        parameterChecker.addParameter("member", member);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-        parameterChecker.check("member", "isNull", Parameters::isNull);
-
-        return (boolean) execute(methodName, parameterChecker.getParameterMap(), () -> new SIsMemberCommand(key, member),
-                response -> Integer.valueOf(response.getText()) == 1);
-    }
-
-    @Override
-    public int getSizeOfSet(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "DirectRedisClient#getSizeOfSet(String key)";
-
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-
-        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new SCardCommand(key),
-                response -> Integer.valueOf(response.getText()));
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public List<String> getMembersFromSet(String key, int count) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "DirectRedisClient#getMembersFromSet(String key, int count)";
-
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-        parameterChecker.addParameter("count", count);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-
-        return (List<String>) execute(methodName, parameterChecker.getParameterMap(), () -> new SRandMemberCommand(key, count), response -> {
-            List<String> members = new ArrayList<>();
-            for (int i = 0; i < response.size(); i++) {
-                members.add(response.get(i).getText());
-            }
-            return members;
-        });
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public List<String> popMembersFromSet(String key, int count) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "DirectRedisClient#popMembersFromSet(String key, int count)";
-
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-        parameterChecker.addParameter("count", count);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-        parameterChecker.check("count", "isEqualOrLessThanZero", Parameters::isEqualOrLessThanZero);
-
-        return (List<String>) execute(methodName, parameterChecker.getParameterMap(), () -> new SPopCommand(key, count), response -> {
-            List<String> members = new ArrayList<>();
-            for (int i = 0; i < response.size(); i++) {
-                members.add(response.get(i).getText());
-            }
-            return members;
-        });
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public List<String> getAllMembersFromSet(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = "DirectRedisClient#getAllMembersFromSet(String key)";
-
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-
-        return (List<String>) execute(methodName, parameterChecker.getParameterMap(), () -> new SMembersCommand(key), response -> {
-            List<String> members = new ArrayList<>();
-            for (int i = 0; i < response.size(); i++) {
-                members.add(response.get(i).getText());
-            }
-            return members;
-        });
-    }
-
-    @Override
     public void close() {
         redisChannel.close();
     }
@@ -439,65 +204,6 @@ public class DirectRedisClient implements NaiveRedisClient {
                 ", timeout=" + timeout +
                 ", slowExecutionThreshold=" + slowExecutionThreshold +
                 ", redisChannel=" + redisChannel +
-                ", transcoder=" + transcoder +
                 '}';
-    }
-
-    private interface CommandBuilder {
-
-        Command build() throws Exception;
-    }
-
-    private interface ResponseParser {
-
-        Object parse(RedisData response) throws Exception;
-    }
-
-    private MethodParameterChecker buildRedisCommandMethodParameterChecker(String methodName) {
-        MethodParameterChecker checker = new MethodParameterChecker(methodName, NAIVEREDIS_ERROR_LOG, parameterName -> executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_ILLEGAL_ARGUMENT));
-        checker.addParameter("host", host);
-        return checker;
-    }
-
-    private Object execute(String methodName, Map<String, Object> paramMap, CommandBuilder builder, ResponseParser parser) {
-        long startTime = System.nanoTime();
-        try {
-            Command command = builder.build();
-            RedisData response = redisChannel.send(command, timeout);
-            if (response.isError()) { // 判断 Redis 服务是否返回错误信息
-                String errorMessage = response.getText();
-                NAIVEREDIS_ERROR_LOG.error(LogBuildUtil.buildMethodExecuteFailedLog(methodName, errorMessage, paramMap));
-                executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_REDIS_ERROR);
-                throw new RedisException(RedisException.CODE_REDIS_SERVER, errorMessage);
-            }
-            if (parser != null) {
-                return parser.parse(response);
-            } else {
-                return null;
-            }
-        } catch (RedisException e) {
-            throw e;
-        } catch (IllegalStateException e) {
-            NAIVEREDIS_ERROR_LOG.error(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "client has been closed", paramMap));
-            executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_ILLEGAL_STATE);
-            throw e;
-        } catch (TimeoutException e) {
-            NAIVEREDIS_ERROR_LOG.error(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "wait response timeout (" + timeout + "ms)", paramMap));
-            executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_TIMEOUT);
-            throw e;
-        } catch (Exception e) { // should not happen, for bug detection
-            String errorLog = LogBuildUtil.buildMethodExecuteFailedLog(methodName, "unexpected error", paramMap);
-            NAIVEREDIS_ERROR_LOG.error(errorLog);
-            LOG.error(errorLog, e);
-            executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_UNEXPECTED_ERROR);
-            throw new RedisException(RedisException.CODE_UNEXPECTED_ERROR, errorLog, e);
-        } finally {
-            long executedNanoTime = System.nanoTime() - startTime;
-            if (executedNanoTime > slowExecutionThreshold) {
-                NAIVEREDIS_SLOW_EXECUTION_LOG.info("`Method`:`{}`. `Cost`:`{}ns ({}ms)`. `Host`:`{}`.{}", methodName, executedNanoTime,
-                        TimeUnit.MILLISECONDS.convert(executedNanoTime, TimeUnit.NANOSECONDS), host, LogBuildUtil.build(paramMap));
-            }
-            executionMonitor.onExecuted(startTime);
-        }
     }
 }

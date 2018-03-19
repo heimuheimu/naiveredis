@@ -22,50 +22,20 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.monitor;
+package com.heimuheimu.naiveredis.clients.delegate;
 
-import java.util.concurrent.atomic.AtomicLong;
+import com.heimuheimu.naiveredis.exception.RedisException;
+import com.heimuheimu.naiveredis.exception.TimeoutException;
 
-/**
- * Redis 集群客户端信息监控器。
- *
- * @author heimuheimu
- */
-public class ClusterMonitor {
+public interface NaiveRedisClientDelegate extends NaiveRedisStorageClientDelegate, NaiveRedisCountClientDelegate, NaiveRedisSetClientDelegate {
 
-    private static final ClusterMonitor INSTANCE =  ClusterMonitor.getInstance();
-
-    /**
-     * 获取不可用客户端的次数
-     */
-    private final AtomicLong unavailableClientCount = new AtomicLong();
-
-    private ClusterMonitor() {
-        //private constructor
+    @Override
+    default void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        getNaiveRedisStorageClient().expire(key, expiry);
     }
 
-    /**
-     * 对 Redis 集群客户端获取到不可用 Redis 客户端的次数进行监控。
-     */
-    public void onUnavailable() {
-        unavailableClientCount.incrementAndGet();
-    }
-
-    /**
-     * 获得获取不可用客户端的次数。
-     *
-     * @return 获取不可用客户端的次数
-     */
-    public long getUnavailableClientCount() {
-        return unavailableClientCount.get();
-    }
-
-    /**
-     * 获得 Redis 集群客户端信息监控器。
-     *
-     * @return Redis 集群客户端信息监控器
-     */
-    public static ClusterMonitor getInstance() {
-        return INSTANCE;
+    @Override
+    default void delete(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        getNaiveRedisStorageClient().delete(key);
     }
 }

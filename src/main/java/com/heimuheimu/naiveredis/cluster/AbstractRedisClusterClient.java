@@ -43,7 +43,7 @@ import java.util.Map;
  */
 public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
 
-    protected ClusterMonitor clusterMonitor = ClusterMonitor.getInstance();
+    protected final ClusterMonitor clusterMonitor = ClusterMonitor.getInstance();
 
     @Override
     public void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {

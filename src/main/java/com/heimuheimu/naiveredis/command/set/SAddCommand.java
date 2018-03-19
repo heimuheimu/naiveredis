@@ -53,6 +53,7 @@ public class SAddCommand extends AbstractCommand {
      * @throws IllegalArgumentException 如果 Redis key 为 {@code null} 或空字符串，将抛出此异常
      * @throws IllegalArgumentException 如果 {@code members} 为 {@code null} 或空列表，将抛出此异常
      */
+    @SuppressWarnings("unchecked")
     public SAddCommand(String key, Collection<String> members) throws IllegalArgumentException {
         ConstructorParameterChecker checker = new ConstructorParameterChecker("SAddCommand", null);
         checker.addParameter("key", key);

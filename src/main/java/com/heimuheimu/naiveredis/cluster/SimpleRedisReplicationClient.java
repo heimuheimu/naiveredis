@@ -35,6 +35,7 @@ import com.heimuheimu.naiveredis.util.LogBuildUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -47,7 +48,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author heimuheimu
  */
-public class SimpleRedisReplicationClient extends AbstractRedisClusterClient {
+public class SimpleRedisReplicationClient extends AbstractRedisClusterClient implements Closeable {
 
     private static final Logger LOG = LoggerFactory.getLogger(SimpleRedisReplicationClient.class);
 

@@ -22,50 +22,28 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.monitor;
+package com.heimuheimu.naiveredis.clients.delegate;
 
-import java.util.concurrent.atomic.AtomicLong;
+import com.heimuheimu.naiveredis.NaiveRedisStorageClient;
+import com.heimuheimu.naiveredis.exception.RedisException;
+import com.heimuheimu.naiveredis.exception.TimeoutException;
 
-/**
- * Redis 集群客户端信息监控器。
- *
- * @author heimuheimu
- */
-public class ClusterMonitor {
+public interface NaiveRedisStorageClientDelegate extends NaiveRedisStorageClient {
 
-    private static final ClusterMonitor INSTANCE =  ClusterMonitor.getInstance();
+    NaiveRedisStorageClient getNaiveRedisStorageClient();
 
-    /**
-     * 获取不可用客户端的次数
-     */
-    private final AtomicLong unavailableClientCount = new AtomicLong();
-
-    private ClusterMonitor() {
-        //private constructor
+    @Override
+    default <T> T get(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return getNaiveRedisStorageClient().get(key);
     }
 
-    /**
-     * 对 Redis 集群客户端获取到不可用 Redis 客户端的次数进行监控。
-     */
-    public void onUnavailable() {
-        unavailableClientCount.incrementAndGet();
+    @Override
+    default void set(String key, Object value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        getNaiveRedisStorageClient().set(key, value);
     }
 
-    /**
-     * 获得获取不可用客户端的次数。
-     *
-     * @return 获取不可用客户端的次数
-     */
-    public long getUnavailableClientCount() {
-        return unavailableClientCount.get();
-    }
-
-    /**
-     * 获得 Redis 集群客户端信息监控器。
-     *
-     * @return Redis 集群客户端信息监控器
-     */
-    public static ClusterMonitor getInstance() {
-        return INSTANCE;
+    @Override
+    default void set(String key, Object value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        getNaiveRedisStorageClient().set(key, value, expiry);
     }
 }

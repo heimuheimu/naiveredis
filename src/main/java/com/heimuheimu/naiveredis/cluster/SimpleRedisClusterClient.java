@@ -34,6 +34,7 @@ import com.heimuheimu.naiveredis.util.LogBuildUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -44,7 +45,7 @@ import java.util.Map;
  *
  * @author heimuheimu
  */
-public class SimpleRedisClusterClient extends AbstractRedisClusterClient {
+public class SimpleRedisClusterClient extends AbstractRedisClusterClient implements Closeable {
 
     /**
      * Redis 命令执行错误日志

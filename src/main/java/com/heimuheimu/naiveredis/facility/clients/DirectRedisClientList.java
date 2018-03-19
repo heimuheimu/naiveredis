@@ -309,7 +309,7 @@ public class DirectRedisClientList implements Closeable {
         DirectRedisClient client = null;
         try {
             client = new DirectRedisClient(host, configuration, timeout, compressionThreshold, slowExecutionThreshold, pingPeriod,
-                    unavailableClient -> removeUnavailableClient(unavailableClient));
+                    this::removeUnavailableClient);
         } catch (Exception ignored) {}
 
         synchronized (clientListUpdateLock) {
@@ -344,7 +344,7 @@ public class DirectRedisClientList implements Closeable {
                     LogBuildUtil.build(getParameterMap(-1, null)));
         }
         boolean isRemoveSuccess = false;
-        int clientIndex = -1;
+        int clientIndex;
         synchronized (clientListUpdateLock) {
             clientIndex = clientList.indexOf(unavailableClient);
             if (clientIndex >= 0) {

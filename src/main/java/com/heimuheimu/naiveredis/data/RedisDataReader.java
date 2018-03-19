@@ -144,16 +144,16 @@ public class RedisDataReader {
             } else if (length == 0) {
                 return new RedisArray(new RedisData[0]);
             } else {
-                RedisData[] datas = new RedisData[length];
+                RedisData[] dataArray = new RedisData[length];
                 for (int i = 0; i < length; i++) {
                     RedisData data = read();
                     if (data != null) {
-                        datas[i] = data;
+                        dataArray[i] = data;
                     } else { //end of the stream is reached
                         return null;
                     }
                 }
-                return new RedisArray(datas);
+                return new RedisArray(dataArray);
             }
         } else {
             return null;
@@ -243,7 +243,7 @@ public class RedisDataReader {
 
         @Override
         public int read() throws IOException {
-            int value = read();
+            int value = in.read();
             if (value >= 0) {
                 socketMonitor.onRead(1);
             }

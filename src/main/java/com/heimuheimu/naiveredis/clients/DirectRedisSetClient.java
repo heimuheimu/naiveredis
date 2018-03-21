@@ -92,6 +92,7 @@ public class DirectRedisSetClient extends AbstractDirectRedisClient implements N
         parameterChecker.addParameter("members", members);
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
         return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new SRemCommand(key, members),
                 response -> Integer.valueOf(response.getText()));
     }

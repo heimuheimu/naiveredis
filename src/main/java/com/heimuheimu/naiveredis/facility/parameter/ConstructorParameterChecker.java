@@ -103,6 +103,15 @@ public class ConstructorParameterChecker {
         }
     }
 
+    /**
+     * 获得构造函数参数 {@code Map}。
+     *
+     * @return 构造函数参数 {@code Map}
+     */
+    public Map<String, Object> getParameterMap() {
+        return parameterMap;
+    }
+
     @Override
     public String toString() {
         return "ConstructorParameterChecker{" +

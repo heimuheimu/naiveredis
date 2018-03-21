@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.command.set;
+package com.heimuheimu.naiveredis.command.sortedset;
 
 import com.heimuheimu.naiveredis.command.AbstractCommand;
 import com.heimuheimu.naiveredis.data.RedisArray;
@@ -32,37 +32,40 @@ import com.heimuheimu.naiveredis.facility.parameter.ConstructorParameterChecker;
 import com.heimuheimu.naiveredis.facility.parameter.Parameters;
 
 /**
- * Redis SISMEMBER 命令。命令定义请参考文档：
- * <a href="https://redis.io/commands/sismember">https://redis.io/commands/sismember</a>
+ * Redis ZINCRBY 命令。命令定义请参考文档：
+ * <a href="https://redis.io/commands/zincrby">https://redis.io/commands/zincrby</a>
  *
- * <p><strong>说明：</strong>{@code SRemCommand} 类是线程安全的，可在多个线程中使用同一个实例。</p>
+ * <p><strong>说明：</strong>{@code ZIncrByCommand} 类是线程安全的，可在多个线程中使用同一个实例。</p>
  *
  * @author heimuheimu
  */
-public class SIsMemberCommand extends AbstractCommand {
+public class ZIncrByCommand extends AbstractCommand {
 
     private final byte[] requestByteArray;
 
     /**
-     * 构造一个 Redis SISMEMBER 命令。
+     * 构造一个 Redis ZINCRBY 命令。
      *
      * @param key Redis key，不允许为 {@code null} 或空字符串
+     * @param increment 需要增加的分值
      * @param member 成员，不允许为 {@code null}
      * @throws IllegalArgumentException 如果 Redis key 为 {@code null} 或空字符串，将抛出此异常
      * @throws IllegalArgumentException 如果 {@code member} 为 {@code null}，将抛出此异常
      */
-    public SIsMemberCommand(String key, String member) throws IllegalArgumentException {
-        ConstructorParameterChecker checker = new ConstructorParameterChecker("SIsMemberCommand", null);
+    public ZIncrByCommand(String key, double increment, String member) throws IllegalArgumentException {
+        ConstructorParameterChecker checker = new ConstructorParameterChecker("ZIncrByCommand", null);
         checker.addParameter("key", key);
+        checker.addParameter("increment", increment);
         checker.addParameter("member", member);
 
         checker.check("key", "isEmpty", Parameters::isEmpty);
         checker.check("member", "isNull", Parameters::isNull);
 
-        RedisData[] commandDataArray = new RedisData[3];
-        commandDataArray[0] = new RedisBulkString("SISMEMBER".getBytes(RedisData.UTF8));
+        RedisData[] commandDataArray = new RedisData[4];
+        commandDataArray[0] = new RedisBulkString("ZINCRBY".getBytes(RedisData.UTF8));
         commandDataArray[1] = new RedisBulkString(key.getBytes(RedisData.UTF8));
-        commandDataArray[2] = new RedisBulkString(member.getBytes(RedisData.UTF8));
+        commandDataArray[2] = new RedisBulkString(String.valueOf(increment).getBytes(RedisData.UTF8));
+        commandDataArray[3] = new RedisBulkString(member.getBytes(RedisData.UTF8));
         this.requestByteArray = new RedisArray(commandDataArray).getRespByteArray();
     }
 

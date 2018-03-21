@@ -51,8 +51,13 @@ public interface NaiveRedisSetClientDelegate extends NaiveRedisSetClient {
     }
 
     @Override
-    default void removeFromSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        getNaiveRedisSetClient().removeFromSet(key, member);
+    default int removeFromSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return getNaiveRedisSetClient().removeFromSet(key, member);
+    }
+
+    @Override
+    default int removeFromSet(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return getNaiveRedisSetClient().removeFromSet(key, members);
     }
 
     @Override

@@ -84,6 +84,11 @@ public enum RedisClientMethod {
     REMOVE_FROM_SET("#removeFromSet(String key, String member)", false),
 
     /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#removeFromSet(String, Collection)
+     */
+    MULTI_REMOVE_FROM_SET("#removeFromSet(String key, Collection<String> members)", false),
+
+    /**
      * @see com.heimuheimu.naiveredis.NaiveRedisClient#isMemberInSet(String, String)
      */
     IS_MEMBER_IN_SET("#isMemberInSet(String key, String member)", true),

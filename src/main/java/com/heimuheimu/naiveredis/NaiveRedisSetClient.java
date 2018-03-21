@@ -42,7 +42,7 @@ public interface NaiveRedisSetClient extends NaiveRedisKeysClient {
     /**
      * 将成员添加到指定的 Set 集合中，并返回成功（集合中尚不存在该成员）添加的个数。
      *
-     * @param key Set Key，不允许 {@code null} 或空
+     * @param key Set key，不允许 {@code null} 或空
      * @param member 需要添加的成员，不允许为 {@code null}
      * @return 成功（集合中尚不存在该成员）添加的个数
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
@@ -55,7 +55,7 @@ public interface NaiveRedisSetClient extends NaiveRedisKeysClient {
     /**
      * 将列表中的成员均添加到指定的 Set 集合中，并返回成功（集合中尚不存在该成员）添加的个数。
      *
-     * @param key Set Key，不允许 {@code null} 或空
+     * @param key Set key，不允许 {@code null} 或空
      * @param members 需要添加的成员列表，成员不允许为 {@code null}
      * @return 成功（集合中尚不存在该成员）添加的个数
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
@@ -66,21 +66,35 @@ public interface NaiveRedisSetClient extends NaiveRedisKeysClient {
     int addToSet(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 将一个成员从指定的 Set 集合中移除。
+     * 将一个成员从指定的 Set 集合中移除，并返回成功移除的个数。
      *
-     * @param key Set Key，不允许 {@code null} 或空
+     * @param key Set key，不允许 {@code null} 或空
      * @param member 需要移除的成员，不允许为 {@code null}
+     * @return 成功移除的个数
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
      * @throws TimeoutException 如果操作超时，将会抛出此异常
      * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
      */
-    void removeFromSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
+    int removeFromSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
+
+    /**
+     * 将列表中的成员从指定的 Set 集合中移除，并返回成功移除的个数。
+     *
+     * @param key Set key，不允许 {@code null} 或空
+     * @param members 需要移除的成员列表，成员不允许为 {@code null}
+     * @return 成功移除的个数
+     * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
+     * @throws TimeoutException 如果操作超时，将会抛出此异常
+     * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
+     */
+    int removeFromSet(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
      * 判断成员是否在指定的 Set 集合中存在。
      *
-     * @param key Set Key，不允许 {@code null} 或空
+     * @param key Set key，不允许 {@code null} 或空
      * @param member 成员，不允许为 {@code null}
      * @return 是否在指定的 Set 集合中存在
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
@@ -93,7 +107,7 @@ public interface NaiveRedisSetClient extends NaiveRedisKeysClient {
     /**
      * 获得指定的 Set 集合成员总数。
      *
-     * @param key Set Key，不允许 {@code null} 或空
+     * @param key Set key，不允许 {@code null} 或空
      * @return Set 集合成员总数
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
@@ -105,7 +119,7 @@ public interface NaiveRedisSetClient extends NaiveRedisKeysClient {
     /**
      * 从指定的 Set 集合中随机选择指定个数的成员，以列表的形式返回，该成员列表不会从 Set 中移除，该方法不会返回 {@code null}。
      *
-     * @param key Set Key，不允许 {@code null} 或空
+     * @param key Set key，不允许 {@code null} 或空
      * @param count Set 集合成员总数
      * @return 随机成员列表，不会为 {@code null}
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
@@ -118,7 +132,7 @@ public interface NaiveRedisSetClient extends NaiveRedisKeysClient {
     /**
      * 从指定的 Set 集合中随机选择指定个数的成员，以列表的形式返回，并将该成员列表从 Set 中移除，该方法不会返回 {@code null}。
      *
-     * @param key Set Key，不允许 {@code null} 或空
+     * @param key Set key，不允许 {@code null} 或空
      * @param count Set 集合成员总数，不允许小于等于 0
      * @return 随机成员列表，不会为 {@code null}
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
@@ -132,7 +146,7 @@ public interface NaiveRedisSetClient extends NaiveRedisKeysClient {
     /**
      * 获得指定的 Set 集合中所有的成员列表，该方法不会返回 {@code null}。
      *
-     * @param key Set Key，不允许 {@code null} 或空
+     * @param key Set key，不允许 {@code null} 或空
      * @return Set 集合中所有的成员列表，不会为 {@code null}
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常

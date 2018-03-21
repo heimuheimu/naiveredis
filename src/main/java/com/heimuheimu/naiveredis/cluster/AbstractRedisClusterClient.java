@@ -126,12 +126,21 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
     }
 
     @Override
-    public void removeFromSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+    public int removeFromSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         Map<String, Object> parameterMap = new LinkedHashMap<>();
         parameterMap.put("key", key);
         parameterMap.put("member", member);
 
-        getClient(RedisClientMethod.REMOVE_FROM_SET, parameterMap).removeFromSet(key, member);
+        return getClient(RedisClientMethod.REMOVE_FROM_SET, parameterMap).removeFromSet(key, member);
+    }
+
+    @Override
+    public int removeFromSet(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("members", members);
+
+        return getClient(RedisClientMethod.MULTI_REMOVE_FROM_SET, parameterMap).removeFromSet(key, members);
     }
 
     @Override

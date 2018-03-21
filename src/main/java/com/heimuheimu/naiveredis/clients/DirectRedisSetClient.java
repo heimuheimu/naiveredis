@@ -61,7 +61,6 @@ public class DirectRedisSetClient extends AbstractDirectRedisClient implements N
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public int addToSet(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         if (members == null || members.isEmpty()) {
             return 0;
@@ -74,31 +73,27 @@ public class DirectRedisSetClient extends AbstractDirectRedisClient implements N
         parameterChecker.addParameter("members", members);
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-        parameterChecker.check("members", "members could not contain null member", parameterValue -> {
-            for (String member : (Collection<String>) parameterValue) {
-                if (member == null) {
-                    return true;
-                }
-            }
-            return false;
-        });
 
         return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new SAddCommand(key, members),
                 response -> Integer.valueOf(response.getText()));
     }
 
     @Override
-    public void removeFromSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = methodNamePrefix + "removeFromSet(String key, String member)";
+    public int removeFromSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return removeFromSet(key, Collections.singleton(member));
+    }
+
+    @Override
+    public int removeFromSet(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = methodNamePrefix + "removeFromSet(String key, Collection<String> members)";
 
         MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
         parameterChecker.addParameter("key", key);
-        parameterChecker.addParameter("member", member);
+        parameterChecker.addParameter("members", members);
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-        parameterChecker.check("member", "isNull", Parameters::isNull);
-
-        execute(methodName, parameterChecker.getParameterMap(), () -> new SRemCommand(key, Collections.singleton(member)), null);
+        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new SRemCommand(key, members),
+                response -> Integer.valueOf(response.getText()));
     }
 
     @Override

@@ -30,6 +30,7 @@ import com.heimuheimu.naiveredis.data.RedisBulkString;
 import com.heimuheimu.naiveredis.data.RedisData;
 import com.heimuheimu.naiveredis.facility.parameter.ConstructorParameterChecker;
 import com.heimuheimu.naiveredis.facility.parameter.Parameters;
+import com.heimuheimu.naiveredis.util.LogBuildUtil;
 
 import java.util.Collection;
 
@@ -53,7 +54,6 @@ public class SRemCommand extends AbstractCommand {
      * @throws IllegalArgumentException 如果 Redis key 为 {@code null} 或空字符串，将抛出此异常
      * @throws IllegalArgumentException 如果 {@code members} 为 {@code null} 或空列表，将抛出此异常
      */
-    @SuppressWarnings("unchecked")
     public SRemCommand(String key, Collection<String> members) throws IllegalArgumentException {
         ConstructorParameterChecker checker = new ConstructorParameterChecker("SRemCommand", null);
         checker.addParameter("key", key);
@@ -61,14 +61,6 @@ public class SRemCommand extends AbstractCommand {
 
         checker.check("key", "isEmpty", Parameters::isEmpty);
         checker.check("members", "isEmpty", Parameters::isEmpty);
-        checker.check("members", "members could not contain null member", parameterValue -> {
-            for (String member : (Collection<String>) parameterValue) {
-                if (member == null) {
-                    return true;
-                }
-            }
-            return false;
-        });
 
         int commandDataArrayLength = 2 + members.size();
         RedisData[] commandDataArray = new RedisData[commandDataArrayLength];
@@ -76,6 +68,10 @@ public class SRemCommand extends AbstractCommand {
         commandDataArray[1] = new RedisBulkString(key.getBytes(RedisData.UTF8));
         int memberIndex = 2;
         for (String member : members) {
+            if (member == null) {
+                throw new IllegalArgumentException("Create `SRemCommand` failed: `members could not contain null element`." +
+                        LogBuildUtil.build(checker.getParameterMap()));
+            }
             commandDataArray[memberIndex++] = new RedisBulkString(member.getBytes(RedisData.UTF8));
         }
         this.requestByteArray = new RedisArray(commandDataArray).getRespByteArray();

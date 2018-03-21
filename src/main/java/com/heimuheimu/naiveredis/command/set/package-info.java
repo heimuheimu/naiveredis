@@ -23,7 +23,7 @@
  */
 
 /**
- * 提供 Redis Set 数据结构相关命令。
+ * 提供 Redis Set 数据结构相关命令，更多信息可参考文档：<a href="https://redis.io/commands#set">https://redis.io/commands#set</a>
  *
  * @author heimuheimu
  */

@@ -23,8 +23,8 @@
  */
 
 /**
- * 提供 Redis 计数器客户端使用的命令，更多信息可参考文档：<a href="https://redis.io/commands/incrby">https://redis.io/commands/incrby</a>
+ * 提供 Redis Sorted Set 数据结构相关命令，更多信息可参考文档：<a href="https://redis.io/commands#sorted_set">https://redis.io/commands#sorted_set</a>
  *
  * @author heimuheimu
  */
-package com.heimuheimu.naiveredis.command.count;
+package com.heimuheimu.naiveredis.command.sortedset;

@@ -93,7 +93,7 @@ public class ZRangeByScoreCommand extends AbstractCommand {
         if (count > 0) {
             commandDataArray[arrayIndex++] = new RedisBulkString("LIMIT".getBytes(RedisData.UTF8));
             commandDataArray[arrayIndex++] = new RedisBulkString(String.valueOf(offset).getBytes(RedisData.UTF8));
-            commandDataArray[arrayIndex++] = new RedisBulkString(String.valueOf(count).getBytes(RedisData.UTF8));
+            commandDataArray[arrayIndex] = new RedisBulkString(String.valueOf(count).getBytes(RedisData.UTF8));
         }
         this.requestByteArray = new RedisArray(commandDataArray).getRespByteArray();
     }

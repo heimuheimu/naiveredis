@@ -29,6 +29,7 @@ package com.heimuheimu.naiveredis;
  *
  * <p><strong>说明：</strong>{@code NaiveRedisClient} 的实现类必须是线程安全的。</p>
  */
-public interface NaiveRedisClient extends NaiveRedisCountClient, NaiveRedisStorageClient, NaiveRedisSetClient {
+public interface NaiveRedisClient extends NaiveRedisCountClient, NaiveRedisStorageClient, NaiveRedisSetClient,
+        NaiveRedisSortedSetClient {
 
 }

@@ -27,6 +27,7 @@ package com.heimuheimu.naiveredis;
 import com.heimuheimu.naiveredis.channel.RedisChannel;
 import com.heimuheimu.naiveredis.clients.DirectRedisCountClient;
 import com.heimuheimu.naiveredis.clients.DirectRedisSetClient;
+import com.heimuheimu.naiveredis.clients.DirectRedisSortedSetClient;
 import com.heimuheimu.naiveredis.clients.DirectRedisStorageClient;
 import com.heimuheimu.naiveredis.clients.delegate.NaiveRedisClientDelegate;
 import com.heimuheimu.naiveredis.facility.UnusableServiceNotifier;
@@ -88,6 +89,11 @@ public class DirectRedisClient implements NaiveRedisClientDelegate, Closeable {
      * Redis SET 客户端
      */
     private final NaiveRedisSetClient naiveRedisSetClient;
+
+    /**
+     * Redis Sorted SET 客户端
+     */
+    private final NaiveRedisSortedSetClient naiveRedisSortedSetClient;
 
     /**
      * 构造一个 Redis 直连客户端，{@link java.net.Socket} 配置信息使用 {@link SocketConfiguration#DEFAULT}，Redis 操作超时时间设置为 5 秒，
@@ -157,6 +163,7 @@ public class DirectRedisClient implements NaiveRedisClientDelegate, Closeable {
         this.naiveRedisStorageClient = new DirectRedisStorageClient(redisChannel, timeout, this.slowExecutionThreshold, compressionThreshold);
         this.naiveRedisCountClient = new DirectRedisCountClient(redisChannel, timeout, this.slowExecutionThreshold);
         this.naiveRedisSetClient = new DirectRedisSetClient(redisChannel, timeout, this.slowExecutionThreshold);
+        this.naiveRedisSortedSetClient = new DirectRedisSortedSetClient(redisChannel, timeout, this.slowExecutionThreshold);
     }
 
     @Override
@@ -172,6 +179,11 @@ public class DirectRedisClient implements NaiveRedisClientDelegate, Closeable {
     @Override
     public NaiveRedisSetClient getNaiveRedisSetClient() {
         return naiveRedisSetClient;
+    }
+
+    @Override
+    public NaiveRedisSortedSetClient getNaiveRedisSortedSetClient() {
+        return naiveRedisSortedSetClient;
     }
 
     /**

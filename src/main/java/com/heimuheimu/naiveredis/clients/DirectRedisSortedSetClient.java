@@ -26,8 +26,7 @@ package com.heimuheimu.naiveredis.clients;
 
 import com.heimuheimu.naiveredis.NaiveRedisSortedSetClient;
 import com.heimuheimu.naiveredis.channel.RedisChannel;
-import com.heimuheimu.naiveredis.command.sortedset.ZAddCommand;
-import com.heimuheimu.naiveredis.command.sortedset.ZIncrByCommand;
+import com.heimuheimu.naiveredis.command.sortedset.*;
 import com.heimuheimu.naiveredis.constant.SortedSetAddMode;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
@@ -84,6 +83,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
         parameterChecker.addParameter("mode", mode);
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
         return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new ZAddCommand(key, memberMap, mode),
                 response -> Integer.valueOf(response.getText()));
     }
@@ -106,81 +106,304 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
 
     @Override
     public int removeFromSortedSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return 0;
+        return removeFromSortedSet(key, Collections.singleton(member));
     }
 
     @Override
     public int removeFromSortedSet(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return 0;
+        if (members == null || members.isEmpty()) {
+            return 0;
+        }
+        String methodName = methodNamePrefix + "removeFromSortedSet(String key, Collection<String> members)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("members", members);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new ZRemCommand(key, members),
+                response -> Integer.valueOf(response.getText()));
     }
 
     @Override
     public int removeByRankFromSortedSet(String key, int start, int stop) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return 0;
+        String methodName = methodNamePrefix + "removeByRankFromSortedSet(String key, int start, int stop)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("start", start);
+        parameterChecker.addParameter("stop", stop);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new ZRemRangeByRankCommand(key, start, stop),
+                response -> Integer.valueOf(response.getText()));
     }
 
     @Override
     public int removeByScoreFromSortedSet(String key, double minScore, double maxScore) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return 0;
+        return removeByScoreFromSortedSet(key, minScore, true, maxScore, true);
     }
 
     @Override
-    public int removeByScoreFromSortedSet(String key, double minScore, boolean includeMinScore, double maxScore, boolean includeMaxScore) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return 0;
+    public int removeByScoreFromSortedSet(String key, double minScore, boolean includeMinScore, double maxScore, boolean includeMaxScore)
+            throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = methodNamePrefix + "removeByScoreFromSortedSet(String key, double minScore, boolean includeMinScore, double maxScore, boolean includeMaxScore)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("minScore", minScore);
+        parameterChecker.addParameter("includeMinScore", includeMinScore);
+        parameterChecker.addParameter("maxScore", maxScore);
+        parameterChecker.addParameter("includeMaxScore", includeMaxScore);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (int) execute(methodName, parameterChecker.getParameterMap(),
+                () -> new ZRemRangeByScoreCommand(key, minScore, includeMinScore, maxScore, includeMaxScore),
+                response -> Integer.valueOf(response.getText()));
     }
 
     @Override
     public Double getScoreFromSortedSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return null;
+        String methodName = methodNamePrefix + "getScoreFromSortedSet(String key, String member)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("member", member);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+        parameterChecker.check("member", "isNull", Parameters::isNull);
+
+        return (Double) execute(methodName, parameterChecker.getParameterMap(),
+                () -> new ZScoreCommand(key, member),
+                response -> {
+                    if (response.getValueBytes() != null) {
+                        return Double.valueOf(response.getText());
+                    } else {
+                        return null;
+                    }
+                });
     }
 
     @Override
     public Integer getRankFromSortedSet(String key, String member, boolean reverse) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return null;
+        String methodName = methodNamePrefix + "getRankFromSortedSet(String key, String member, boolean reverse)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("member", member);
+        parameterChecker.addParameter("reverse", reverse);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+        parameterChecker.check("member", "isNull", Parameters::isNull);
+
+        return (Integer) execute(methodName, parameterChecker.getParameterMap(),
+                () -> {
+                    if (reverse) {
+                        return new ZRevRankCommand(key, member);
+                    } else {
+                        return new ZRankCommand(key, member);
+                    }
+                },
+                response -> {
+                    if (response.getValueBytes() != null) {
+                        return Integer.valueOf(response.getText());
+                    } else {
+                        return null;
+                    }
+                });
     }
 
     @Override
     public int getSizeOfSortedSet(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return 0;
+        String methodName = methodNamePrefix + "getSizeOfSortedSet(String key)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new ZCardCommand(key),
+                response -> Integer.valueOf(response.getText()));
     }
 
     @Override
     public int getCountFromSortedSet(String key, double minScore, double maxScore) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return 0;
+        return getCountFromSortedSet(key, minScore, true, maxScore, true);
     }
 
     @Override
-    public int getCountFromSortedSet(String key, double minScore, boolean includeMinScore, double maxScore, boolean includeMaxScore) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return 0;
+    public int getCountFromSortedSet(String key, double minScore, boolean includeMinScore, double maxScore, boolean includeMaxScore)
+            throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = methodNamePrefix + "getCountFromSortedSet(String key, double minScore, boolean includeMinScore, double maxScore, boolean includeMaxScore)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("minScore", minScore);
+        parameterChecker.addParameter("includeMinScore", includeMinScore);
+        parameterChecker.addParameter("maxScore", maxScore);
+        parameterChecker.addParameter("includeMaxScore", includeMaxScore);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (int) execute(methodName, parameterChecker.getParameterMap(),
+                () -> new ZCountCommand(key, minScore, includeMinScore, maxScore, includeMaxScore),
+                response -> Integer.valueOf(response.getText()));
     }
 
     @Override
-    public List<String> getMembersByRankFromSortedSet(String key, int start, int stop, boolean reverse) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return null;
+    @SuppressWarnings("unchecked")
+    public List<String> getMembersByRankFromSortedSet(String key, int start, int stop, boolean reverse)
+            throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = methodNamePrefix + "getMembersByRankFromSortedSet(String key, int start, int stop, boolean reverse)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("start", start);
+        parameterChecker.addParameter("stop", stop);
+        parameterChecker.addParameter("reverse", reverse);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (List<String>) execute(methodName, parameterChecker.getParameterMap(),
+                () -> {
+                    if (reverse) {
+                        return new ZRevRangeCommand(key, start, stop, false);
+                    } else {
+                        return new ZRangeCommand(key, start, stop, false);
+                    }
+                },
+                response -> {
+                    List<String> members = new ArrayList<>();
+                    for (int i = 0; i < response.size(); i++) {
+                        members.add(response.get(i).getText());
+                    }
+                    return members;
+                });
     }
 
     @Override
-    public LinkedHashMap<String, Double> getMembersWithScoresByRankFromSortedSet(String key, int start, int stop, boolean reverse) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return null;
+    @SuppressWarnings("unchecked")
+    public LinkedHashMap<String, Double> getMembersWithScoresByRankFromSortedSet(String key, int start, int stop, boolean reverse)
+            throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = methodNamePrefix + "getMembersWithScoresByRankFromSortedSet(String key, int start, int stop, boolean reverse)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("start", start);
+        parameterChecker.addParameter("stop", stop);
+        parameterChecker.addParameter("reverse", reverse);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (LinkedHashMap<String, Double>) execute(methodName, parameterChecker.getParameterMap(),
+                () -> {
+                    if (reverse) {
+                        return new ZRevRangeCommand(key, start, stop, true);
+                    } else {
+                        return new ZRangeCommand(key, start, stop, true);
+                    }
+                },
+                response -> {
+                    LinkedHashMap<String, Double> memberMap = new LinkedHashMap<>();
+                    for (int i = 0; i < response.size(); i += 2) {
+                        String member = response.get(i).getText();
+                        Double score = Double.valueOf(response.get(i + 1).getText());
+                        memberMap.put(member, score);
+                    }
+                    return memberMap;
+                });
     }
 
     @Override
-    public List<String> getMembersByScoreFromSortedSet(String key, double minScore, double maxScore, boolean reverse) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return null;
+    public List<String> getMembersByScoreFromSortedSet(String key, double minScore, double maxScore, boolean reverse)
+            throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return getMembersByScoreFromSortedSet(key, minScore, true, maxScore, true, reverse, 0, -1);
     }
 
     @Override
-    public List<String> getMembersByScoreFromSortedSet(String key, double minScore, boolean includeMinScore, double maxScore, boolean includeMaxScore, boolean reverse, int offset, int count) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return null;
+    @SuppressWarnings("unchecked")
+    public List<String> getMembersByScoreFromSortedSet(String key, double minScore, boolean includeMinScore, double maxScore,
+                                                       boolean includeMaxScore, boolean reverse, int offset, int count)
+            throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = methodNamePrefix + "getMembersByScoreFromSortedSet(String key, double minScore, boolean includeMinScore, " +
+                "double maxScore, boolean includeMaxScore, boolean reverse, int offset, int count)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("minScore", minScore);
+        parameterChecker.addParameter("includeMinScore", includeMinScore);
+        parameterChecker.addParameter("maxScore", maxScore);
+        parameterChecker.addParameter("includeMaxScore", includeMaxScore);
+        parameterChecker.addParameter("reverse", reverse);
+        parameterChecker.addParameter("offset", offset);
+        parameterChecker.addParameter("count", count);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (List<String>) execute(methodName, parameterChecker.getParameterMap(),
+                () -> {
+                    if (reverse) {
+                        return new ZRevRangeByScoreCommand(key, minScore, includeMinScore, maxScore, includeMaxScore, offset, count, false);
+                    } else {
+                        return new ZRangeByScoreCommand(key, minScore, includeMinScore, maxScore, includeMaxScore, offset, count, false);
+                    }
+                },
+                response -> {
+                    List<String> members = new ArrayList<>();
+                    for (int i = 0; i < response.size(); i++) {
+                        members.add(response.get(i).getText());
+                    }
+                    return members;
+                });
     }
 
     @Override
-    public LinkedHashMap<String, Double> getMembersWithScoresByScoreFromSortedSet(String key, double minScore, double maxScore, boolean reverse) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return null;
+    public LinkedHashMap<String, Double> getMembersWithScoresByScoreFromSortedSet(String key, double minScore, double maxScore,
+                                                                                  boolean reverse)
+            throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return getMembersWithScoresByScoreFromSortedSet(key, minScore, true, maxScore, true, reverse, 0, -1);
     }
 
     @Override
-    public LinkedHashMap<String, Double> getMembersWithScoresByScoreFromSortedSet(String key, double minScore, boolean includeMinScore, double maxScore, boolean includeMaxScore, boolean reverse, int offset, int count) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return null;
+    @SuppressWarnings("unchecked")
+    public LinkedHashMap<String, Double> getMembersWithScoresByScoreFromSortedSet(String key, double minScore, boolean includeMinScore,
+                                                                                  double maxScore, boolean includeMaxScore,
+                                                                                  boolean reverse, int offset, int count)
+            throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = methodNamePrefix + "getMembersWithScoresByScoreFromSortedSet(String key, double minScore, boolean includeMinScore, " +
+                "double maxScore, boolean includeMaxScore, boolean reverse, int offset, int count)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("minScore", minScore);
+        parameterChecker.addParameter("includeMinScore", includeMinScore);
+        parameterChecker.addParameter("maxScore", maxScore);
+        parameterChecker.addParameter("includeMaxScore", includeMaxScore);
+        parameterChecker.addParameter("reverse", reverse);
+        parameterChecker.addParameter("offset", offset);
+        parameterChecker.addParameter("count", count);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (LinkedHashMap<String, Double>) execute(methodName, parameterChecker.getParameterMap(),
+                () -> {
+                    if (reverse) {
+                        return new ZRevRangeByScoreCommand(key, minScore, includeMinScore, maxScore, includeMaxScore, offset, count, true);
+                    } else {
+                        return new ZRangeByScoreCommand(key, minScore, includeMinScore, maxScore, includeMaxScore, offset, count, true);
+                    }
+                },
+                response -> {
+                    LinkedHashMap<String, Double> memberMap = new LinkedHashMap<>();
+                    for (int i = 0; i < response.size(); i += 2) {
+                        String member = response.get(i).getText();
+                        Double score = Double.valueOf(response.get(i + 1).getText());
+                        memberMap.put(member, score);
+                    }
+                    return memberMap;
+                });
     }
 }

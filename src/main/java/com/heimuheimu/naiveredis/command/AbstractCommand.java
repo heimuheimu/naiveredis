@@ -74,4 +74,19 @@ public abstract class AbstractCommand implements Command {
     public void close() {
         latch.countDown();
     }
+
+    protected String makeScoreToString(double score, boolean includeScore) {
+        String scoreStr;
+        if (score == Double.NEGATIVE_INFINITY) {
+            scoreStr = "-inf";
+        } else if (score == Double.POSITIVE_INFINITY) {
+            scoreStr = "+inf";
+        } else {
+            scoreStr = String.valueOf(score);
+            if (!includeScore) {
+                scoreStr = "(" + scoreStr;
+            }
+        }
+        return scoreStr;
+    }
 }

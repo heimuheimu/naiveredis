@@ -27,6 +27,7 @@ package com.heimuheimu.naiveredis.cluster;
 import com.heimuheimu.naiveredis.DirectRedisClient;
 import com.heimuheimu.naiveredis.NaiveRedisClient;
 import com.heimuheimu.naiveredis.constant.RedisClientMethod;
+import com.heimuheimu.naiveredis.constant.SortedSetAddMode;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 import com.heimuheimu.naiveredis.monitor.ClusterMonitor;
@@ -184,6 +185,229 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
         parameterMap.put("key", key);
 
         return getClient(RedisClientMethod.GET_ALL_MEMBERS_FROM_SET, parameterMap).getAllMembersFromSet(key);
+    }
+
+    @Override
+    public int addToSortedSet(String key, double score, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("score", score);
+        parameterMap.put("member", member);
+
+        return getClient(RedisClientMethod.ADD_TO_SORTED_SET, parameterMap).addToSortedSet(key, score, member);
+    }
+
+    @Override
+    public int addToSortedSet(String key, double score, String member, SortedSetAddMode mode) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("score", score);
+        parameterMap.put("member", member);
+        parameterMap.put("mode", mode);
+
+        return getClient(RedisClientMethod.ADD_TO_SORTED_SET_WITH_MODE, parameterMap).addToSortedSet(key, score, member, mode);
+    }
+
+    @Override
+    public int addToSortedSet(String key, Map<String, Double> memberMap) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("memberMap", memberMap);
+
+        return getClient(RedisClientMethod.MULTI_ADD_TO_SORTED_SET, parameterMap).addToSortedSet(key, memberMap);
+    }
+
+    @Override
+    public int addToSortedSet(String key, Map<String, Double> memberMap, SortedSetAddMode mode) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("memberMap", memberMap);
+        parameterMap.put("mode", mode);
+
+        return getClient(RedisClientMethod.MULTI_ADD_TO_SORTED_SET_WITH_MODE, parameterMap).addToSortedSet(key, memberMap, mode);
+    }
+
+    @Override
+    public double incrForSortedSet(String key, double increment, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("increment", increment);
+        parameterMap.put("member", member);
+
+        return getClient(RedisClientMethod.INCR_FOR_SORTED_SET, parameterMap).incrForSortedSet(key, increment, member);
+    }
+
+    @Override
+    public int removeFromSortedSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+
+        return getClient(RedisClientMethod.REMOVE_FROM_SORTED_SET, parameterMap).removeFromSortedSet(key, member);
+    }
+
+    @Override
+    public int removeFromSortedSet(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("members", members);
+
+        return getClient(RedisClientMethod.MULTI_REMOVE_FROM_SORTED_SET, parameterMap).removeFromSortedSet(key, members);
+    }
+
+    @Override
+    public int removeByRankFromSortedSet(String key, int start, int stop) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("start", start);
+        parameterMap.put("stop", stop);
+
+        return getClient(RedisClientMethod.REMOVE_BY_RANK_FROM_SORTED_SET, parameterMap).removeByRankFromSortedSet(key, start, stop);
+    }
+
+    @Override
+    public int removeByScoreFromSortedSet(String key, double minScore, double maxScore) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("minScore", minScore);
+        parameterMap.put("maxScore", maxScore);
+
+        return getClient(RedisClientMethod.REMOVE_BY_SCORE_FROM_SORTED_SET, parameterMap).removeByScoreFromSortedSet(key, minScore, maxScore);
+    }
+
+    @Override
+    public int removeByScoreFromSortedSet(String key, double minScore, boolean includeMinScore, double maxScore, boolean includeMaxScore) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("minScore", minScore);
+        parameterMap.put("includeMinScore", includeMinScore);
+        parameterMap.put("maxScore", maxScore);
+        parameterMap.put("includeMaxScore", includeMaxScore);
+
+        return getClient(RedisClientMethod.EXTRA_REMOVE_BY_SCORE_FROM_SORTED_SET, parameterMap).removeByScoreFromSortedSet(key, minScore, includeMinScore, maxScore, includeMaxScore);
+    }
+
+    @Override
+    public Double getScoreFromSortedSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+
+        return getClient(RedisClientMethod.GET_SCORE_FROM_SORTED_SET, parameterMap).getScoreFromSortedSet(key, member);
+    }
+
+    @Override
+    public Integer getRankFromSortedSet(String key, String member, boolean reverse) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+        parameterMap.put("reverse", reverse);
+
+        return getClient(RedisClientMethod.GET_RANK_FROM_SORTED_SET, parameterMap).getRankFromSortedSet(key, member, reverse);
+    }
+
+    @Override
+    public int getSizeOfSortedSet(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+
+        return getClient(RedisClientMethod.GET_SIZE_OF_SORTED_SET, parameterMap).getSizeOfSortedSet(key);
+    }
+
+    @Override
+    public int getCountFromSortedSet(String key, double minScore, double maxScore) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("minScore", minScore);
+        parameterMap.put("maxScore", maxScore);
+
+        return getClient(RedisClientMethod.GET_COUNT_FROM_SORTED_SET, parameterMap).getCountFromSortedSet(key, minScore, maxScore);
+    }
+
+    @Override
+    public int getCountFromSortedSet(String key, double minScore, boolean includeMinScore, double maxScore, boolean includeMaxScore) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("minScore", minScore);
+        parameterMap.put("includeMinScore", includeMinScore);
+        parameterMap.put("maxScore", maxScore);
+        parameterMap.put("includeMaxScore", includeMaxScore);
+
+        return getClient(RedisClientMethod.EXTRA_GET_COUNT_FROM_SORTED_SET, parameterMap).getCountFromSortedSet(key, minScore, includeMinScore, maxScore, includeMaxScore);
+    }
+
+    @Override
+    public List<String> getMembersByRankFromSortedSet(String key, int start, int stop, boolean reverse) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("start", start);
+        parameterMap.put("stop", stop);
+        parameterMap.put("reverse", reverse);
+
+        return getClient(RedisClientMethod.GET_MEMBERS_BY_RANK_FROM_SORTED_SET, parameterMap).getMembersByRankFromSortedSet(key, start, stop, reverse);
+    }
+
+    @Override
+    public LinkedHashMap<String, Double> getMembersWithScoresByRankFromSortedSet(String key, int start, int stop, boolean reverse) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("start", start);
+        parameterMap.put("stop", stop);
+        parameterMap.put("reverse", reverse);
+
+        return getClient(RedisClientMethod.GET_MEMBERS_WITH_SCORES_BY_RANK_FROM_SORTED_SET, parameterMap).getMembersWithScoresByRankFromSortedSet(key, start, stop, reverse);
+    }
+
+    @Override
+    public List<String> getMembersByScoreFromSortedSet(String key, double minScore, double maxScore, boolean reverse) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("minScore", minScore);
+        parameterMap.put("maxScore", maxScore);
+        parameterMap.put("reverse", reverse);
+
+        return getClient(RedisClientMethod.GET_MEMBERS_BY_SCORE_FROM_SORTED_SET, parameterMap).getMembersByScoreFromSortedSet(key, minScore, maxScore, reverse);
+    }
+
+    @Override
+    public List<String> getMembersByScoreFromSortedSet(String key, double minScore, boolean includeMinScore, double maxScore, boolean includeMaxScore, boolean reverse, int offset, int count) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("minScore", minScore);
+        parameterMap.put("includeMinScore", includeMinScore);
+        parameterMap.put("maxScore", maxScore);
+        parameterMap.put("includeMaxScore", includeMaxScore);
+        parameterMap.put("reverse", reverse);
+        parameterMap.put("offset", offset);
+        parameterMap.put("count", count);
+
+        return getClient(RedisClientMethod.EXTRA_GET_MEMBERS_BY_SCORE_FROM_SORTED_SET, parameterMap).getMembersByScoreFromSortedSet(key, minScore, includeMinScore, maxScore, includeMaxScore, reverse, offset, count);
+    }
+
+    @Override
+    public LinkedHashMap<String, Double> getMembersWithScoresByScoreFromSortedSet(String key, double minScore, double maxScore, boolean reverse) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("minScore", minScore);
+        parameterMap.put("maxScore", maxScore);
+        parameterMap.put("reverse", reverse);
+
+        return getClient(RedisClientMethod.GET_MEMBERS_WITH_SCORES_BY_SCORE_FROM_SORTED_SET, parameterMap).getMembersWithScoresByScoreFromSortedSet(key, minScore, maxScore, reverse);
+    }
+
+    @Override
+    public LinkedHashMap<String, Double> getMembersWithScoresByScoreFromSortedSet(String key, double minScore, boolean includeMinScore, double maxScore, boolean includeMaxScore, boolean reverse, int offset, int count) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("minScore", minScore);
+        parameterMap.put("includeMinScore", includeMinScore);
+        parameterMap.put("maxScore", maxScore);
+        parameterMap.put("includeMaxScore", includeMaxScore);
+        parameterMap.put("reverse", reverse);
+        parameterMap.put("offset", offset);
+        parameterMap.put("count", count);
+
+        return getClient(RedisClientMethod.EXTRA_GET_MEMBERS_WITH_SCORES_BY_SCORE_FROM_SORTED_SET, parameterMap).getMembersWithScoresByScoreFromSortedSet(key, minScore, includeMinScore, maxScore, includeMaxScore, reverse, offset, count);
     }
 
     protected abstract DirectRedisClient getClient(RedisClientMethod method, Map<String, Object> parameterMap);

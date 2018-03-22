@@ -85,8 +85,8 @@ public class ZRevRangeByScoreCommand extends AbstractCommand {
         RedisData[] commandDataArray = new RedisData[arrayLength];
         commandDataArray[arrayIndex++] = new RedisBulkString("ZREVRANGEBYSCORE".getBytes(RedisData.UTF8));
         commandDataArray[arrayIndex++] = new RedisBulkString(key.getBytes(RedisData.UTF8));
-        commandDataArray[arrayIndex++] = new RedisBulkString(minScoreStr.getBytes(RedisData.UTF8));
         commandDataArray[arrayIndex++] = new RedisBulkString(maxScoreStr.getBytes(RedisData.UTF8));
+        commandDataArray[arrayIndex++] = new RedisBulkString(minScoreStr.getBytes(RedisData.UTF8));
         if (withScores) {
             commandDataArray[arrayIndex++] = new RedisBulkString("WITHSCORES".getBytes(RedisData.UTF8));
         }

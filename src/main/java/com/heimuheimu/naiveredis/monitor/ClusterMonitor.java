@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ClusterMonitor {
 
-    private static final ClusterMonitor INSTANCE =  ClusterMonitor.getInstance();
+    private static final ClusterMonitor INSTANCE = new ClusterMonitor();
 
     /**
      * 获取不可用客户端的次数

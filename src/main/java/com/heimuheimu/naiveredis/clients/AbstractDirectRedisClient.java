@@ -159,6 +159,9 @@ public abstract class AbstractDirectRedisClient implements NaiveRedisKeysClient 
                 LOG.debug("Client will send following redis command:\n\r" + command.toString());
             }
             RedisData response = channel.send(command, timeout);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Client received following redis response:\n\r" + response.toString());
+            }
             if (response.isError()) { // 判断 Redis 服务是否返回错误信息
                 String errorMessage = response.getText();
                 NAIVEREDIS_ERROR_LOG.error(LogBuildUtil.buildMethodExecuteFailedLog(methodName, errorMessage, paramMap));

@@ -102,8 +102,8 @@ public class ZAddCommand extends AbstractCommand {
             if (score == null) {
                 score = 0d;
             }
-            commandDataArray[arrayIndex++] = new RedisBulkString(member.getBytes(RedisData.UTF8));
             commandDataArray[arrayIndex++] = new RedisBulkString(score.toString().getBytes(RedisData.UTF8));
+            commandDataArray[arrayIndex++] = new RedisBulkString(member.getBytes(RedisData.UTF8));
         }
 
         this.requestByteArray = new RedisArray(commandDataArray).getRespByteArray();

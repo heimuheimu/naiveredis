@@ -75,6 +75,11 @@ public abstract class AbstractCommand implements Command {
         latch.countDown();
     }
 
+    @Override
+    public String toString() {
+        return new String(getRequestByteArray(), RedisData.UTF8);
+    }
+
     protected String makeScoreToString(double score, boolean includeScore) {
         String scoreStr;
         if (score == Double.NEGATIVE_INFINITY) {

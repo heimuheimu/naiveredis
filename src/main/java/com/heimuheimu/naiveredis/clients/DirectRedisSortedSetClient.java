@@ -61,7 +61,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
     @Override
     public int addToSortedSet(String key, double score, String member, SortedSetAddMode mode) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         Map<String, Double> memberMap = new HashMap<>();
-        memberMap.put(key, score);
+        memberMap.put(member, score);
         return addToSortedSet(key, memberMap, mode);
     }
 

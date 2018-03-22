@@ -28,6 +28,7 @@ import com.heimuheimu.naiveredis.NaiveRedisSortedSetClient;
 import com.heimuheimu.naiveredis.channel.RedisChannel;
 import com.heimuheimu.naiveredis.command.sortedset.*;
 import com.heimuheimu.naiveredis.constant.SortedSetAddMode;
+import com.heimuheimu.naiveredis.data.RedisDataParser;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 import com.heimuheimu.naiveredis.facility.parameter.MethodParameterChecker;
@@ -84,8 +85,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
 
-        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new ZAddCommand(key, memberMap, mode),
-                response -> Integer.valueOf(response.getText()));
+        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new ZAddCommand(key, memberMap, mode), RedisDataParser::parseInt);
     }
 
     @Override
@@ -100,8 +100,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
         parameterChecker.check("member", "isNull", Parameters::isNull);
 
-        return (double) execute(methodName, parameterChecker.getParameterMap(), () -> new ZIncrByCommand(key, increment, member),
-                response -> Double.valueOf(response.getText()));
+        return (double) execute(methodName, parameterChecker.getParameterMap(), () -> new ZIncrByCommand(key, increment, member), RedisDataParser::parseDouble);
     }
 
     @Override
@@ -122,8 +121,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
 
-        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new ZRemCommand(key, members),
-                response -> Integer.valueOf(response.getText()));
+        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new ZRemCommand(key, members), RedisDataParser::parseInt);
     }
 
     @Override
@@ -137,8 +135,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
 
-        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new ZRemRangeByRankCommand(key, start, stop),
-                response -> Integer.valueOf(response.getText()));
+        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new ZRemRangeByRankCommand(key, start, stop), RedisDataParser::parseInt);
     }
 
     @Override
@@ -162,7 +159,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
 
         return (int) execute(methodName, parameterChecker.getParameterMap(),
                 () -> new ZRemRangeByScoreCommand(key, minScore, includeMinScore, maxScore, includeMaxScore),
-                response -> Integer.valueOf(response.getText()));
+                RedisDataParser::parseInt);
     }
 
     @Override
@@ -176,15 +173,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
         parameterChecker.check("member", "isNull", Parameters::isNull);
 
-        return (Double) execute(methodName, parameterChecker.getParameterMap(),
-                () -> new ZScoreCommand(key, member),
-                response -> {
-                    if (response.getValueBytes() != null) {
-                        return Double.valueOf(response.getText());
-                    } else {
-                        return null;
-                    }
-                });
+        return (Double) execute(methodName, parameterChecker.getParameterMap(), () -> new ZScoreCommand(key, member), RedisDataParser::parseDouble);
     }
 
     @Override
@@ -207,13 +196,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
                         return new ZRankCommand(key, member);
                     }
                 },
-                response -> {
-                    if (response.getValueBytes() != null) {
-                        return Integer.valueOf(response.getText());
-                    } else {
-                        return null;
-                    }
-                });
+                RedisDataParser::parseInt);
     }
 
     @Override
@@ -225,8 +208,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
 
-        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new ZCardCommand(key),
-                response -> Integer.valueOf(response.getText()));
+        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new ZCardCommand(key), RedisDataParser::parseInt);
     }
 
     @Override
@@ -250,7 +232,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
 
         return (int) execute(methodName, parameterChecker.getParameterMap(),
                 () -> new ZCountCommand(key, minScore, includeMinScore, maxScore, includeMaxScore),
-                response -> Integer.valueOf(response.getText()));
+                RedisDataParser::parseInt);
     }
 
     @Override
@@ -275,13 +257,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
                         return new ZRangeCommand(key, start, stop, false);
                     }
                 },
-                response -> {
-                    List<String> members = new ArrayList<>();
-                    for (int i = 0; i < response.size(); i++) {
-                        members.add(response.get(i).getText());
-                    }
-                    return members;
-                });
+                RedisDataParser::parseStringList);
     }
 
     @Override
@@ -305,16 +281,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
                     } else {
                         return new ZRangeCommand(key, start, stop, true);
                     }
-                },
-                response -> {
-                    LinkedHashMap<String, Double> memberMap = new LinkedHashMap<>();
-                    for (int i = 0; i < response.size(); i += 2) {
-                        String member = response.get(i).getText();
-                        Double score = Double.valueOf(response.get(i + 1).getText());
-                        memberMap.put(member, score);
-                    }
-                    return memberMap;
-                });
+                }, RedisDataParser::parseMemberMapForSortedSet);
     }
 
     @Override
@@ -350,14 +317,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
                     } else {
                         return new ZRangeByScoreCommand(key, minScore, includeMinScore, maxScore, includeMaxScore, offset, count, false);
                     }
-                },
-                response -> {
-                    List<String> members = new ArrayList<>();
-                    for (int i = 0; i < response.size(); i++) {
-                        members.add(response.get(i).getText());
-                    }
-                    return members;
-                });
+                }, RedisDataParser::parseStringList);
     }
 
     @Override
@@ -395,15 +355,6 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
                     } else {
                         return new ZRangeByScoreCommand(key, minScore, includeMinScore, maxScore, includeMaxScore, offset, count, true);
                     }
-                },
-                response -> {
-                    LinkedHashMap<String, Double> memberMap = new LinkedHashMap<>();
-                    for (int i = 0; i < response.size(); i += 2) {
-                        String member = response.get(i).getText();
-                        Double score = Double.valueOf(response.get(i + 1).getText());
-                        memberMap.put(member, score);
-                    }
-                    return memberMap;
-                });
+                }, RedisDataParser::parseMemberMapForSortedSet);
     }
 }

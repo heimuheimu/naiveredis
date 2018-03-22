@@ -27,12 +27,12 @@ package com.heimuheimu.naiveredis.clients;
 import com.heimuheimu.naiveredis.NaiveRedisSetClient;
 import com.heimuheimu.naiveredis.channel.RedisChannel;
 import com.heimuheimu.naiveredis.command.set.*;
+import com.heimuheimu.naiveredis.data.RedisDataParser;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 import com.heimuheimu.naiveredis.facility.parameter.MethodParameterChecker;
 import com.heimuheimu.naiveredis.facility.parameter.Parameters;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -74,8 +74,7 @@ public class DirectRedisSetClient extends AbstractDirectRedisClient implements N
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
 
-        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new SAddCommand(key, members),
-                response -> Integer.valueOf(response.getText()));
+        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new SAddCommand(key, members), RedisDataParser::parseInt);
     }
 
     @Override
@@ -93,8 +92,7 @@ public class DirectRedisSetClient extends AbstractDirectRedisClient implements N
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
 
-        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new SRemCommand(key, members),
-                response -> Integer.valueOf(response.getText()));
+        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new SRemCommand(key, members), RedisDataParser::parseInt);
     }
 
     @Override
@@ -108,8 +106,7 @@ public class DirectRedisSetClient extends AbstractDirectRedisClient implements N
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
         parameterChecker.check("member", "isNull", Parameters::isNull);
 
-        return (boolean) execute(methodName, parameterChecker.getParameterMap(), () -> new SIsMemberCommand(key, member),
-                response -> Integer.valueOf(response.getText()) == 1);
+        return (boolean) execute(methodName, parameterChecker.getParameterMap(), () -> new SIsMemberCommand(key, member), RedisDataParser::parseBoolean);
     }
 
     @Override
@@ -121,8 +118,7 @@ public class DirectRedisSetClient extends AbstractDirectRedisClient implements N
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
 
-        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new SCardCommand(key),
-                response -> Integer.valueOf(response.getText()));
+        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new SCardCommand(key), RedisDataParser::parseInt);
     }
 
     @Override
@@ -136,13 +132,7 @@ public class DirectRedisSetClient extends AbstractDirectRedisClient implements N
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
 
-        return (List<String>) execute(methodName, parameterChecker.getParameterMap(), () -> new SRandMemberCommand(key, count), response -> {
-            List<String> members = new ArrayList<>();
-            for (int i = 0; i < response.size(); i++) {
-                members.add(response.get(i).getText());
-            }
-            return members;
-        });
+        return (List<String>) execute(methodName, parameterChecker.getParameterMap(), () -> new SRandMemberCommand(key, count), RedisDataParser::parseStringList);
     }
 
     @Override
@@ -157,13 +147,7 @@ public class DirectRedisSetClient extends AbstractDirectRedisClient implements N
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
         parameterChecker.check("count", "isEqualOrLessThanZero", Parameters::isEqualOrLessThanZero);
 
-        return (List<String>) execute(methodName, parameterChecker.getParameterMap(), () -> new SPopCommand(key, count), response -> {
-            List<String> members = new ArrayList<>();
-            for (int i = 0; i < response.size(); i++) {
-                members.add(response.get(i).getText());
-            }
-            return members;
-        });
+        return (List<String>) execute(methodName, parameterChecker.getParameterMap(), () -> new SPopCommand(key, count), RedisDataParser::parseStringList);
     }
 
     @Override
@@ -176,12 +160,6 @@ public class DirectRedisSetClient extends AbstractDirectRedisClient implements N
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
 
-        return (List<String>) execute(methodName, parameterChecker.getParameterMap(), () -> new SMembersCommand(key), response -> {
-            List<String> members = new ArrayList<>();
-            for (int i = 0; i < response.size(); i++) {
-                members.add(response.get(i).getText());
-            }
-            return members;
-        });
+        return (List<String>) execute(methodName, parameterChecker.getParameterMap(), () -> new SMembersCommand(key), RedisDataParser::parseStringList);
     }
 }

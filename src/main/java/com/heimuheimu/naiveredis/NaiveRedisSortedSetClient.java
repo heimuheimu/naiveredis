@@ -40,7 +40,7 @@ import java.util.Map;
  *
  * @author heimuheimu
  */
-public interface NaiveRedisSortedSetClient {
+public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
 
     /**
      * 将成员和对应的分值添加到指定的排序 Set 集合中，并返回成功（集合中尚不存在该成员）添加的个数。

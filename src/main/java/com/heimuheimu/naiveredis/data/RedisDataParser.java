@@ -111,7 +111,7 @@ public class RedisDataParser {
     }
 
     private static Double toDouble(String doubleStr) throws NumberFormatException {
-        if ("+inf".equals(doubleStr)) {
+        if ("inf".equals(doubleStr)) {
             return Double.POSITIVE_INFINITY;
         } else if ("-inf".equals(doubleStr)) {
             return Double.NEGATIVE_INFINITY;

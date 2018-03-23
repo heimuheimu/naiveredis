@@ -120,13 +120,15 @@ public class DirectRedisGeoClient extends AbstractDirectRedisClient implements N
         return (Map<String, GeoCoordinate>) execute(methodName, parameterChecker.getParameterMap(), () -> new GeoPosCommand(key, members),
                 response -> {
                     Map<String, GeoCoordinate> result = new HashMap<>();
-                    int index = 0;
-                    for (String member : members) {
-                        RedisData data = response.get(index++);
-                        if (data.getValueBytes() != null) {
-                            double longitude = RedisDataParser.parseDouble(data.get(0));
-                            double latitude = RedisDataParser.parseDouble(data.get(1));
-                            result.put(member, new GeoCoordinate(longitude, latitude));
+                    if (response.size() > 0) {
+                        int index = 0;
+                        for (String member : members) {
+                            RedisData data = response.get(index++);
+                            if (data.size() > 0) {
+                                double longitude = RedisDataParser.parseDouble(data.get(0));
+                                double latitude = RedisDataParser.parseDouble(data.get(1));
+                                result.put(member, new GeoCoordinate(longitude, latitude));
+                            }
                         }
                     }
                     return result;

@@ -43,7 +43,7 @@ public class RedisDataParser {
      * @throws NumberFormatException 如果整数转换失败，将会抛出异常
      */
     public static Integer parseInt(RedisData data) throws NumberFormatException {
-        if (data.getValueBytes() != null) {
+        if (data.getValueBytes() != null && data.getValueBytes().length > 0) {
             return Integer.valueOf(data.getText());
         } else {
             return null;
@@ -84,7 +84,7 @@ public class RedisDataParser {
      * @throws NumberFormatException 如果 Double 转换失败，将会抛出异常
      */
     public static Double parseDouble(RedisData data) throws NumberFormatException {
-        if (data.getValueBytes() != null) {
+        if (data.getValueBytes() != null && data.getValueBytes().length > 0) {
             return toDouble(data.getText());
         } else {
             return null;

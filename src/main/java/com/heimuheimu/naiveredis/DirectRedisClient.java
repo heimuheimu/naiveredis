@@ -25,10 +25,7 @@
 package com.heimuheimu.naiveredis;
 
 import com.heimuheimu.naiveredis.channel.RedisChannel;
-import com.heimuheimu.naiveredis.clients.DirectRedisCountClient;
-import com.heimuheimu.naiveredis.clients.DirectRedisSetClient;
-import com.heimuheimu.naiveredis.clients.DirectRedisSortedSetClient;
-import com.heimuheimu.naiveredis.clients.DirectRedisStorageClient;
+import com.heimuheimu.naiveredis.clients.*;
 import com.heimuheimu.naiveredis.clients.delegate.NaiveRedisClientDelegate;
 import com.heimuheimu.naiveredis.facility.UnusableServiceNotifier;
 import com.heimuheimu.naiveredis.facility.parameter.ConstructorParameterChecker;
@@ -94,6 +91,11 @@ public class DirectRedisClient implements NaiveRedisClientDelegate, Closeable {
      * Redis Sorted SET 客户端
      */
     private final NaiveRedisSortedSetClient naiveRedisSortedSetClient;
+
+    /**
+     * Redis Sorted GEO 客户端
+     */
+    private final NaiveRedisGeoClient naiveRedisGeoClient;
 
     /**
      * 构造一个 Redis 直连客户端，{@link java.net.Socket} 配置信息使用 {@link SocketConfiguration#DEFAULT}，Redis 操作超时时间设置为 5 秒，
@@ -164,6 +166,7 @@ public class DirectRedisClient implements NaiveRedisClientDelegate, Closeable {
         this.naiveRedisCountClient = new DirectRedisCountClient(redisChannel, timeout, this.slowExecutionThreshold);
         this.naiveRedisSetClient = new DirectRedisSetClient(redisChannel, timeout, this.slowExecutionThreshold);
         this.naiveRedisSortedSetClient = new DirectRedisSortedSetClient(redisChannel, timeout, this.slowExecutionThreshold);
+        this.naiveRedisGeoClient = new DirectRedisGeoClient(redisChannel, timeout, this.slowExecutionThreshold);
     }
 
     @Override
@@ -184,6 +187,11 @@ public class DirectRedisClient implements NaiveRedisClientDelegate, Closeable {
     @Override
     public NaiveRedisSortedSetClient getNaiveRedisSortedSetClient() {
         return naiveRedisSortedSetClient;
+    }
+
+    @Override
+    public NaiveRedisGeoClient getNaiveRedisGeoClient() {
+        return naiveRedisGeoClient;
     }
 
     /**

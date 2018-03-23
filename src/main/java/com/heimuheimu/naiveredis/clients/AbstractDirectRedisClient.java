@@ -175,7 +175,13 @@ public abstract class AbstractDirectRedisClient implements NaiveRedisKeysClient 
             }
         } catch (RedisException e) {
             throw e;
-        } catch (IllegalStateException e) {
+        } catch (IllegalArgumentException e) {
+            String errorLog = LogBuildUtil.buildMethodExecuteFailedLog(methodName, "illegal argument", paramMap);
+            NAIVEREDIS_ERROR_LOG.error(errorLog);
+            LOG.error(errorLog, e);
+            executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_ILLEGAL_ARGUMENT);
+            throw e;
+        }catch (IllegalStateException e) {
             NAIVEREDIS_ERROR_LOG.error(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "client has been closed", paramMap));
             executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_ILLEGAL_STATE);
             throw e;

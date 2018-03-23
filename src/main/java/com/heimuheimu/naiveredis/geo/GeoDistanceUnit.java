@@ -22,26 +22,50 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.clients.delegate;
-
-import com.heimuheimu.naiveredis.exception.RedisException;
-import com.heimuheimu.naiveredis.exception.TimeoutException;
+package com.heimuheimu.naiveredis.geo;
 
 /**
- * Redis 客户端代理接口。
+ * 距离单位枚举类。
  *
  * @author heimuheimu
  */
-public interface NaiveRedisClientDelegate extends NaiveRedisStorageClientDelegate, NaiveRedisCountClientDelegate,
-        NaiveRedisSetClientDelegate, NaiveRedisSortedSetClientDelegate, NaiveRedisGeoClientDelegate {
+public enum GeoDistanceUnit {
 
-    @Override
-    default void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        getNaiveRedisStorageClient().expire(key, expiry);
+    /**
+     * 米
+     */
+    M("m"),
+
+    /**
+     * 千米，1 KM = 1000 M
+     */
+    KM("km"),
+
+    /**
+     * 英尺，1 FT = 0.304794 M
+     */
+    FT("ft"),
+
+    /**
+     * 英里，1 MI = 1609.31 M
+     */
+    MI("mi");
+
+    /**
+     * 单位
+     */
+    private final String unit;
+
+    GeoDistanceUnit(String unit) {
+        this.unit = unit;
     }
 
-    @Override
-    default void delete(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        getNaiveRedisStorageClient().delete(key);
+    /**
+     * 获得单位的字符串表达形式。
+     *
+     * @return 单位
+     */
+    public String getUnit() {
+        return unit;
     }
 }

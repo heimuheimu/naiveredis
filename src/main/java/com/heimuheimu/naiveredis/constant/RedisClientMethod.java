@@ -24,6 +24,10 @@
 
 package com.heimuheimu.naiveredis.constant;
 
+import com.heimuheimu.naiveredis.geo.GeoCoordinate;
+import com.heimuheimu.naiveredis.geo.GeoDistanceUnit;
+import com.heimuheimu.naiveredis.geo.GeoSearchParameter;
+
 import java.util.Collection;
 import java.util.Map;
 
@@ -219,7 +223,42 @@ public enum RedisClientMethod {
      * @see com.heimuheimu.naiveredis.NaiveRedisSortedSetClient#getMembersWithScoresByScoreFromSortedSet(String, double, boolean, double, boolean, boolean, int, int)
      */
     EXTRA_GET_MEMBERS_WITH_SCORES_BY_SCORE_FROM_SORTED_SET("#getMembersWithScoresByScoreFromSortedSet(String key, double minScore, " +
-            "boolean includeMinScore, double maxScore, boolean includeMaxScore, boolean reverse, int offset, int count)", true);
+            "boolean includeMinScore, double maxScore, boolean includeMaxScore, boolean reverse, int offset, int count)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisGeoClient#addGeoCoordinate(String, double, double, String)
+     */
+    ADD_GEO_COORDINATE("#addGeoCoordinate(String key, double longitude, double latitude, String member)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisGeoClient#addGeoCoordinates(String, Map)
+     */
+    ADD_GEO_COORDINATES("#addGeoCoordinates(String key, Map<String, GeoCoordinate> memberMap)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisGeoClient#getGeoDistance(String, String, String, GeoDistanceUnit)
+     */
+    GET_GEO_DISTANCE("#getGeoDistance(String key, String member, String targetMember, GeoDistanceUnit unit)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisGeoClient#getGeoCoordinate(String, String)
+     */
+    GET_GEO_COORDINATE("#getGeoCoordinate(String key, String member)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisGeoClient#getGeoCoordinates(String, Collection)
+     */
+    GET_GEO_COORDINATES("#getGeoCoordinates(String key, Collection<String> members)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisGeoClient#findGeoNeighbours(String, GeoCoordinate, GeoSearchParameter)
+     */
+    FIND_GEO_NEIGHBOURS("#findGeoNeighbours(String key, GeoCoordinate center, GeoSearchParameter geoSearchParameter)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisGeoClient#findGeoNeighboursByMember(String, String, GeoSearchParameter)
+     */
+    FIND_GEO_NEIGHBOURS_BY_MEMBER("#findGeoNeighboursByMember(String key, String member, GeoSearchParameter geoSearchParameter)", true);
 
     private final String methodName;
 

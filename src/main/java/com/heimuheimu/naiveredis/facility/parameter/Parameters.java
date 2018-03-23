@@ -43,7 +43,7 @@ public class Parameters {
      */
     public static boolean isEqualOrLessThanZero(Object parameterValue) {
         Number number = (Number) parameterValue;
-        return number.longValue() <= 0;
+        return number.doubleValue() <= 0d;
     }
 
     /**

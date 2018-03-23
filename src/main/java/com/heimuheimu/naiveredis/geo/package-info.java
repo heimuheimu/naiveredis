@@ -22,26 +22,9 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.clients.delegate;
-
-import com.heimuheimu.naiveredis.exception.RedisException;
-import com.heimuheimu.naiveredis.exception.TimeoutException;
-
 /**
- * Redis 客户端代理接口。
+ * 提供 Redis GEO 客户端需要使用的类。
  *
  * @author heimuheimu
  */
-public interface NaiveRedisClientDelegate extends NaiveRedisStorageClientDelegate, NaiveRedisCountClientDelegate,
-        NaiveRedisSetClientDelegate, NaiveRedisSortedSetClientDelegate, NaiveRedisGeoClientDelegate {
-
-    @Override
-    default void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        getNaiveRedisStorageClient().expire(key, expiry);
-    }
-
-    @Override
-    default void delete(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        getNaiveRedisStorageClient().delete(key);
-    }
-}
+package com.heimuheimu.naiveredis.geo;

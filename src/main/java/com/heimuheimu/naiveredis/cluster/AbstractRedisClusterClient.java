@@ -30,6 +30,10 @@ import com.heimuheimu.naiveredis.constant.RedisClientMethod;
 import com.heimuheimu.naiveredis.constant.SortedSetAddMode;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
+import com.heimuheimu.naiveredis.geo.GeoCoordinate;
+import com.heimuheimu.naiveredis.geo.GeoDistanceUnit;
+import com.heimuheimu.naiveredis.geo.GeoNeighbour;
+import com.heimuheimu.naiveredis.geo.GeoSearchParameter;
 import com.heimuheimu.naiveredis.monitor.ClusterMonitor;
 
 import java.util.Collection;
@@ -408,6 +412,75 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
         parameterMap.put("count", count);
 
         return getClient(RedisClientMethod.EXTRA_GET_MEMBERS_WITH_SCORES_BY_SCORE_FROM_SORTED_SET, parameterMap).getMembersWithScoresByScoreFromSortedSet(key, minScore, includeMinScore, maxScore, includeMaxScore, reverse, offset, count);
+    }
+
+    @Override
+    public int addGeoCoordinate(String key, double longitude, double latitude, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("longitude", longitude);
+        parameterMap.put("latitude", latitude);
+        parameterMap.put("member", member);
+
+        return getClient(RedisClientMethod.ADD_GEO_COORDINATE, parameterMap).addGeoCoordinate(key, longitude, latitude, member);
+    }
+
+    @Override
+    public int addGeoCoordinates(String key, Map<String, GeoCoordinate> memberMap) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("memberMap", memberMap);
+
+        return getClient(RedisClientMethod.ADD_GEO_COORDINATES, parameterMap).addGeoCoordinates(key, memberMap);
+    }
+
+    @Override
+    public Double getGeoDistance(String key, String member, String targetMember, GeoDistanceUnit unit) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+        parameterMap.put("targetMember", targetMember);
+        parameterMap.put("unit", unit);
+
+        return getClient(RedisClientMethod.GET_GEO_DISTANCE, parameterMap).getGeoDistance(key, member, targetMember, unit);
+    }
+
+    @Override
+    public GeoCoordinate getGeoCoordinate(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+
+        return getClient(RedisClientMethod.GET_GEO_COORDINATE, parameterMap).getGeoCoordinate(key, member);
+    }
+
+    @Override
+    public Map<String, GeoCoordinate> getGeoCoordinates(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("members", members);
+
+        return getClient(RedisClientMethod.GET_GEO_COORDINATES, parameterMap).getGeoCoordinates(key, members);
+    }
+
+    @Override
+    public List<GeoNeighbour> findGeoNeighbours(String key, GeoCoordinate center, GeoSearchParameter geoSearchParameter) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("center", center);
+        parameterMap.put("geoSearchParameter", geoSearchParameter);
+
+        return getClient(RedisClientMethod.FIND_GEO_NEIGHBOURS, parameterMap).findGeoNeighbours(key, center, geoSearchParameter);
+    }
+
+    @Override
+    public List<GeoNeighbour> findGeoNeighboursByMember(String key, String member, GeoSearchParameter geoSearchParameter) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+        parameterMap.put("geoSearchParameter", geoSearchParameter);
+
+        return getClient(RedisClientMethod.FIND_GEO_NEIGHBOURS_BY_MEMBER, parameterMap).findGeoNeighboursByMember(key, member, geoSearchParameter);
     }
 
     protected abstract DirectRedisClient getClient(RedisClientMethod method, Map<String, Object> parameterMap);

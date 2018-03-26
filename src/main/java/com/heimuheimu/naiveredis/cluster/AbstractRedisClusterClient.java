@@ -435,6 +435,24 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
     }
 
     @Override
+    public int removeGeoMember(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+
+        return getClient(RedisClientMethod.REMOVE_GEO_MEMBER, parameterMap).removeGeoMember(key, member);
+    }
+
+    @Override
+    public int removeGeoMembers(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("members", members);
+
+        return getClient(RedisClientMethod.MULTI_REMOVE_GEO_MEMBERS, parameterMap).removeGeoMembers(key, members);
+    }
+
+    @Override
     public Double getGeoDistance(String key, String member, String targetMember, GeoDistanceUnit unit) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         Map<String, Object> parameterMap = new LinkedHashMap<>();
         parameterMap.put("key", key);

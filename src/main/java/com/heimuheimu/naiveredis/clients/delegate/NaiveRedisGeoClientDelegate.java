@@ -56,6 +56,16 @@ public interface NaiveRedisGeoClientDelegate extends NaiveRedisGeoClient {
     }
 
     @Override
+    default int removeGeoMember(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return getNaiveRedisGeoClient().removeGeoMember(key, member);
+    }
+
+    @Override
+    default int removeGeoMembers(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return getNaiveRedisGeoClient().removeGeoMembers(key, members);
+    }
+
+    @Override
     default Double getGeoDistance(String key, String member, String targetMember, GeoDistanceUnit unit) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         return getNaiveRedisGeoClient().getGeoDistance(key, member, targetMember, unit);
     }

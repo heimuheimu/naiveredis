@@ -79,6 +79,38 @@ public interface NaiveRedisGeoClient extends NaiveRedisKeysClient {
     int addGeoCoordinates(String key, Map<String, GeoCoordinate> memberMap) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
+     * 将一个成员从 GEO 成员集合中移除，并返回成功移除的个数。
+     *
+     * <p><strong>算法复杂度：</strong> O(log(N))，N 为 GEO 成员集合总数。</p>
+     *
+     * @param key GEO 成员集合 Key，不允许 {@code null} 或空
+     * @param member 成员，不允许为 {@code null}
+     * @return 成功移除的个数
+     * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalArgumentException 如果成员为 {@code null}，将会抛出此异常
+     * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
+     * @throws TimeoutException 如果操作超时，将会抛出此异常
+     * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
+     */
+    int removeGeoMember(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
+
+    /**
+     * 将列表中的成员从指定的 GEO 成员集合中移除，并返回成功移除的个数。
+     *
+     * <p><strong>算法复杂度：</strong> O(M * log(N))，M 为删除的成员个数，N 为 GEO 成员集合总数。</p>
+     *
+     * @param key GEO 成员集合 Key，不允许 {@code null} 或空
+     * @param members 需要移除的成员列表，成员不允许为 {@code null}
+     * @return 成功移除的个数
+     * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalArgumentException 如果 members 含有 {@code null} 的成员，将会抛出此异常
+     * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
+     * @throws TimeoutException 如果操作超时，将会抛出此异常
+     * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
+     */
+    int removeGeoMembers(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
+
+    /**
      * 计算两个成员之间的距离，如果有成员不存在，则返回 {@code null}。
      *
      * <p><strong>算法复杂度：</strong> O(log(N))，N 为 GEO 成员总数。</p>
@@ -149,6 +181,8 @@ public interface NaiveRedisGeoClient extends NaiveRedisKeysClient {
 
     /**
      * 在指定的 GEO 成员集合中查找 {@code member} 附近的成员列表，该方法不会返回 {@code null}。
+     *
+     * <p><strong>注意：</strong>查找的成员必须在 GEO 成员集合中已存在，否则会抛出 {@code RedisException} 异常。</p>
      *
      * <p><strong>算法复杂度：</strong> O(M + log(N)) ，M 为位于半径以内的成员数量，N 为 GEO 成员总数。</p>
      *

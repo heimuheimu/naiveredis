@@ -27,6 +27,7 @@ package com.heimuheimu.naiveredis.clients;
 import com.heimuheimu.naiveredis.NaiveRedisGeoClient;
 import com.heimuheimu.naiveredis.channel.RedisChannel;
 import com.heimuheimu.naiveredis.command.geo.*;
+import com.heimuheimu.naiveredis.command.sortedset.ZRemCommand;
 import com.heimuheimu.naiveredis.data.RedisData;
 import com.heimuheimu.naiveredis.data.RedisDataParser;
 import com.heimuheimu.naiveredis.exception.RedisException;
@@ -79,6 +80,27 @@ public class DirectRedisGeoClient extends AbstractDirectRedisClient implements N
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
 
         return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new GeoAddCommand(key, memberMap), RedisDataParser::parseInt);
+    }
+
+    @Override
+    public int removeGeoMember(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return removeGeoMembers(key, Collections.singleton(member));
+    }
+
+    @Override
+    public int removeGeoMembers(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        if (members == null || members.isEmpty()) {
+            return 0;
+        }
+        String methodName = methodNamePrefix + "removeGeoMembers(String key, Collection<String> members)";
+
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("members", members);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new ZRemCommand(key, members), RedisDataParser::parseInt);
     }
 
     @Override

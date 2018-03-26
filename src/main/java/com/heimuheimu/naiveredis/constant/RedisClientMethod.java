@@ -236,6 +236,16 @@ public enum RedisClientMethod {
     ADD_GEO_COORDINATES("#addGeoCoordinates(String key, Map<String, GeoCoordinate> memberMap)", false),
 
     /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisGeoClient#removeGeoMember(String, String)
+     */
+    REMOVE_GEO_MEMBER("#removeGeoMember(String key, String member)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisGeoClient#removeGeoMembers(String, Collection)
+     */
+    MULTI_REMOVE_GEO_MEMBERS("#removeGeoMembers(String key, Collection<String> members)", false),
+
+    /**
      * @see com.heimuheimu.naiveredis.NaiveRedisGeoClient#getGeoDistance(String, String, String, GeoDistanceUnit)
      */
     GET_GEO_DISTANCE("#getGeoDistance(String key, String member, String targetMember, GeoDistanceUnit unit)", true),

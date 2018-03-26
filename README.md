@@ -18,6 +18,7 @@
 
 ## Log4J 配置
 ```
+# Redis 根日志
 log4j.logger.com.heimuheimu.naiveredis=WARN, NAIVEREDIS
 log4j.additivity.com.heimuheimu.naiveredis=false
 log4j.appender.NAIVEREDIS=org.apache.log4j.DailyRollingFileAppender
@@ -38,7 +39,7 @@ log4j.appender.NAIVEREDIS_CONNECTION_LOG.layout=org.apache.log4j.PatternLayout
 log4j.appender.NAIVEREDIS_CONNECTION_LOG.layout.ConversionPattern=%d{ISO8601} %-5p : %m%n
 
 # Redis 错误信息日志，不打印错误堆栈
-log4j.logger.NAIVEREDIS_ERROR_LOG=INFO, NAIVEREDIS_ERROR_LOG
+log4j.logger.NAIVEREDIS_ERROR_LOG=ERROR, NAIVEREDIS_ERROR_LOG
 log4j.additivity.NAIVEREDIS_ERROR_LOG=false
 log4j.appender.NAIVEREDIS_ERROR_LOG=org.apache.log4j.DailyRollingFileAppender
 log4j.appender.NAIVEREDIS_ERROR_LOG.file=${log.output.directory}/naiveredis/error.log

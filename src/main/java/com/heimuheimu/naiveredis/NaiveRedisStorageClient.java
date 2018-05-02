@@ -27,6 +27,9 @@ package com.heimuheimu.naiveredis;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Redis 存储客户端，提供设置、获取 Java 对象的方法。
  *
@@ -48,6 +51,19 @@ public interface NaiveRedisStorageClient extends NaiveRedisKeysClient {
      * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
      */
     <T> T get(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
+
+    /**
+     * 根据 Key 列表批量获取在 Redis 中存储的值，找到的 Key 将会把对应的 Key 和结果放入 Map 中，未找到或发生异常的 Key 不会出现在返回 Map 中。
+     *
+     * @param keySet Key 列表，列表中不允许包含为 {@code null} 或空字符串的 Key
+     * @param <T> Value 类型
+     * @return Key 列表对应的 Redis 缓存值 Map，不会为 {@code null}
+     * @throws IllegalArgumentException 如果 keySet 为 {@code null} 或空，或者 keySet 中包含 {@code null} 或空字符串的 Key，将抛出此异常
+     * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
+     * @throws TimeoutException 如果操作超时，将会抛出此异常
+     * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
+     */
+    <T> Map<String, T> multiGet(Set<String> keySet) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
      * 将 Key 和 Value 存储至 Redis 中，不设置过期时间。

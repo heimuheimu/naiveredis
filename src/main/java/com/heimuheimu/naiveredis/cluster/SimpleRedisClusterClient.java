@@ -114,7 +114,7 @@ public class SimpleRedisClusterClient extends AbstractRedisClusterClient impleme
     }
 
     @Override
-    protected DirectRedisClient getClient(RedisClientMethod method, Map<String, Object> parameterMap) {
+    protected DirectRedisClient getClient(RedisClientMethod method, Map<String, Object> parameterMap) throws IllegalStateException {
         String key = (String) parameterMap.get("key");
         int clientIndex = consistentHashLocator.getIndex(key, hosts.length);
         DirectRedisClient client = directRedisClientList.get(clientIndex);

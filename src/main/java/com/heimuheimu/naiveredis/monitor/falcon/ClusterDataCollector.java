@@ -36,19 +36,28 @@ import java.util.List;
  * Redis 集群客户端信息 Falcon 监控数据采集器。该采集器采集周期为 30 秒，每次采集将会返回以下数据项：
  * <ul>
  *     <li>naiveredis_cluster_unavailable_client_count/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 集群客户端获取到不可用 Redis 客户端的次数</li>
+ *     <li>naiveredis_cluster_multi_get_error_count/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 集群客户端调用 #multiGet(Set<String> keySet) 方法出现的错误次数</li>
  * </ul>
  */
 public class ClusterDataCollector extends AbstractFalconDataCollector {
 
     private volatile long lastUnavailableClientCount = 0;
 
+    private volatile long lastMultiGetErrorCount = 0;
+
     @Override
     public List<FalconData> getList() {
         ClusterMonitor monitor = ClusterMonitor.getInstance();
         List<FalconData> falconDataList = new ArrayList<>();
+
         long unavailableClientCount = monitor.getUnavailableClientCount();
         falconDataList.add(create("_cluster_unavailable_client_count", unavailableClientCount - lastUnavailableClientCount));
         lastUnavailableClientCount = unavailableClientCount;
+
+        long multiGetErrorCount = monitor.getMultiGetErrorCount();
+        falconDataList.add(create("_cluster_multi_get_error_count", multiGetErrorCount - lastMultiGetErrorCount));
+        lastMultiGetErrorCount = multiGetErrorCount;
+
         return falconDataList;
     }
 

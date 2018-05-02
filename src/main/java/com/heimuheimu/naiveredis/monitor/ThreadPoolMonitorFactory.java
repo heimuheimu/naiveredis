@@ -24,27 +24,27 @@
 
 package com.heimuheimu.naiveredis.monitor;
 
-import com.heimuheimu.naivemonitor.monitor.CompressionMonitor;
+import com.heimuheimu.naivemonitor.monitor.ThreadPoolMonitor;
 
 /**
- * Redis 客户端使用的压缩信息监控器工厂类。
+ * Redis 客户端使用的线程池信息监控器工厂类。
  *
  * @author heimuheimu
  */
-public class CompressionMonitorFactory {
+public class ThreadPoolMonitorFactory {
 
-    private CompressionMonitorFactory() {
+    private ThreadPoolMonitorFactory() {
         //private constructor
     }
 
-    private static final CompressionMonitor COMPRESSION_MONITOR = new CompressionMonitor();
+    private static final ThreadPoolMonitor THREAD_POOL_MONITOR = new ThreadPoolMonitor();
 
     /**
-     * 获得 Redis 客户端使用的压缩信息监控器。
+     * 获得 Redis 客户端使用的线程池信息监控器。
      *
-     * @return 压缩信息监控器
+     * @return 线程池信息监控器
      */
-    public static CompressionMonitor get() {
-        return COMPRESSION_MONITOR;
+    public static ThreadPoolMonitor get() {
+        return THREAD_POOL_MONITOR;
     }
 }

@@ -151,7 +151,7 @@ public class SimpleRedisReplicationClient extends AbstractRedisClusterClient imp
     }
 
     @Override
-    protected DirectRedisClient getClient(RedisClientMethod method, Map<String, Object> parameterMap) {
+    protected DirectRedisClient getClient(RedisClientMethod method, Map<String, Object> parameterMap) throws IllegalStateException {
         boolean useSlave = method.isReadOnly();
         DirectRedisClient client;
         if (useSlave) { // 获取 Slave 直连客户端

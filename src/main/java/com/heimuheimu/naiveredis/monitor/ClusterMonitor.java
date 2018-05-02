@@ -40,6 +40,11 @@ public class ClusterMonitor {
      */
     private final AtomicLong unavailableClientCount = new AtomicLong();
 
+    /**
+     * Redis 集群客户端调用 {@code #multiGet(Set<String> keySet)} 方法出现的错误次数
+     */
+    private final AtomicLong multiGetErrorCount = new AtomicLong();
+
     private ClusterMonitor() {
         //private constructor
     }
@@ -58,6 +63,22 @@ public class ClusterMonitor {
      */
     public long getUnavailableClientCount() {
         return unavailableClientCount.get();
+    }
+
+    /**
+     * 对 Redis 集群客户端调用 {@code #multiGet(Set<String> keySet)} 方法出错的次数进行监控。
+     */
+    public void onMultiGetError() {
+        multiGetErrorCount.incrementAndGet();
+    }
+
+    /**
+     * 获得 Redis 集群客户端调用 {@code #multiGet(Set<String> keySet)} 方法出现的错误次数。
+     *
+     * @return Redis 集群客户端调用 {@code #multiGet(Set<String> keySet)} 方法出现的错误次数
+     */
+    public long getMultiGetErrorCount() {
+        return multiGetErrorCount.get();
     }
 
     /**

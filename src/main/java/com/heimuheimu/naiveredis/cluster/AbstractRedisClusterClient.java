@@ -35,11 +35,12 @@ import com.heimuheimu.naiveredis.geo.GeoDistanceUnit;
 import com.heimuheimu.naiveredis.geo.GeoNeighbour;
 import com.heimuheimu.naiveredis.geo.GeoSearchParameter;
 import com.heimuheimu.naiveredis.monitor.ClusterMonitor;
+import com.heimuheimu.naiveredis.util.LogBuildUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.Future;
 
 /**
  * Redis 集群客户端抽象类。
@@ -47,8 +48,15 @@ import java.util.Map;
  * @author heimuheimu
  */
 public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
+    
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractRedisClusterClient.class);
 
     protected final ClusterMonitor clusterMonitor = ClusterMonitor.getInstance();
+
+    /**
+     * Redis multi-get 命令执行器，用于同时执行多台 Redis 服务的 multi-get 命令
+     */
+    private final MultiGetExecutor multiGetExecutor = new MultiGetExecutor();
 
     @Override
     public void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
@@ -73,6 +81,58 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
         parameterMap.put("key", key);
 
         return getClient(RedisClientMethod.GET, parameterMap).get(key);
+    }
+
+    @Override
+    public <T> Map<String, T> multiGet(Set<String> keySet) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        if (keySet == null || keySet.isEmpty()) {
+            return new HashMap<>();
+        }
+        Map<DirectRedisClient, Set<String>> clusterKeyMap = new HashMap<>();
+        for (String key : keySet) {
+            Map<String, Object> parameterMap = new LinkedHashMap<>();
+            parameterMap.put("key", key);
+            parameterMap.put("keySet", keySet);
+
+            DirectRedisClient client = getClient(RedisClientMethod.MULTI_GET, parameterMap);
+            Set<String> thisClientKeySet = clusterKeyMap.get(client);
+            //noinspection Java8MapApi
+            if (thisClientKeySet == null) {
+                thisClientKeySet = new HashSet<>();
+                clusterKeyMap.put(client, thisClientKeySet);
+            }
+            thisClientKeySet.add(key);
+        }
+
+        if (clusterKeyMap.size() > 1) {
+            Map<String, T> result = new HashMap<>();
+            List<Future<Map<String, T>>> futureList = new ArrayList<>();
+            for (DirectRedisClient client : clusterKeyMap.keySet()) {
+                Future<Map<String, T>> future = multiGetExecutor.submit(client, clusterKeyMap.get(client));
+                if (future != null) {
+                    futureList.add(future);
+                }
+            }
+            for (Future<Map<String, T>> future : futureList) {
+                try {
+                    result.putAll(future.get());
+                } catch (Exception e) { // should not happen
+                    Map<String, Object> parameterMap = new LinkedHashMap<>();
+                    parameterMap.put("keySet", keySet);
+                    String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog("AbstractRedisClusterClient#multiGet(Set<String> keySet)",
+                            e.getMessage(), parameterMap);
+                    LOG.error(errorMessage);
+                    clusterMonitor.onMultiGetError();
+                    throw new RedisException(RedisException.CODE_UNEXPECTED_ERROR, errorMessage, e);
+                }
+            }
+            return result;
+        } else if (clusterKeyMap.size() == 1) { //如果只有一个 Client，不需要使用线程池执行
+            DirectRedisClient singleClient = clusterKeyMap.keySet().iterator().next();
+            return singleClient.multiGet(clusterKeyMap.get(singleClient));
+        } else { //should not happen, just for bug detect
+            return new HashMap<>();
+        }
     }
 
     @Override
@@ -501,5 +561,14 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
         return getClient(RedisClientMethod.FIND_GEO_NEIGHBOURS_BY_MEMBER, parameterMap).findGeoNeighboursByMember(key, member, geoSearchParameter);
     }
 
-    protected abstract DirectRedisClient getClient(RedisClientMethod method, Map<String, Object> parameterMap);
+    /**
+     * 根据调用的 Redis 方法和参数 Map 获得 Cluster 中对应的 {@code DirectRedisClient} 实例，该方法不允许返回 {@code null}，
+     * 如果无可用 {@code DirectRedisClient} 实例，将抛出 {@code IllegalStateException} 异常。
+     *
+     * @param method 调用的 Redis 方法
+     * @param parameterMap 参数 Map
+     * @return {@code DirectRedisClient} 实例，不会为 {@code null}
+     * @throws IllegalStateException 如果无可用 {@code DirectRedisClient} 实例，将抛出此异常
+     */
+    protected abstract DirectRedisClient getClient(RedisClientMethod method, Map<String, Object> parameterMap) throws IllegalStateException;
 }

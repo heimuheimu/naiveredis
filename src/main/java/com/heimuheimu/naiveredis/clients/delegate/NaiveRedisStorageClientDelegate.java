@@ -28,6 +28,9 @@ import com.heimuheimu.naiveredis.NaiveRedisStorageClient;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Redis 存储客户端代理接口。
  *
@@ -40,6 +43,10 @@ public interface NaiveRedisStorageClientDelegate extends NaiveRedisStorageClient
     @Override
     default <T> T get(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         return getNaiveRedisStorageClient().get(key);
+    }
+
+    default <T> Map<String, T> multiGet(Set<String> keySet) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return getNaiveRedisStorageClient().multiGet(keySet);
     }
 
     @Override

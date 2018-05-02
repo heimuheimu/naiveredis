@@ -30,6 +30,7 @@ import com.heimuheimu.naiveredis.geo.GeoSearchParameter;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Redis 客户端方法定义枚举类。
@@ -52,6 +53,11 @@ public enum RedisClientMethod {
      * @see com.heimuheimu.naiveredis.NaiveRedisClient#get(String)
      */
     GET("#get(String key)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#multiGet(Set)
+     */
+    MULTI_GET("#multiGet(Set<String> keySet)", true),
 
     /**
      * @see com.heimuheimu.naiveredis.NaiveRedisClient#set(String, Object)

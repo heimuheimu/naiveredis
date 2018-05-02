@@ -83,6 +83,7 @@ log4j.appender.NAIVEREDIS_SLOW_EXECUTION_LOG.layout.ConversionPattern=%d{ISO8601
         <bean class="com.heimuheimu.naiveredis.monitor.falcon.CompressionDataCollector" />
         <bean class="com.heimuheimu.naiveredis.monitor.falcon.ExecutionDataCollector" />
         <bean class="com.heimuheimu.naiveredis.monitor.falcon.SocketDataCollector" />
+        <bean class="com.heimuheimu.naiveredis.monitor.falcon.ThreadPoolDataCollector" />
     </util:list>
     
     <!-- Falcon 监控数据上报器 -->
@@ -108,8 +109,15 @@ log4j.appender.NAIVEREDIS_SLOW_EXECUTION_LOG.layout.ConversionPattern=%d{ISO8601
  * naiveredis_socket_written_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Socket 写入的总字节数
  * naiveredis_socket_avg_written_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Socket 每次写入的平均字节数
  * naiveredis_cluster_unavailable_client_count/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 集群客户端获取到不可用 Redis 客户端的次数
+ * naiveredis_cluster_multi_get_error_count/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 集群客户端调用 #multiGet(Set<String> keySet) 方法出现的错误次数
  * naiveredis_compression_reduce_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内压缩操作已节省的字节数
- * naiveredis_compression_avg_reduce_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内平均每次压缩操作节省的字节数  
+ * naiveredis_compression_avg_reduce_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内平均每次压缩操作节省的字节数
+ * naiveredis_threadPool_rejected_count/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内所有线程池拒绝执行的任务总数
+ * naiveredis_threadPool_active_count/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 采集时刻所有线程池活跃线程数近似值总和
+ * naiveredis_threadPool_pool_size/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 采集时刻所有线程池线程数总和
+ * naiveredis_threadPool_peak_pool_size/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 所有线程池出现过的最大线程数总和
+ * naiveredis_threadPool_core_pool_size/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 所有线程池配置的核心线程数总和
+ * naiveredis_threadPool_maximum_pool_size/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 所有线程池配置的最大线程数总和
 
 ## Redis 客户端示例代码
 ### 存储客户端

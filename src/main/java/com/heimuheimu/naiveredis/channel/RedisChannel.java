@@ -24,6 +24,7 @@
 
 package com.heimuheimu.naiveredis.channel;
 
+import com.heimuheimu.naivemonitor.facility.MonitoredSocketOutputStream;
 import com.heimuheimu.naivemonitor.monitor.SocketMonitor;
 import com.heimuheimu.naiveredis.command.Command;
 import com.heimuheimu.naiveredis.command.keys.PingCommand;
@@ -41,7 +42,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -274,7 +274,7 @@ public class RedisChannel implements Closeable {
 
     private class RedisIOTask extends Thread {
 
-        private final OutputStream outputStream;
+        private final MonitoredSocketOutputStream outputStream;
 
         private final int sendBufferSize;
 
@@ -297,7 +297,7 @@ public class RedisChannel implements Closeable {
         private final LinkedList<Command> waitingQueue = new LinkedList<>();
 
         private RedisIOTask(Integer sendBufferSize, Integer receiveBufferSize) throws IOException {
-            this.outputStream = socket.getOutputStream();
+            this.outputStream = new MonitoredSocketOutputStream(socket.getOutputStream(), socketMonitor);
 
             this.sendBufferSize = sendBufferSize != null ? sendBufferSize : 64 * 1024;
             this.sendBuffer = new byte[sendBufferSize];
@@ -418,7 +418,6 @@ public class RedisChannel implements Closeable {
         private void sendMergedPacket() throws IOException {
             if (sendBufferOffset > 0) {
                 outputStream.write(sendBuffer, 0, sendBufferOffset);
-                socketMonitor.onWritten(sendBufferOffset);
 
                 waitingQueue.addAll(mergedCommandList);
                 mergedCommandList.clear();
@@ -428,7 +427,6 @@ public class RedisChannel implements Closeable {
 
         private void sendPacket(Command command, byte[] requestPacket) throws IOException {
             outputStream.write(requestPacket);
-            socketMonitor.onWritten(requestPacket.length);
 
             waitingQueue.add(command);
         }

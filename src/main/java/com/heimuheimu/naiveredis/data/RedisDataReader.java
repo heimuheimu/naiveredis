@@ -24,6 +24,7 @@
 
 package com.heimuheimu.naiveredis.data;
 
+import com.heimuheimu.naivemonitor.facility.MonitoredSocketInputStream;
 import com.heimuheimu.naivemonitor.monitor.SocketMonitor;
 
 import java.io.BufferedInputStream;
@@ -39,8 +40,6 @@ import java.io.InputStream;
  */
 public class RedisDataReader {
 
-    private final SocketMonitor socketMonitor;
-
     private final BufferedInputStream bis;
 
     /**
@@ -51,8 +50,7 @@ public class RedisDataReader {
      * @param bufferSize 批量读取的字节大小
      */
     public RedisDataReader(SocketMonitor socketMonitor, InputStream inputStream, int bufferSize) {
-        this.socketMonitor = socketMonitor;
-        this.bis = new BufferedInputStream(new MonitoredInputStream(inputStream), bufferSize);
+        this.bis = new BufferedInputStream(new MonitoredSocketInputStream(inputStream, socketMonitor), bufferSize);
     }
 
     /**
@@ -179,75 +177,5 @@ public class RedisDataReader {
         bis.read();
         bis.read();
         return valueBytes;
-    }
-
-    private class MonitoredInputStream extends InputStream {
-
-        private final InputStream in;
-
-        private MonitoredInputStream(InputStream in) {
-            this.in = in;
-        }
-
-        @Override
-        public int read(byte[] b) throws IOException {
-            int readBytes = in.read(b);
-            if (readBytes >= 0) {
-                socketMonitor.onRead(readBytes);
-            }
-            return readBytes;
-        }
-
-        @Override
-        public int read(byte[] b, int off, int len) throws IOException {
-            int readBytes = in.read(b, off, len);
-            if (readBytes >= 0) {
-                socketMonitor.onRead(readBytes);
-            }
-            return readBytes;
-        }
-
-        @Override
-        public long skip(long n) throws IOException {
-            long skipBytes = in.skip(n);
-            if (skipBytes >= 0) {
-                socketMonitor.onRead(skipBytes);
-            }
-            return skipBytes;
-        }
-
-        @Override
-        public int available() throws IOException {
-            return in.available();
-        }
-
-        @Override
-        public void close() throws IOException {
-            in.close();
-        }
-
-        @Override
-        public synchronized void mark(int readLimit) {
-            in.mark(readLimit);
-        }
-
-        @Override
-        public synchronized void reset() throws IOException {
-            in.reset();
-        }
-
-        @Override
-        public boolean markSupported() {
-            return in.markSupported();
-        }
-
-        @Override
-        public int read() throws IOException {
-            int value = in.read();
-            if (value >= 0) {
-                socketMonitor.onRead(1);
-            }
-            return value;
-        }
     }
 }

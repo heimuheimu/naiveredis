@@ -60,12 +60,12 @@ class MultiGetExecutor implements Closeable {
     }
 
     @SuppressWarnings("unchecked")
-    <T> Future<Map<String, T>> submit(DirectRedisClient client, Set<String> keySet) {
+    <T> Future<Map<String, T>> submit(DirectRedisClient client, Set<String> keySet, boolean isGetCount) {
         try {
-            return executorService.submit(new MultiGetTask(client, keySet));
+            return executorService.submit(new MultiGetTask(client, keySet, isGetCount));
         } catch (RejectedExecutionException e) {
-            LOG.error("Redis Multi-Get failed: `thread pool is too busy`. `host`:`" + client.getHost() + "`. `keySet`: `"
-                    + keySet + "`.");
+            LOG.error("Redis Multi-Get failed: `thread pool is too busy`. `host`:`" + client.getHost() + "`. `isGetCount`: `"
+                    + isGetCount + "`. `keySet`: `" + keySet + "`.", e);
             threadPoolMonitor.onRejected();
             return null;
         }
@@ -82,15 +82,23 @@ class MultiGetExecutor implements Closeable {
 
         private final Set<String> keySet;
 
-        private MultiGetTask(DirectRedisClient client, Set<String> keySet) {
+        private final boolean isGetCount;
+
+        private MultiGetTask(DirectRedisClient client, Set<String> keySet, boolean isGetCount) {
             this.client = client;
             this.keySet = keySet;
+            this.isGetCount = isGetCount;
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public Map<String, T> call() throws Exception {
             if (!keySet.isEmpty()) {
-                return client.multiGet(keySet);
+                if (isGetCount) {
+                    return (Map<String, T>) client.multiGetCount(keySet);
+                } else {
+                    return client.multiGet(keySet);
+                }
             } else {
                 return new HashMap<>();
             }

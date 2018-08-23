@@ -28,6 +28,9 @@ import com.heimuheimu.naiveredis.NaiveRedisCountClient;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Redis 计数器客户端代理接口。
  *
@@ -40,6 +43,10 @@ public interface NaiveRedisCountClientDelegate extends NaiveRedisCountClient {
     @Override
     default Long getCount(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         return getNaiveRedisCountClient().getCount(key);
+    }
+
+    default Map<String, Long> multiGetCount(Set<String> keySet) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return getNaiveRedisCountClient().multiGetCount(keySet);
     }
 
     @Override

@@ -27,6 +27,9 @@ package com.heimuheimu.naiveredis;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Redis 计数器客户端，提供原子加（或减）方法。
  *
@@ -47,6 +50,18 @@ public interface NaiveRedisCountClient extends NaiveRedisKeysClient {
      * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
      */
     Long getCount(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
+
+    /**
+     * 根据 Key 列表批量获取在 Redis 中存储的计数值，找到的 Key 将会把对应的 Key 和结果放入 Map 中，未找到或发生异常的 Key 不会出现在返回 Map 中。
+     *
+     * @param keySet Key 列表，列表中不允许包含为 {@code null} 或空字符串的 Key
+     * @return Key 列表对应的计数值 Map，不会为 {@code null}
+     * @throws IllegalArgumentException 如果 keySet 为 {@code null} 或空，或者 keySet 中包含 {@code null} 或空字符串的 Key，将抛出此异常
+     * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
+     * @throws TimeoutException 如果操作超时，将会抛出此异常
+     * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
+     */
+    Map<String, Long> multiGetCount(Set<String> keySet) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
      * 对 Key 对应的 long 数值执行原子加（或减）操作，并返回操作后的结果值。如果 Key 不存在，会初始化为 0 后再进行操作。

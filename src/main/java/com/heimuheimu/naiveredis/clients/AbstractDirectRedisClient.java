@@ -164,7 +164,9 @@ public abstract class AbstractDirectRedisClient implements NaiveRedisKeysClient 
             }
             if (response.isError()) { // 判断 Redis 服务是否返回错误信息
                 String errorMessage = response.getText();
-                NAIVEREDIS_ERROR_LOG.error(LogBuildUtil.buildMethodExecuteFailedLog(methodName, errorMessage, paramMap));
+                String errorLog = LogBuildUtil.buildMethodExecuteFailedLog(methodName, errorMessage, paramMap);
+                NAIVEREDIS_ERROR_LOG.error(errorLog);
+                LOG.error(errorLog);
                 executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_REDIS_ERROR);
                 throw new RedisException(RedisException.CODE_REDIS_SERVER, errorMessage);
             }
@@ -182,11 +184,15 @@ public abstract class AbstractDirectRedisClient implements NaiveRedisKeysClient 
             executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_ILLEGAL_ARGUMENT);
             throw e;
         }catch (IllegalStateException e) {
-            NAIVEREDIS_ERROR_LOG.error(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "illegal state", paramMap));
+            String errorLog = LogBuildUtil.buildMethodExecuteFailedLog(methodName, "illegal state", paramMap);
+            NAIVEREDIS_ERROR_LOG.error(errorLog);
+            LOG.error(errorLog, e);
             executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_ILLEGAL_STATE);
             throw e;
         } catch (TimeoutException e) {
-            NAIVEREDIS_ERROR_LOG.error(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "wait response timeout (" + timeout + "ms)", paramMap));
+            String errorLog = LogBuildUtil.buildMethodExecuteFailedLog(methodName, "wait response timeout (" + timeout + "ms)", paramMap);
+            NAIVEREDIS_ERROR_LOG.error(errorLog);
+            LOG.error(errorLog, e);
             executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_TIMEOUT);
             throw e;
         } catch (Exception e) { // should not happen, for bug detection

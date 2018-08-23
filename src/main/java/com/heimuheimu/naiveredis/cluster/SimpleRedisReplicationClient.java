@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -161,9 +162,10 @@ public class SimpleRedisReplicationClient extends AbstractRedisClusterClient imp
             client = directRedisClientList.get(0);
         }
         if (client == null || !client.isAvailable()) {
-            parameterMap.put("useSlave", useSlave);
+            Map<String, Object> errorParameterMap = new LinkedHashMap<>(parameterMap);
+            errorParameterMap.put("useSlave", useSlave);
             String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog("SimpleRedisReplicationClient" + method.getMethodName(),
-                    "no available client", parameterMap);
+                    "no available client", errorParameterMap);
             NAIVEREDIS_ERROR_LOG.error(errorMessage);
             clusterMonitor.onUnavailable();
             throw new IllegalStateException(errorMessage);

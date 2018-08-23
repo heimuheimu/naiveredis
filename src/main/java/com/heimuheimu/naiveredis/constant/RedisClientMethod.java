@@ -75,6 +75,11 @@ public enum RedisClientMethod {
     GET_COUNT("#getCount(String key)", true),
 
     /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#multiGetCount(Set)
+     */
+    MULTI_GET_COUNT("#multiGetCount(Set<String> keySet)", true),
+
+    /**
      * @see com.heimuheimu.naiveredis.NaiveRedisClient#addAndGet(String, long, int)
      */
     ADD_AND_GET("#addAndGet(String key, long delta, int expiry)", false),

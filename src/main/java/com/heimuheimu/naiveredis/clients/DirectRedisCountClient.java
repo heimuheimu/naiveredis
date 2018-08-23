@@ -28,12 +28,18 @@ import com.heimuheimu.naiveredis.NaiveRedisCountClient;
 import com.heimuheimu.naiveredis.channel.RedisChannel;
 import com.heimuheimu.naiveredis.command.count.IncrByCommand;
 import com.heimuheimu.naiveredis.command.storage.GetCommand;
+import com.heimuheimu.naiveredis.command.storage.MGetCommand;
+import com.heimuheimu.naiveredis.data.RedisData;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 import com.heimuheimu.naiveredis.facility.parameter.MethodParameterChecker;
 import com.heimuheimu.naiveredis.facility.parameter.Parameters;
 import com.heimuheimu.naiveredis.monitor.ExecutionMonitorFactory;
 import com.heimuheimu.naiveredis.util.LogBuildUtil;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Redis 计数器直连客户端。
@@ -69,6 +75,33 @@ public class DirectRedisCountClient extends AbstractDirectRedisClient implements
             } else {
                 return Long.valueOf(response.getText());
             }
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Map<String, Long> multiGetCount(Set<String> keySet) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        if (keySet == null || keySet.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        String methodName = methodNamePrefix + "multiGetCount(Set<String> keySet)";
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("keySet", keySet);
+
+        return (Map<String, Long>) execute(methodName, parameterChecker.getParameterMap(), () -> new MGetCommand(keySet), response ->  {
+            HashMap<String, Object> result = new HashMap<>();
+            int index = 0;
+            for (String key : keySet) {
+                RedisData redisData = response.get(index++);
+                if (redisData.getValueBytes() == null) { // Key 不存在
+                    NAIVEREDIS_ERROR_LOG.warn(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "key not found", parameterChecker.getParameterMap()));
+                    executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_KEY_NOT_FOUND);
+                } else {
+                    result.put(key, Long.valueOf(redisData.getText()));
+                }
+            }
+            return result;
         });
     }
 

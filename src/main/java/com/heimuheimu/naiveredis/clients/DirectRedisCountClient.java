@@ -69,7 +69,9 @@ public class DirectRedisCountClient extends AbstractDirectRedisClient implements
 
         return (Long) execute(methodName, parameterChecker.getParameterMap(), () -> new GetCommand(key), response -> {
             if (response.getValueBytes() == null) { // Key 不存在
-                NAIVEREDIS_ERROR_LOG.warn(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "key not found", parameterChecker.getParameterMap()));
+                if (NAIVEREDIS_ERROR_LOG.isInfoEnabled()) {
+                    NAIVEREDIS_ERROR_LOG.info(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "key not found", parameterChecker.getParameterMap()));
+                }
                 executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_KEY_NOT_FOUND);
                 return null;
             } else {
@@ -95,7 +97,9 @@ public class DirectRedisCountClient extends AbstractDirectRedisClient implements
             for (String key : keySet) {
                 RedisData redisData = response.get(index++);
                 if (redisData.getValueBytes() == null) { // Key 不存在
-                    NAIVEREDIS_ERROR_LOG.warn(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "key not found", parameterChecker.getParameterMap()));
+                    if (NAIVEREDIS_ERROR_LOG.isInfoEnabled()) {
+                        NAIVEREDIS_ERROR_LOG.info(LogBuildUtil.buildMethodExecuteFailedLog(methodName, "key not found (" + key + ")", parameterChecker.getParameterMap()));
+                    }
                     executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_KEY_NOT_FOUND);
                 } else {
                     result.put(key, Long.valueOf(redisData.getText()));

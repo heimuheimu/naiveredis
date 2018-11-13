@@ -94,24 +94,36 @@ log4j.appender.NAIVEREDIS_SLOW_EXECUTION_LOG.layout.ConversionPattern=%d{ISO8601
 ```
 
 ## Falcon 上报数据项说明（上报周期：30秒）
+### Redis 集群客户端数据项：
+ * naiveredis_cluster_unavailable_client_count/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 集群客户端获取到不可用 Redis 客户端的次数
+ * naiveredis_cluster_multi_get_error_count/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 集群客户端调用 #multiGet(Set<String> keySet) 方法出现的错误次数
+ 
+### Redis 操作执行错误数据项：
  * naiveredis_illegal_argument/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 操作发生的参数不正确错误次数
  * naiveredis_illegal_state/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 操作发生的管道或命令已关闭错误次数
  * naiveredis_timeout/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 操作发生的超时错误次数
  * naiveredis_redis_error/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 操作发生的 Redis 错误次数
  * naiveredis_key_not_found/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis Get 操作发生的 Key 未找到错误次数
  * naiveredis_unexpected_error/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 操作发生的预期外错误次数
+ * naiveredis_slow_execution/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 操作发生的慢执行次数
+
+### Redis 操作执行数据项：
  * naiveredis_tps/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内每秒平均执行次数
  * naiveredis_peak_tps/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内每秒最大执行次数
  * naiveredis_avg_exec_time/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内单次 Redis 操作平均执行时间
  * naiveredis_max_exec_time/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内单次 Redis 操作最大执行时间
+ 
+### Redis 操作 Socket 数据项：
  * naiveredis_socket_read_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Socket 读取的总字节数
  * naiveredis_socket_avg_read_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Socket 每次读取的平均字节数
  * naiveredis_socket_written_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Socket 写入的总字节数
  * naiveredis_socket_avg_written_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Socket 每次写入的平均字节数
- * naiveredis_cluster_unavailable_client_count/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 集群客户端获取到不可用 Redis 客户端的次数
- * naiveredis_cluster_multi_get_error_count/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 集群客户端调用 #multiGet(Set<String> keySet) 方法出现的错误次数
+ 
+### Redis 操作压缩数据项： 
  * naiveredis_compression_reduce_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内压缩操作已节省的字节数
  * naiveredis_compression_avg_reduce_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内平均每次压缩操作节省的字节数
+ 
+### Redis 客户端线程池数据项：  
  * naiveredis_threadPool_rejected_count/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内所有线程池拒绝执行的任务总数
  * naiveredis_threadPool_active_count/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 采集时刻所有线程池活跃线程数近似值总和
  * naiveredis_threadPool_pool_size/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 采集时刻所有线程池线程数总和

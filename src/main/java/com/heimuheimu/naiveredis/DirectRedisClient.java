@@ -154,7 +154,7 @@ public class DirectRedisClient implements NaiveRedisClientDelegate, Closeable {
 
         this.redisChannel = new RedisChannel(host, configuration, pingPeriod, channel -> {
             if (unusableServiceNotifier != null) {
-                unusableServiceNotifier.onClosed(DirectRedisClient.this);
+                unusableServiceNotifier.onClosed(this);
             }
         });
         this.redisChannel.init();

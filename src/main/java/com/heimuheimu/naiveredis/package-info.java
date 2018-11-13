@@ -22,4 +22,9 @@
  * SOFTWARE.
  */
 
+/**
+ * 提供 Redis 客户端。
+ *
+ * @author heimuheimu
+ */
 package com.heimuheimu.naiveredis;

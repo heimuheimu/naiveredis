@@ -43,6 +43,7 @@ import java.util.Map;
  *     <li>naiveredis_redis_error/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 操作发生的 Redis 错误次数</li>
  *     <li>naiveredis_key_not_found/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis Get 操作发生的 Key 未找到错误次数</li>
  *     <li>naiveredis_unexpected_error/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 操作发生的预期外错误次数</li>
+ *     <li>naiveredis_slow_execution/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 操作发生的慢执行次数</li>
  *     <li>naiveredis_tps/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内每秒平均执行次数</li>
  *     <li>naiveredis_peak_tps/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内每秒最大执行次数</li>
  *     <li>naiveredis_avg_exec_time/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内单次 Redis 操作平均执行时间</li>
@@ -63,6 +64,7 @@ public class ExecutionDataCollector extends AbstractExecutionDataCollector {
         ERROR_METRIC_SUFFIX_MAP.put(ExecutionMonitorFactory.ERROR_CODE_REDIS_ERROR, "_redis_error");
         ERROR_METRIC_SUFFIX_MAP.put(ExecutionMonitorFactory.ERROR_CODE_KEY_NOT_FOUND, "_key_not_found");
         ERROR_METRIC_SUFFIX_MAP.put(ExecutionMonitorFactory.ERROR_CODE_UNEXPECTED_ERROR, "_unexpected_error");
+        ERROR_METRIC_SUFFIX_MAP.put(ExecutionMonitorFactory.ERROR_CODE_SLOW_EXECUTION, "_slow_execution");
     }
 
     @Override

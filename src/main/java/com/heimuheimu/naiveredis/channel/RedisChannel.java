@@ -245,8 +245,10 @@ public class RedisChannel implements Closeable {
                 //关闭Socket连接
                 socket.close();
                 //停止IO线程
-                ioTask.stopSignal = true;
-                ioTask.interrupt();
+                if (ioTask != null) {
+                    ioTask.stopSignal = true;
+                    ioTask.interrupt();
+                }
                 REDIS_CONNECTION_LOG.info("RedisChannel has been closed. Cost: `{}ms`. Host: `{}`.", (System.currentTimeMillis() - startTime), host);
             } catch (Exception e) {
                 REDIS_CONNECTION_LOG.error("Close RedisChannel failed: `{}`. Host: `{}`.", e.getMessage(), host);

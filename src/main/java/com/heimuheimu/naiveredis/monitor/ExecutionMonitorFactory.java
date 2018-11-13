@@ -76,6 +76,11 @@ public class ExecutionMonitorFactory {
     public static final int ERROR_CODE_UNEXPECTED_ERROR = -6;
 
     /**
+     * Redis 客户端操作执行错误码：慢执行
+     */
+    public static final int ERROR_CODE_SLOW_EXECUTION = -7;
+
+    /**
      * 根据 Socket 连接目标地址获得对应的操作执行信息监控器，该方法不会返回 {@code null}
      *
      * @param host Socket 连接目标地址

@@ -340,8 +340,10 @@ public class DirectRedisClientList implements Closeable {
      */
     private void removeUnavailableClient(DirectRedisClient unavailableClient) {
         if (unavailableClient == null) { //should not happen, just for bug detection
-            throw new NullPointerException("Remove unavailable client failed: `null client`." +
-                    LogBuildUtil.build(getParameterMap(-1, null)));
+            String errorMessage = "Remove unavailable client failed: `null client`." +
+                    LogBuildUtil.build(getParameterMap(-1, null));
+            LOG.error(errorMessage);
+            throw new NullPointerException(errorMessage);
         }
         boolean isRemoveSuccess = false;
         int clientIndex;
@@ -350,7 +352,10 @@ public class DirectRedisClientList implements Closeable {
             if (clientIndex >= 0) {
                 clientList.set(clientIndex, null);
                 isRemoveSuccess = true;
-                LOG.debug("Remove `DirectRedisClient` from client list success." + LogBuildUtil.build(getParameterMap(clientIndex, unavailableClient.getHost())));
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Remove `DirectRedisClient` from client list success. `clientIndex`:`{}`.{}", clientIndex,
+                            LogBuildUtil.build(getParameterMap(clientIndex, unavailableClient.getHost())));
+                }
             }
         }
         if (isRemoveSuccess) {
@@ -419,7 +424,7 @@ public class DirectRedisClientList implements Closeable {
                                 REDIS_CONNECTION_LOG.info("DirectRedisClient rescue task has been finished. Cost: {}ms. `name`:`{}`. `hosts`:`{}`.",
                                         System.currentTimeMillis() - startTime, name, hosts);
                             } catch (Exception e) { //should not happen, just for bug detection
-                                REDIS_CONNECTION_LOG.info("DirectRedisClient rescue task execute failed: `{}`. Cost: {}ms. `name`:`{}`. `hosts`:`{}`.",
+                                REDIS_CONNECTION_LOG.error("DirectRedisClient rescue task execute failed: `{}`. Cost: {}ms. `name`:`{}`. `hosts`:`{}`.",
                                         e.getMessage(), System.currentTimeMillis() - startTime, name, hosts);
                                 LOG.error("DirectRedisClient rescue task executed failed. `name`:`" + name + "`. `hosts`:`"
                                         + Arrays.toString(hosts) + "`.", e);

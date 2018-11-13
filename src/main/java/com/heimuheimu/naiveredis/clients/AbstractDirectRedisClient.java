@@ -204,6 +204,7 @@ public abstract class AbstractDirectRedisClient implements NaiveRedisKeysClient 
         } finally {
             long executedNanoTime = System.nanoTime() - startTime;
             if (executedNanoTime > slowExecutionThreshold) {
+                executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_SLOW_EXECUTION);
                 NAIVEREDIS_SLOW_EXECUTION_LOG.info("`Method`:`{}`. `Cost`:`{}ns ({}ms)`. `Host`:`{}`.{}", methodName, executedNanoTime,
                         TimeUnit.MILLISECONDS.convert(executedNanoTime, TimeUnit.NANOSECONDS), host, LogBuildUtil.build(paramMap));
             }

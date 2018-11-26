@@ -84,6 +84,9 @@ public class DirectRedisSetClient extends AbstractDirectRedisClient implements N
 
     @Override
     public int removeFromSet(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        if (members == null || members.isEmpty()) {
+            return 0;
+        }
         String methodName = methodNamePrefix + "removeFromSet(String key, Collection<String> members)";
 
         MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);

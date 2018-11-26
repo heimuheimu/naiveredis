@@ -43,14 +43,17 @@ import java.util.Map;
 public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
 
     /**
-     * 将成员和对应的分值添加到指定的排序 Set 集合中，并返回成功（集合中尚不存在该成员）添加的个数。
+     * 将成员和对应的分值添加到指定的排序 Set 集合中，并返回成功添加的成员个数（不包括更新分值的成员），如果成员在 Set 集合中已存在，
+     * 将会更新该成员的分值。如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作。
      *
      * <p><strong>算法复杂度：</strong> O(log(N))，N 为排序 Set 成员总数。</p>
+     *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zadd">ZADD key score member [score member ...]</a></p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param score 成员对应的分值
      * @param member 成员，不允许为 {@code null}
-     * @return 成功（集合中尚不存在该成员）添加的个数
+     * @return 成功添加的成员个数（不包括更新分值的成员）
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalArgumentException 如果 member 为 {@code null}，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
@@ -61,15 +64,27 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
     int addToSortedSet(String key, double score, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 将成员和对应的分值添加到指定的排序 Set 集合中，并指定添加模式。
+     * 将成员和对应的分值根据不同的添加模式添加到指定的排序 Set 集合中，如果添加模式为 {@code null}，默认使用 {@link SortedSetAddMode#REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER} 模式。
+     * 如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作。
+     *
+     * <p><strong>添加模式定义：</strong>
+     * <ul>
+     * <li>REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，执行更新操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）。</li>
+     * <li>REPLACE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，执行更新操作，操作完成后，返回成功添加或更新的成员个数。</li>
+     * <li>ONLY_UPDATE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，不执行任何操作，如果成员已存在，执行更新操作，操作完成后，返回成功更新的成员个数。</li>
+     * <li>ONLY_ADD_AND_RETURN_NEW_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，不执行任何操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）。</li>
+     * </ul>
+     * </p>
      *
      * <p><strong>算法复杂度：</strong> O(log(N))，N 为排序 Set 成员总数。</p>
+     *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zadd">ZADD key [NX|XX] [CH] score member [score member ...]</a></p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param score 成员对应的分值
      * @param member 成员，不允许为 {@code null}
      * @param mode 添加模式，如果为 {@code null}，则默认为 {@link SortedSetAddMode#REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER} 模式
-     * @return 成功添加或更新的成员数量，由 {@code mode} 决定
+     * @return 根据 {@code mode} 返回不同的个数
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalArgumentException 如果 member 为 {@code null}，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
@@ -79,13 +94,16 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
     int addToSortedSet(String key, double score, String member, SortedSetAddMode mode) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 将成员 Map 添加到指定的排序 Set 集合中，Map 的 Key 为成员，Value 为成员对应的分值，并返回成功（集合中尚不存在该成员）添加的个数。
+     * 将成员 Map （Key 为成员，Value 为成员对应的分值）添加到指定的排序 Set 集合中，并返回成功添加的成员个数（不包括更新分值的成员），如果成员在 Set 集合中已存在，
+     * 将会更新该成员的分值。如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作。
      *
      * <p><strong>算法复杂度：</strong> O(M * log(N))，M 为添加的成员个数，N 为排序 Set 成员总数。</p>
      *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zadd">ZADD key [NX|XX] [CH] score member [score member ...]</a></p>
+     *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param memberMap 成员 Map，Key 为成员，Value 为成员对应的分值，允许为 {@code null} 或空，但不允许含有 {@code null} 的成员
-     * @return 成功（集合中尚不存在该成员）添加的个数
+     * @return 成功添加的成员个数（不包括更新分值的成员）
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalArgumentException 如果 memberMap 含有 {@code null} 的成员，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
@@ -96,9 +114,22 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
     int addToSortedSet(String key, Map<String, Double> memberMap) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 将成员 Map 添加到指定的排序 Set 集合中，Map 的 Key 为成员，Value 为成员对应的分值，并指定添加模式。
+     * 将成员 Map 根据不同的添加模式添加到指定的排序 Set 集合中，Map 的 Key 为成员，Value 为成员对应的分值，如果添加模式为 {@code null}，
+     * 默认使用 {@link SortedSetAddMode#REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER} 模式。如果 key 不存在，
+     * 将会新创建一个 Set 集合后再执行添加操作。
+     *
+     * <p><strong>添加模式定义：</strong>
+     * <ul>
+     * <li>REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，执行更新操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）。</li>
+     * <li>REPLACE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，执行更新操作，操作完成后，返回成功添加或更新的成员个数。</li>
+     * <li>ONLY_UPDATE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，不执行任何操作，如果成员已存在，执行更新操作，操作完成后，返回成功更新的成员个数。</li>
+     * <li>ONLY_ADD_AND_RETURN_NEW_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，不执行任何操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）。</li>
+     * </ul>
+     * </p>
      *
      * <p><strong>算法复杂度：</strong> O(M * log(N))，M 为添加的成员个数，N 为排序 Set 成员总数。</p>
+     *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zadd">ZADD key [NX|XX] [CH] score member [score member ...]</a></p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param memberMap 成员 Map，Key 为成员，Value 为成员对应的分值，允许为 {@code null} 或空，但不允许含有 {@code null} 的成员
@@ -113,9 +144,12 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
     int addToSortedSet(String key, Map<String, Double> memberMap, SortedSetAddMode mode) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 给指定的成员增加分值，如果成员或排序 Set 集合不存在，将会进行创建，然后增加。
+     * 给指定的成员增加分值，如果成员不存在，将会添加一个初始化分值为 0.0 的该成员，再执行增加分值操作。如果 key 不存在，
+     * 将会新创建一个 Set 集合后再执行增加分值操作。
      *
      * <p><strong>算法复杂度：</strong> O(log(N))，N 为排序 Set 成员总数。</p>
+     *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zincrby">ZINCRBY key increment member</a></p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param increment 需要增加的分值
@@ -130,13 +164,15 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
     double incrForSortedSet(String key, double increment, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 将一个成员从指定的排序 Set 集合中移除，并返回成功移除的个数。
+     * 将一个成员从指定的排序 Set 集合中移除，并返回成功移除的成员个数，如果 key 不存在，将会返回 0。
      *
      * <p><strong>算法复杂度：</strong> O(log(N))，N 为排序 Set 成员总数。</p>
      *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zrem">ZREM key member [member ...]</a></p>
+     *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param member 需要移除的成员，不允许为 {@code null}
-     * @return 成功移除的个数
+     * @return 成功移除的成员个数
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalArgumentException 如果 member 为 {@code null}，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
@@ -146,13 +182,15 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
     int removeFromSortedSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 将列表中的成员从指定的排序 Set 集合中移除，并返回成功移除的个数。
+     * 将列表中的成员从指定的排序 Set 集合中移除，并返回成功移除的成员个数，如果 key 不存在，将会返回 0。
      *
      * <p><strong>算法复杂度：</strong> O(M * log(N))，M 为删除的成员个数，N 为排序 Set 成员总数。</p>
      *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zrem">ZREM key member [member ...]</a></p>
+     *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param members 需要移除的成员列表，成员不允许为 {@code null}
-     * @return 成功移除的个数
+     * @return 成功移除的成员个数
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalArgumentException 如果 members 含有 {@code null} 的成员，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
@@ -162,7 +200,7 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
     int removeFromSortedSet(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 从指定的排序 Set 集合中移除排名区间内的成员，并返回成功移除的个数。
+     * 从指定的排序 Set 集合中移除排名区间内的成员，并返回成功移除的成员个数，如果 key 不存在，将会返回 0。
      *
      * <p>排名定义：成员按分值从小到大排序（同样分值的成员按字母顺序排序），分值最小的成员排名为 0。</p>
      *
@@ -178,10 +216,12 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为删除的成员个数，N 为排序 Set 成员总数。</p>
      *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zremrangebyrank">ZREMRANGEBYRANK key start stop</a></p>
+     *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param start 起始排名（包含）
      * @param stop 结束排名（包含）
-     * @return 成功移除的个数
+     * @return 成功移除的成员个数
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
      * @throws TimeoutException 如果操作超时，将会抛出此异常
@@ -190,14 +230,16 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
     int removeByRankFromSortedSet(String key, int start, int stop) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 从指定的排序 Set 集合中移除分值区间内的成员，并返回成功移除的个数。
+     * 从指定的排序 Set 集合中移除分值区间内的成员，并返回成功移除的成员个数，如果 key 不存在，将会返回 0。
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为删除的成员个数，N 为排序 Set 成员总数。</p>
+     *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zremrangebyscore">ZREMRANGEBYSCORE key min max</a></p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param minScore 最小分值（包含），{@link Double#NEGATIVE_INFINITY} 代表无穷小
      * @param maxScore 最大分值（包含），{@link Double#POSITIVE_INFINITY} 代表无穷大
-     * @return 成功移除的个数
+     * @return 成功移除的成员个数
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
      * @throws TimeoutException 如果操作超时，将会抛出此异常
@@ -206,16 +248,18 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
     int removeByScoreFromSortedSet(String key, double minScore, double maxScore) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 从指定的排序 Set 集合中移除分值区间内的成员，并返回成功移除的个数。
+     * 从指定的排序 Set 集合中移除分值区间内的成员，并返回成功移除的成员个数，如果 key 不存在，将会返回 0。
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为删除的成员个数，N 为排序 Set 成员总数。</p>
+     *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zremrangebyscore">ZREMRANGEBYSCORE key min max</a></p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param minScore 最小分值，{@link Double#NEGATIVE_INFINITY} 代表无穷小
      * @param includeMinScore 是否包含最小分值
      * @param maxScore 最大分值，{@link Double#POSITIVE_INFINITY} 代表无穷大
      * @param includeMaxScore 是否包含最大分值
-     * @return 成功移除的个数
+     * @return 成功移除的成员个数
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
      * @throws TimeoutException 如果操作超时，将会抛出此异常
@@ -225,9 +269,11 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
             throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 获得排序 Set 集合中指定成员的分值，如果该成员不存在，则返回 {@code null}。
+     * 获得排序 Set 集合中指定成员的分值，如果该成员不存在或 key 不存在，将会返回 {@code null}。
      *
      * <p><strong>算法复杂度：</strong> O(1)。</p>
+     *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zscore">ZSCORE key member</a></p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param member 成员，不允许为 {@code null}
@@ -241,13 +287,20 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
     Double getScoreFromSortedSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 获得排序 Set 集合中指定成员的排名，排名从 0 开始（第一名为 0，第二名为 1，依次类推），如果该成员不存在，则返回 {@code null}。
+     * 获得排序 Set 集合中指定成员的排名，排名从 0 开始（第一名为 0，第二名为 1，依次类推），如果该成员不存在或 key 不存在，则返回 {@code null}。
+     *
+     * <p>
+     *     <strong>排名规则：</strong>reverse 为 {@code false}，按分值从低到高排序（同分值按字母顺序排序），reverse 为 {@code true}，
+     *     按分值从高到低排序（同分值按字母顺序倒序排序）。
+     * </p>
      *
      * <p><strong>算法复杂度：</strong> O(log(N))，N 为排序 Set 成员总数。</p>
      *
-     * <p>
-     *     <strong>排名规则：</strong>{@code reverse} 为 {@code false}，按分值从低到高排序（同分值按字母顺序排序），{@code reverse} 为 {@code true}，
-     *     按分值从高到低排序（同分值按字母顺序倒序排序）。
+     * <p><strong>Redis 命令：</strong>
+     * <ul>
+     *     <li>reverse 为 {@code false}：<a href="https://redis.io/commands/zrank">ZRANK key member</a></li>
+     *     <li>reverse 为 {@code true}：<a href="https://redis.io/commands/zrevrank">ZREVRANK key member</a></li>
+     * </ul>
      * </p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
@@ -263,9 +316,11 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
     Integer getRankFromSortedSet(String key, String member, boolean reverse) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 获得指定的排序 Set 集合成员总数。
+     * 获得指定的排序 Set 集合成员总数，如果 key 不存在，将会返回 0。
      *
      * <p><strong>算法复杂度：</strong> O(1)。</p>
+     *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zcard">ZCARD key</a></p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @return 排序 Set 集合成员总数
@@ -277,9 +332,11 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
     int getSizeOfSortedSet(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 获得排序 Set 集合中处于分值区间内的成员个数。
+     * 获得排序 Set 集合中处于分值区间内的成员个数，如果 key 不存在，将会返回 0。
      *
      * <p><strong>算法复杂度：</strong> O(log(N))，N 为排序 Set 成员总数。</p>
+     *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zcount">ZCOUNT key min max</a></p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param minScore 最小分值（包含），{@link Double#NEGATIVE_INFINITY} 代表无穷小
@@ -293,9 +350,11 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
     int getCountFromSortedSet(String key, double minScore, double maxScore) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 获得排序 Set 集合中处于分值区间内的成员个数。
+     * 获得排序 Set 集合中处于分值区间内的成员个数，如果 key 不存在，将会返回 0。
      *
      * <p><strong>算法复杂度：</strong> O(log(N))，N 为排序 Set 成员总数。</p>
+     *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zcount">ZCOUNT key min max</a></p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param minScore 最小分值，{@link Double#NEGATIVE_INFINITY} 代表无穷小
@@ -312,14 +371,29 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
             throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 从指定的排序 Set 集合中获得排名区间内的成员有序列表，排名从 0 开始（第一名为 0，第二名为 1，依次类推），该方法不会返回 {@code null}。
+     * 从指定的排序 Set 集合中获得排名区间内的成员有序列表，排名从 0 开始（第一名为 0，第二名为 1，依次类推），如果 key 不存在，
+     * 将会返回空列表，该方法不会返回 {@code null}。
      *
      * <p>
-     *     <strong>排名规则：</strong>{@code reverse} 为 {@code false}，按分值从低到高排序（同分值按字母顺序排序），{@code reverse} 为 {@code true}，
-     *     按分值从高到低排序（同分值按字母顺序倒序排序）。
+     *     <strong>排名规则：</strong>reverse 为 {@code false}，按分值从低到高排序（同分值按字母顺序排序），reverse 为 {@code true}，
+     *     按分值从高到低排序（同分值按字母顺序倒序排序）。起始排名、结束排名可以使用负数来代表排序尾部成员，例如：当 reverse 为 {@code false} 时，
+     *     分值从大到小的成员排名依次为 -1, -2, -3...<br>
+     * 代码示例：
+     * <blockquote>
+     * <pre>
+     * naiveRedisSortedSetClient.getMembersByRankFromSortedSet("my_test_sorted_set", 0, -1, false); // 获取全部成员列表，按分值从低到高排序
+     * </pre>
+     * </blockquote>
      * </p>
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为返回的成员数量，N 为排序 Set 成员总数。</p>
+     *
+     * <p><strong>Redis 命令：</strong>
+     * <ul>
+     *     <li>reverse 为 {@code false}：<a href="https://redis.io/commands/zrange">ZRANGE key start stop [WITHSCORES]</a></li>
+     *     <li>reverse 为 {@code true}：<a href="https://redis.io/commands/zrevrange">ZREVRANGE key start stop [WITHSCORES]</a></li>
+     * </ul>
+     * </p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param start 起始排名（包含）
@@ -335,14 +409,23 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
             throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 从指定的排序 Set 集合中获得排名区间内的成员有序 Map，Key 为成员，Value 为成员对应的分值，排名从 0 开始（第一名为 0，第二名为 1，依次类推），该方法不会返回 {@code null}。
+     * 从指定的排序 Set 集合中获得排名区间内的成员有序 Map，Key 为成员，Value 为成员对应的分值，排名从 0 开始（第一名为 0，第二名为 1，依次类推），
+     * 如果 key 不存在，将会返回空 Map，该方法不会返回 {@code null}。
      *
      * <p>
-     *     <strong>排名规则：</strong>{@code reverse} 为 {@code false}，按分值从低到高排序（同分值按字母顺序排序），{@code reverse} 为 {@code true}，
-     *     按分值从高到低排序（同分值按字母顺序倒序排序）。
+     *     <strong>排名规则：</strong>reverse 为 {@code false}，按分值从低到高排序（同分值按字母顺序排序），reverse 为 {@code true}，
+     *     按分值从高到低排序（同分值按字母顺序倒序排序）。起始排名、结束排名可以使用负数来代表排序尾部成员，例如：当 reverse 为 {@code false} 时，
+     *     分值从大到小的成员排名依次为 -1, -2, -3...
      * </p>
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为返回的成员数量，N 为排序 Set 成员总数。</p>
+     *
+     * <p><strong>Redis 命令：</strong>
+     * <ul>
+     *     <li>reverse 为 {@code false}：<a href="https://redis.io/commands/zrange">ZRANGE key start stop [WITHSCORES]</a></li>
+     *     <li>reverse 为 {@code true}：<a href="https://redis.io/commands/zrevrange">ZREVRANGE key start stop [WITHSCORES]</a></li>
+     * </ul>
+     * </p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param start 起始排名（包含）
@@ -358,14 +441,21 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
             throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 从指定的排序 Set 集合中获得分值区间内的成员有序列表，该方法不会返回 {@code null}。
+     * 从指定的排序 Set 集合中获得分值区间内的成员有序列表，如果 key 不存在，将会返回空列表，该方法不会返回 {@code null}。
      *
      * <p>
-     *     <strong>成员排序规则：</strong>{@code reverse} 为 {@code false}，全部成员按分值从低到高排序（同分值按字母顺序排序），
-     *     {@code reverse} 为 {@code true}，全部成员按分值从高到低排序（同分值按字母顺序倒序排序）。
+     *     <strong>成员排序规则：</strong>reverse 为 {@code false}，全部成员按分值从低到高排序（同分值按字母顺序排序），
+     *     reverse 为 {@code true}，全部成员按分值从高到低排序（同分值按字母顺序倒序排序）。
      * </p>
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为返回的成员数量，N 为排序 Set 成员总数。</p>
+     *
+     * <p><strong>Redis 命令：</strong>
+     * <ul>
+     *     <li>reverse 为 {@code false}：<a href="https://redis.io/commands/zrangebyscore">ZRANGEBYSCORE key min max [WITHSCORES] [LIMIT offset count]</a></li>
+     *     <li>reverse 为 {@code true}：<a href="https://redis.io/commands/zrevrangebyscore">ZREVRANGEBYSCORE key max min [WITHSCORES] [LIMIT offset count]</a></li>
+     * </ul>
+     * </p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param minScore 最小分值（包含），{@link Double#NEGATIVE_INFINITY} 代表无穷小
@@ -381,14 +471,21 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
             throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 从指定的排序 Set 集合中获得分值区间内的成员有序列表，该方法不会返回 {@code null}。
+     * 从指定的排序 Set 集合中获得分值区间内的成员有序列表，如果 key 不存在，将会返回空列表，该方法不会返回 {@code null}。
      *
      * <p>
-     *     <strong>成员排序规则：</strong>{@code reverse} 为 {@code false}，全部成员按分值从低到高排序（同分值按字母顺序排序），
-     *     {@code reverse} 为 {@code true}，全部成员按分值从高到低排序（同分值按字母顺序倒序排序）。
+     *     <strong>成员排序规则：</strong>reverse 为 {@code false}，全部成员按分值从低到高排序（同分值按字母顺序排序），
+     *     reverse 为 {@code true}，全部成员按分值从高到低排序（同分值按字母顺序倒序排序）。
      * </p>
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为返回的成员数量（如果 offset 大于 0，M 为 offset + 返回的成员数量），N 为排序 Set 成员总数。</p>
+     *
+     * <p><strong>Redis 命令：</strong>
+     * <ul>
+     *     <li>reverse 为 {@code false}：<a href="https://redis.io/commands/zrangebyscore">ZRANGEBYSCORE key min max [WITHSCORES] [LIMIT offset count]</a></li>
+     *     <li>reverse 为 {@code true}：<a href="https://redis.io/commands/zrevrangebyscore">ZREVRANGEBYSCORE key max min [WITHSCORES] [LIMIT offset count]</a></li>
+     * </ul>
+     * </p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param minScore 最小分值，{@link Double#NEGATIVE_INFINITY} 代表无穷小
@@ -409,14 +506,22 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
             throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 从指定的排序 Set 集合中获得分值区间内的成员有序 Map，Key 为成员，Value 为成员对应的分值，该方法不会返回 {@code null}。
+     * 从指定的排序 Set 集合中获得分值区间内的成员有序 Map，Key 为成员，Value 为成员对应的分值，如果 key 不存在，
+     * 将会返回空 Map，该方法不会返回 {@code null}。
      *
      * <p>
-     *     <strong>成员排序规则：</strong>{@code reverse} 为 {@code false}，全部成员按分值从低到高排序（同分值按字母顺序排序），
-     *     {@code reverse} 为 {@code true}，全部成员按分值从高到低排序（同分值按字母顺序倒序排序）。
+     *     <strong>成员排序规则：</strong>reverse 为 {@code false}，全部成员按分值从低到高排序（同分值按字母顺序排序），
+     *     reverse 为 {@code true}，全部成员按分值从高到低排序（同分值按字母顺序倒序排序）。
      * </p>
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为返回的成员数量，N 为排序 Set 成员总数。</p>
+     *
+     * <p><strong>Redis 命令：</strong>
+     * <ul>
+     *     <li>reverse 为 {@code false}：<a href="https://redis.io/commands/zrangebyscore">ZRANGEBYSCORE key min max [WITHSCORES] [LIMIT offset count]</a></li>
+     *     <li>reverse 为 {@code true}：<a href="https://redis.io/commands/zrevrangebyscore">ZREVRANGEBYSCORE key max min [WITHSCORES] [LIMIT offset count]</a></li>
+     * </ul>
+     * </p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param minScore 最小分值（包含），{@link Double#NEGATIVE_INFINITY} 代表无穷小
@@ -432,14 +537,22 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
             throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 从指定的排序 Set 集合中获得分值区间内的成员有序 Map，Key 为成员，Value 为成员对应的分值，该方法不会返回 {@code null}。
+     * 从指定的排序 Set 集合中获得分值区间内的成员有序 Map，Key 为成员，Value 为成员对应的分值，如果 key 不存在，
+     * 将会返回空 Map，该方法不会返回 {@code null}。
      *
      * <p>
-     *     <strong>成员排序规则：</strong>{@code reverse} 为 {@code false}，全部成员按分值从低到高排序（同分值按字母顺序排序），
-     *     {@code reverse} 为 {@code true}，全部成员按分值从高到低排序（同分值按字母顺序倒序排序）。
+     *     <strong>成员排序规则：</strong>reverse 为 {@code false}，全部成员按分值从低到高排序（同分值按字母顺序排序），
+     *     reverse 为 {@code true}，全部成员按分值从高到低排序（同分值按字母顺序倒序排序）。
      * </p>
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为返回的成员数量（如果 offset 大于 0，M 为 offset + 返回的成员数量），N 为排序 Set 成员总数。</p>
+     *
+     * <p><strong>Redis 命令：</strong>
+     * <ul>
+     *     <li>reverse 为 {@code false}：<a href="https://redis.io/commands/zrangebyscore">ZRANGEBYSCORE key min max [WITHSCORES] [LIMIT offset count]</a></li>
+     *     <li>reverse 为 {@code true}：<a href="https://redis.io/commands/zrevrangebyscore">ZREVRANGEBYSCORE key max min [WITHSCORES] [LIMIT offset count]</a></li>
+     * </ul>
+     * </p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param minScore 最小分值，{@link Double#NEGATIVE_INFINITY} 代表无穷小

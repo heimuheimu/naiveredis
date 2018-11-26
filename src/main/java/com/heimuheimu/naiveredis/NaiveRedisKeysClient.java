@@ -37,7 +37,11 @@ import com.heimuheimu.naiveredis.exception.TimeoutException;
 public interface NaiveRedisKeysClient {
 
     /**
-     * 设置 Key 对应的过期时间。
+     * 设置 key 对应的过期时间，如果 key 不存在，不执行任何操作。
+     *
+     * <p><strong>算法复杂度：</strong> O(1)</p>
+     *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/expire">EXPIRE key seconds</a></p>
      *
      * @param key Redis key，不允许 {@code null} 或空
      * @param expiry 过期时间，单位：秒，不允许小于等于 0
@@ -50,11 +54,14 @@ public interface NaiveRedisKeysClient {
     void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 从 Redis 中删除指定的 Key。
+     * 从 Redis 中删除指定的 key，如果 key 不存在，不执行任何操作。
+     *
+     * <p><strong>算法复杂度：</strong> O(1)</p>
+     *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/del">DEL key</a></p>
      *
      * @param key Redis key，不允许 {@code null} 或空
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
-     * @throws IllegalArgumentException 如果 expiry 小于等于 0，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
      * @throws TimeoutException 如果操作超时，将会抛出此异常
      * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常

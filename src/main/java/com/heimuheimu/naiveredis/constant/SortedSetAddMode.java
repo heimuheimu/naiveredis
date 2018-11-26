@@ -32,22 +32,22 @@ package com.heimuheimu.naiveredis.constant;
 public enum SortedSetAddMode {
 
     /**
-     * 替换并返回新增成员数量模式：如果成员不存在，则执行新增操作，如果成员已存在，则执行更新操作
+     * 如果成员不存在，执行新增操作，如果成员已存在，执行更新操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）
      */
     REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER(false),
 
     /**
-     * 替换并返回更新成员数量模式：如果成员不存在，则执行新增操作，如果成员已存在，则执行更新操作
+     * 如果成员不存在，执行新增操作，如果成员已存在，执行更新操作，操作完成后，返回成功添加或更新的成员个数
      */
     REPLACE_AND_RETURN_UPDATED_ELEMENTS_NUMBER(true),
 
     /**
-     * 更新成员对应的分值，并返回更新成员数量，如果成员不存在，则不执行任何操作
+     * 如果成员不存在，不执行任何操作，如果成员已存在，执行更新操作，操作完成后，返回成功更新的成员个数
      */
     ONLY_UPDATE_AND_RETURN_UPDATED_ELEMENTS_NUMBER(true),
 
     /**
-     * 仅新增成员，并返回新增成员数量，如果成员已存在，则不执行任何操作
+     * 如果成员不存在，执行新增操作，如果成员已存在，不执行任何操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）
      */
     ONLY_ADD_AND_RETURN_NEW_ELEMENTS_NUMBER(false);
 

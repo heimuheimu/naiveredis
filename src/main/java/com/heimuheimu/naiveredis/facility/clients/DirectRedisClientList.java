@@ -358,7 +358,7 @@ public class DirectRedisClientList implements Closeable {
                 }
             }
         }
-        if (isRemoveSuccess) {
+        if (isRemoveSuccess && (state != BeanStatusEnum.CLOSED)) {
             startRescueTask();
             Methods.invokeIfNotNull("DirectRedisClientListListener#onClosed(String host)", getParameterMap(clientIndex, unavailableClient.getHost()),
                     listener, () -> listener.onClosed(name, unavailableClient.getHost()));

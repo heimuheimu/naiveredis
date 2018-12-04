@@ -65,7 +65,7 @@ public interface NaiveRedisCountClient extends NaiveRedisKeysClient {
      *
      * @param keySet key 列表，列表中不允许包含为 {@code null} 或空字符串的 key
      * @return key 列表对应的计数值 Map，不会为 {@code null}
-     * @throws IllegalArgumentException 如果 keySet 为 {@code null} 或空，或者 keySet 中包含 {@code null} 或空字符串的 key，将抛出此异常
+     * @throws IllegalArgumentException 如果 keySet 中包含 {@code null} 或空字符串的 key，将抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
      * @throws TimeoutException 如果操作超时，将会抛出此异常
      * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常

@@ -57,7 +57,7 @@ public interface NaiveRedisCountClient extends NaiveRedisKeysClient {
 
     /**
      * 根据 key 列表批量获取在 Redis 中存储的计数值，找到的 key 将会把对应的 key 和结果放入 Map 中，未找到或发生异常的 key 不会出现在返回 Map 中，
-     * 该方法不会返回 {@code null}。
+     * 如果 keySet 为 {@code null} 或空列表，将返回空 Map，该方法不会返回 {@code null}。
      *
      * <p><strong>算法复杂度：</strong> O(N), N 为获取的 key 数量</p>
      *

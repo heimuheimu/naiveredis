@@ -30,7 +30,9 @@ import com.heimuheimu.naiveredis.channel.RedisChannel;
 import com.heimuheimu.naiveredis.command.Command;
 import com.heimuheimu.naiveredis.command.keys.DeleteCommand;
 import com.heimuheimu.naiveredis.command.keys.ExpireCommand;
+import com.heimuheimu.naiveredis.command.keys.TTLCommand;
 import com.heimuheimu.naiveredis.data.RedisData;
+import com.heimuheimu.naiveredis.data.RedisDataParser;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 import com.heimuheimu.naiveredis.facility.parameter.MethodParameterChecker;
@@ -133,6 +135,17 @@ public abstract class AbstractDirectRedisClient implements NaiveRedisKeysClient 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
 
         execute(methodName, parameterChecker.getParameterMap(), () -> new DeleteCommand(key), null);
+    }
+
+    @Override
+    public int getTimeToLive(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = methodNamePrefix +"getTimeToLive(String key)";
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+
+        return (int) execute(methodName, parameterChecker.getParameterMap(), () -> new TTLCommand(key), RedisDataParser::parseInt);
     }
 
     protected interface CommandBuilder {

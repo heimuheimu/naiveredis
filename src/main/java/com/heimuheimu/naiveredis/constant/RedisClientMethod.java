@@ -50,6 +50,11 @@ public enum RedisClientMethod {
     DELETE("#delete(String key)", false),
 
     /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#getTimeToLive(String)
+     */
+    GET_TIME_TO_LIVE("#getTimeToLive(String key)", true),
+
+    /**
      * @see com.heimuheimu.naiveredis.NaiveRedisClient#get(String)
      */
     GET("#get(String key)", true),

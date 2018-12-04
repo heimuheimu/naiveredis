@@ -44,4 +44,9 @@ public interface NaiveRedisClientDelegate extends NaiveRedisStorageClientDelegat
     default void delete(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         getNaiveRedisStorageClient().delete(key);
     }
+
+    @Override
+    default int getTimeToLive(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return getNaiveRedisStorageClient().getTimeToLive(key);
+    }
 }

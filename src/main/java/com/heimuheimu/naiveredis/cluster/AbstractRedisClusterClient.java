@@ -76,6 +76,14 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
     }
 
     @Override
+    public int getTimeToLive(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+
+        return getClient(RedisClientMethod.GET_TIME_TO_LIVE, parameterMap).getTimeToLive(key);
+    }
+
+    @Override
     public <T> T get(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         Map<String, Object> parameterMap = new LinkedHashMap<>();
         parameterMap.put("key", key);

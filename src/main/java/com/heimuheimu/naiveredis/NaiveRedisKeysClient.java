@@ -67,4 +67,20 @@ public interface NaiveRedisKeysClient {
      * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
      */
     void delete(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
+
+    /**
+     * 获取 key 对应的存活剩余时间，单位：秒，如果 key 不存在，将会返回 -2，如果 key 没有指定过期时间（永久保存），将会返回 -1。
+     *
+     * <p><strong>算法复杂度：</strong> O(1)</p>
+     *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/ttl">TTL key</a></p>
+     *
+     * @param key Redis key，不允许 {@code null} 或空
+     * @return key 对应的存活剩余时间
+     * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
+     * @throws TimeoutException 如果操作超时，将会抛出此异常
+     * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
+     */
+    int getTimeToLive(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 }

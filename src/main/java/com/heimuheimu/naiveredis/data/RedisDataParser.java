@@ -36,6 +36,16 @@ import java.util.List;
 public class RedisDataParser {
 
     /**
+     * 将 Redis 数据转换成文本类型后返回，有可能返回 {@code null}。
+     *
+     * @param data Redis 数据
+     * @return Redis 数据对应文本
+     */
+    public static String parseString(RedisData data) {
+        return data.getText();
+    }
+
+    /**
      * 将 Redis 数据转换成整数类型后返回，有可能返回 {@code null}。
      *
      * @param data Redis 数据

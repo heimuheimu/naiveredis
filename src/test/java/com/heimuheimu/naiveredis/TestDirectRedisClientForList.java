@@ -24,12 +24,34 @@
 
 package com.heimuheimu.naiveredis;
 
-/**
- * Redis 客户端。可访问以下网站来获得更多 Redis 信息：<a href="https://redis.io">https://redis.io</a>
- *
- * <p><strong>说明：</strong>{@code NaiveRedisClient} 的实现类必须是线程安全的。</p>
- */
-public interface NaiveRedisClient extends NaiveRedisCountClient, NaiveRedisStorageClient, NaiveRedisSetClient,
-        NaiveRedisSortedSetClient, NaiveRedisGeoClient, NaiveRedisListClient {
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 
+/**
+ * {@link DirectRedisClient} 单元测试类，仅测试 Redis List 相关方法。
+ *
+ * <p><strong>说明：</strong>该单元测试需访问 Redis 才可执行，默认为 Ignore，需手动执行。</p>
+ *
+ * @author heimuheimu
+ */
+@Ignore
+public class TestDirectRedisClientForList extends AbstractTestNaiveRedisListClient {
+
+    private static DirectRedisClient CLIENT;
+
+    @BeforeClass
+    public static void init() {
+        CLIENT = new DirectRedisClient(TestRedisProvider.getRedisHost());
+    }
+
+    @AfterClass
+    public static void clean() {
+        CLIENT.close();
+    }
+
+    @Override
+    public NaiveRedisListClient getClient() {
+        return CLIENT;
+    }
 }

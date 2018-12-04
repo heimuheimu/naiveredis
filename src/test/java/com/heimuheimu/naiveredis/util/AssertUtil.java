@@ -22,14 +22,31 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis;
+package com.heimuheimu.naiveredis.util;
+
+import com.heimuheimu.naiveredis.exception.RedisException;
+import org.junit.Assert;
 
 /**
- * Redis 客户端。可访问以下网站来获得更多 Redis 信息：<a href="https://redis.io">https://redis.io</a>
+ * 提供单元测试工具方法。
  *
- * <p><strong>说明：</strong>{@code NaiveRedisClient} 的实现类必须是线程安全的。</p>
+ * @author heimuheimu
  */
-public interface NaiveRedisClient extends NaiveRedisCountClient, NaiveRedisStorageClient, NaiveRedisSetClient,
-        NaiveRedisSortedSetClient, NaiveRedisGeoClient, NaiveRedisListClient {
+public class AssertUtil {
 
+    public static void assertThrowIllegalArgumentException(Runnable runnable) {
+        try {
+            runnable.run();
+            Assert.fail("Expected throw `IllegalArgumentException`.");
+        } catch (IllegalArgumentException ignored) {
+        }
+    }
+
+    public static void assertThrowRedisException(Runnable runnable) {
+        try {
+            runnable.run();
+            Assert.fail("Expected throw `RedisException`.");
+        } catch (RedisException ignored) {
+        }
+    }
 }

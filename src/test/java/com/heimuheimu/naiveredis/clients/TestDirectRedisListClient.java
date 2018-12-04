@@ -22,14 +22,43 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis;
+package com.heimuheimu.naiveredis.clients;
+
+
+import com.heimuheimu.naiveredis.AbstractTestNaiveRedisListClient;
+import com.heimuheimu.naiveredis.NaiveRedisListClient;
+import com.heimuheimu.naiveredis.TestRedisProvider;
+import com.heimuheimu.naiveredis.channel.RedisChannel;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
- * Redis 客户端。可访问以下网站来获得更多 Redis 信息：<a href="https://redis.io">https://redis.io</a>
+ * {@link DirectRedisListClient} 单元测试类。
  *
- * <p><strong>说明：</strong>{@code NaiveRedisClient} 的实现类必须是线程安全的。</p>
+ * <p><strong>说明：</strong>该单元测试需访问 Redis 才可执行，默认为 Ignore，需手动执行。</p>
+ *
+ * @author heimuheimu
  */
-public interface NaiveRedisClient extends NaiveRedisCountClient, NaiveRedisStorageClient, NaiveRedisSetClient,
-        NaiveRedisSortedSetClient, NaiveRedisGeoClient, NaiveRedisListClient {
+@Ignore
+public class TestDirectRedisListClient extends AbstractTestNaiveRedisListClient {
 
+    private static DirectRedisListClient CLIENT;
+
+    @BeforeClass
+    public static void init() {
+        RedisChannel channel = new RedisChannel(TestRedisProvider.getRedisHost(), null, 30, null);
+        channel.init();
+        CLIENT = new DirectRedisListClient(channel, 5000, 1000);
+    }
+
+    @AfterClass
+    public static void clean() {
+        CLIENT.channel.close();
+    }
+
+    @Override
+    public NaiveRedisListClient getClient() {
+        return CLIENT;
+    }
 }

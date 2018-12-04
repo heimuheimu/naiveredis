@@ -22,14 +22,9 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis;
-
 /**
- * Redis 客户端。可访问以下网站来获得更多 Redis 信息：<a href="https://redis.io">https://redis.io</a>
+ * 提供 Redis List 数据结构相关命令，更多信息可参考文档：<a href="https://redis.io/commands#list">https://redis.io/commands#list</a>
  *
- * <p><strong>说明：</strong>{@code NaiveRedisClient} 的实现类必须是线程安全的。</p>
+ * @author heimuheimu
  */
-public interface NaiveRedisClient extends NaiveRedisCountClient, NaiveRedisStorageClient, NaiveRedisSetClient,
-        NaiveRedisSortedSetClient, NaiveRedisGeoClient, NaiveRedisListClient {
-
-}
+package com.heimuheimu.naiveredis.command.list;

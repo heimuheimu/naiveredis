@@ -98,6 +98,11 @@ public class DirectRedisClient implements NaiveRedisClientDelegate, Closeable {
     private final NaiveRedisGeoClient naiveRedisGeoClient;
 
     /**
+     * Redis List 客户端
+     */
+    private final NaiveRedisListClient naiveRedisListClient;
+
+    /**
      * 构造一个 Redis 直连客户端，{@link java.net.Socket} 配置信息使用 {@link SocketConfiguration#DEFAULT}，Redis 操作超时时间设置为 5 秒，
      * 最小压缩字节数设置为 64 KB，Redis 操作过慢最小时间设置为 50 毫秒，心跳检测时间设置为 30 秒。
      *
@@ -167,6 +172,7 @@ public class DirectRedisClient implements NaiveRedisClientDelegate, Closeable {
         this.naiveRedisSetClient = new DirectRedisSetClient(redisChannel, timeout, this.slowExecutionThreshold);
         this.naiveRedisSortedSetClient = new DirectRedisSortedSetClient(redisChannel, timeout, this.slowExecutionThreshold);
         this.naiveRedisGeoClient = new DirectRedisGeoClient(redisChannel, timeout, this.slowExecutionThreshold);
+        this.naiveRedisListClient = new DirectRedisListClient(redisChannel, timeout, this.slowExecutionThreshold);
     }
 
     @Override
@@ -192,6 +198,11 @@ public class DirectRedisClient implements NaiveRedisClientDelegate, Closeable {
     @Override
     public NaiveRedisGeoClient getNaiveRedisGeoClient() {
         return naiveRedisGeoClient;
+    }
+
+    @Override
+    public NaiveRedisListClient getNaiveRedisListClient() {
+        return naiveRedisListClient;
     }
 
     /**

@@ -24,12 +24,48 @@
 
 package com.heimuheimu.naiveredis;
 
-/**
- * Redis 客户端。可访问以下网站来获得更多 Redis 信息：<a href="https://redis.io">https://redis.io</a>
- *
- * <p><strong>说明：</strong>{@code NaiveRedisClient} 的实现类必须是线程安全的。</p>
- */
-public interface NaiveRedisClient extends NaiveRedisCountClient, NaiveRedisStorageClient, NaiveRedisSetClient,
-        NaiveRedisSortedSetClient, NaiveRedisGeoClient, NaiveRedisListClient {
+import com.heimuheimu.naiveredis.channel.RedisChannel;
 
+/**
+ * 提供用于单元测试使用的 {@link RedisChannel} 实例。
+ *
+ * @author heimuheimu
+ */
+public class TestRedisProvider {
+
+    /**
+     * 获得用于单元测试使用的 Redis 地址。
+     *
+     * @return Redis 地址
+     */
+    public static String getRedisHost() {
+        return "192.168.16.100:6379";
+    }
+
+    /**
+     * 获得用于单元测试使用的 Redis 地址数组。
+     *
+     * @return Redis 地址数组
+     */
+    public static String[] getRedisHosts() {
+        return new String[] {"192.168.16.100:6379", "192.168.80.24:6379"};
+    }
+
+    /**
+     * 获得用于单元测试使用的处于 Master 模式 Redis 地址。
+     *
+     * @return 处于 Master 模式 Redis 地址
+     */
+    public static String getMasterRedisHost() {
+        return "192.168.80.24:6379";
+    }
+
+    /**
+     * 获得用于单元测试使用的处于 Slave 模式 Redis 地址数组。
+     *
+     * @return 处于 Slave 模式 Redis 地址数组
+     */
+    public static String[] getSlaveRedisHosts() {
+        return new String[] {"192.168.80.24:6380", "192.168.80.24:6381"};
+    }
 }

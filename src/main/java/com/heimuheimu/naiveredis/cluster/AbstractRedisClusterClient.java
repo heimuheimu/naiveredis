@@ -519,6 +519,146 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
         return getClient(RedisClientMethod.FIND_GEO_NEIGHBOURS_BY_MEMBER, parameterMap).findGeoNeighboursByMember(key, member, geoSearchParameter);
     }
 
+    @Override
+    public int addFirstToList(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+
+        return getClient(RedisClientMethod.ADD_FIRST_TO_LIST, parameterMap).addFirstToList(key, member);
+    }
+
+    @Override
+    public int addFirstToList(String key, String member, boolean isAutoCreate) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+        parameterMap.put("isAutoCreate", isAutoCreate);
+
+        return getClient(RedisClientMethod.ADD_FIRST_TO_LIST_WITH_MODE, parameterMap).addFirstToList(key, member, isAutoCreate);
+    }
+
+    @Override
+    public int addFirstToList(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("members", members);
+
+        return getClient(RedisClientMethod.MULTI_ADD_FIRST_TO_LIST, parameterMap).addFirstToList(key, members);
+    }
+
+    @Override
+    public int addLastToList(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+
+        return getClient(RedisClientMethod.ADD_LAST_TO_LIST, parameterMap).addLastToList(key, member);
+    }
+
+    @Override
+    public int addLastToList(String key, String member, boolean isAutoCreate) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+        parameterMap.put("isAutoCreate", isAutoCreate);
+
+        return getClient(RedisClientMethod.ADD_LAST_TO_LIST_WITH_MODE, parameterMap).addLastToList(key, member, isAutoCreate);
+    }
+
+    @Override
+    public int addLastToList(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("members", members);
+
+        return getClient(RedisClientMethod.MULTI_ADD_LAST_TO_LIST, parameterMap).addLastToList(key, members);
+    }
+
+    @Override
+    public String popFirstFromList(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+
+        return getClient(RedisClientMethod.POP_FIRST_FROM_LIST, parameterMap).popFirstFromList(key);
+    }
+
+    @Override
+    public String popLastFromList(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+
+        return getClient(RedisClientMethod.POP_LAST_FROM_LIST, parameterMap).popLastFromList(key);
+    }
+
+    @Override
+    public int insertIntoList(String key, String pivotalMember, String member, boolean isAfter) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("pivotalMember", pivotalMember);
+        parameterMap.put("member", member);
+        parameterMap.put("isAfter", isAfter);
+
+        return getClient(RedisClientMethod.INSERT_INTO_LIST, parameterMap).insertIntoList(key, pivotalMember, member, isAfter);
+    }
+
+    @Override
+    public void setToList(String key, int index, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("index", index);
+        parameterMap.put("member", member);
+
+        getClient(RedisClientMethod.SET_TO_LIST, parameterMap).setToList(key, index, member);
+    }
+
+    @Override
+    public int removeFromList(String key, int count, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("count", count);
+        parameterMap.put("member", member);
+
+        return getClient(RedisClientMethod.REMOVE_FROM_LIST, parameterMap).removeFromList(key, count, member);
+    }
+
+    @Override
+    public void trimList(String key, int startIndex, int endIndex) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("startIndex", startIndex);
+        parameterMap.put("endIndex", endIndex);
+
+        getClient(RedisClientMethod.TRIM_LIST, parameterMap).trimList(key, startIndex, endIndex);
+    }
+
+    @Override
+    public int getSizeOfList(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+
+        return getClient(RedisClientMethod.GET_SIZE_OF_LIST, parameterMap).getSizeOfList(key);
+    }
+
+    @Override
+    public String getByIndexFromList(String key, int index) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("index", index);
+
+        return getClient(RedisClientMethod.GET_BY_INDEX_FROM_LIST, parameterMap).getByIndexFromList(key, index);
+    }
+
+    @Override
+    public List<String> getMembersFromList(String key, int startIndex, int endIndex) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("startIndex", startIndex);
+        parameterMap.put("endIndex", endIndex);
+
+        return getClient(RedisClientMethod.GET_MEMBERS_FROM_LIST, parameterMap).getMembersFromList(key, startIndex, endIndex);
+    }
+
     @SuppressWarnings("unchecked")
     private <T> Map<String, T> internalMultiGet(Set<String> keySet, boolean isGetCount) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         if (keySet == null || keySet.isEmpty()) {

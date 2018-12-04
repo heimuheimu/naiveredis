@@ -279,7 +279,82 @@ public enum RedisClientMethod {
     /**
      * @see com.heimuheimu.naiveredis.NaiveRedisGeoClient#findGeoNeighboursByMember(String, String, GeoSearchParameter)
      */
-    FIND_GEO_NEIGHBOURS_BY_MEMBER("#findGeoNeighboursByMember(String key, String member, GeoSearchParameter geoSearchParameter)", true);
+    FIND_GEO_NEIGHBOURS_BY_MEMBER("#findGeoNeighboursByMember(String key, String member, GeoSearchParameter geoSearchParameter)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisListClient#addFirstToList(String, String)
+     */
+    ADD_FIRST_TO_LIST("#addFirstToList(String key, String member)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisListClient#addFirstToList(String, String, boolean)
+     */
+    ADD_FIRST_TO_LIST_WITH_MODE("#addFirstToList(String key, String member, boolean isAutoCreate)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisListClient#addFirstToList(String, Collection)
+     */
+    MULTI_ADD_FIRST_TO_LIST("#addFirstToList(String key, Collection<String> members)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisListClient#addLastToList(String, String)
+     */
+    ADD_LAST_TO_LIST("#addLastToList(String key, String member)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisListClient#addLastToList(String, String, boolean)
+     */
+    ADD_LAST_TO_LIST_WITH_MODE("#addLastToList(String key, String member, boolean isAutoCreate)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisListClient#addLastToList(String, Collection)
+     */
+    MULTI_ADD_LAST_TO_LIST("#addLastToList(String key, Collection<String> members)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisListClient#popFirstFromList(String)
+     */
+    POP_FIRST_FROM_LIST("#popFirstFromList(String key)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisListClient#popLastFromList(String)
+     */
+    POP_LAST_FROM_LIST("#popLastFromList(String key)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisListClient#insertIntoList(String, String, String, boolean)
+     */
+    INSERT_INTO_LIST("#insertIntoList(String key, String pivotalMember, String member, boolean isAfter)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisListClient#setToList(String, int, String)
+     */
+    SET_TO_LIST("#setToList(String key, int index, String member)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisListClient#removeFromList(String, int, String)
+     */
+    REMOVE_FROM_LIST("removeFromList(String key, int count, String member)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisListClient#trimList(String, int, int)
+     */
+    TRIM_LIST("trimList(String key, int startIndex, int endIndex)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisListClient#getSizeOfList(String)
+     */
+    GET_SIZE_OF_LIST("getSizeOfList(String key)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisListClient#getByIndexFromList(String, int)
+     */
+    GET_BY_INDEX_FROM_LIST("getByIndexFromList(String key, int index)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisListClient#getMembersFromList(String, int, int)
+     */
+    GET_MEMBERS_FROM_LIST("getMembersFromList(String key, int startIndex, int endIndex)", true);
 
     private final String methodName;
 

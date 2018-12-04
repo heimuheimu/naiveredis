@@ -22,36 +22,39 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.util;
+package com.heimuheimu.naiveredis.cluster;
 
-import com.heimuheimu.naiveredis.exception.RedisException;
-import org.junit.Assert;
+import com.heimuheimu.naiveredis.AbstractTestNaiveRedisCountClient;
+import com.heimuheimu.naiveredis.NaiveRedisCountClient;
+import com.heimuheimu.naiveredis.TestRedisProvider;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
- * 提供单元测试工具方法。
+ * {@link SimpleRedisClusterClient} 单元测试类，仅测试 Redis 计数器相关方法。
+ *
+ * <p><strong>说明：</strong>该单元测试需访问 Redis 才可执行，默认为 Ignore，需手动执行。</p>
  *
  * @author heimuheimu
  */
-public class AssertUtil {
+@Ignore
+public class TestSimpleRedisClusterClientForCount extends AbstractTestNaiveRedisCountClient {
 
-    public static void assertThrowIllegalArgumentException(Runnable runnable) {
-        try {
-            runnable.run();
-            Assert.fail("Expected throw `IllegalArgumentException`.");
-        } catch (IllegalArgumentException ignored) {}
+    private static SimpleRedisClusterClient CLIENT;
+
+    @BeforeClass
+    public static void init() {
+        CLIENT = new SimpleRedisClusterClient(TestRedisProvider.getRedisHosts(), null);
     }
 
-    public static void assertThrowRedisException(Runnable runnable) {
-        try {
-            runnable.run();
-            Assert.fail("Expected throw `RedisException`.");
-        } catch (RedisException ignored) {}
+    @AfterClass
+    public static void clean() {
+        CLIENT.close();
     }
 
-    public static void assertThrowException(Runnable runnable) {
-        try {
-            runnable.run();
-            Assert.fail("Expected throw `Exception`.");
-        } catch (Exception ignored) {}
+    @Override
+    public NaiveRedisCountClient getClient() {
+        return CLIENT;
     }
 }

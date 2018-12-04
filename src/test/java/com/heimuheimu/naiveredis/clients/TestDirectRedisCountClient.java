@@ -22,36 +22,41 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.util;
+package com.heimuheimu.naiveredis.clients;
 
-import com.heimuheimu.naiveredis.exception.RedisException;
-import org.junit.Assert;
+import com.heimuheimu.naiveredis.AbstractTestNaiveRedisCountClient;
+import com.heimuheimu.naiveredis.TestRedisProvider;
+import com.heimuheimu.naiveredis.channel.RedisChannel;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
- * 提供单元测试工具方法。
+ * {@link DirectRedisCountClient} 单元测试类。
+ *
+ * <p><strong>说明：</strong>该单元测试需访问 Redis 才可执行，默认为 Ignore，需手动执行。</p>
  *
  * @author heimuheimu
  */
-public class AssertUtil {
+@Ignore
+public class TestDirectRedisCountClient extends AbstractTestNaiveRedisCountClient {
 
-    public static void assertThrowIllegalArgumentException(Runnable runnable) {
-        try {
-            runnable.run();
-            Assert.fail("Expected throw `IllegalArgumentException`.");
-        } catch (IllegalArgumentException ignored) {}
+    private static DirectRedisCountClient CLIENT;
+
+    @BeforeClass
+    public static void init() {
+        RedisChannel channel = new RedisChannel(TestRedisProvider.getRedisHost(), null, 30, null);
+        channel.init();
+        CLIENT = new DirectRedisCountClient(channel, 5000, 1000);
     }
 
-    public static void assertThrowRedisException(Runnable runnable) {
-        try {
-            runnable.run();
-            Assert.fail("Expected throw `RedisException`.");
-        } catch (RedisException ignored) {}
+    @AfterClass
+    public static void clean() {
+        CLIENT.channel.close();
     }
 
-    public static void assertThrowException(Runnable runnable) {
-        try {
-            runnable.run();
-            Assert.fail("Expected throw `Exception`.");
-        } catch (Exception ignored) {}
+    @Override
+    public DirectRedisCountClient getClient() {
+        return CLIENT;
     }
 }

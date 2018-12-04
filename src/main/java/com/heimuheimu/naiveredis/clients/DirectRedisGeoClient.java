@@ -49,7 +49,7 @@ import java.util.*;
 public class DirectRedisGeoClient extends AbstractDirectRedisClient implements NaiveRedisGeoClient {
 
     /**
-     * 构造一个 Redis 计数器直连客户端。
+     * 构造一个 Redis GEO 直连客户端。
      *
      * @param channel 与 Redis 服务进行数据交互的管道
      * @param timeout Redis 操作超时时间，单位：毫秒，不能小于等于 0

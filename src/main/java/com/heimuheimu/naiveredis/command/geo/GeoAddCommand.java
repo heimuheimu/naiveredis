@@ -71,7 +71,7 @@ public class GeoAddCommand extends AbstractCommand {
 
         for (String member : memberMap.keySet()) {
             if (member == null) {
-                throw new IllegalArgumentException("Create `GeoAddCommand` failed: `memberMap could not contain null key`." +
+                throw new IllegalArgumentException("Create `GeoAddCommand` failed: `member could not be null`." +
                         LogBuildUtil.build(checker.getParameterMap()));
             }
             GeoCoordinate coordinate = memberMap.get(member);

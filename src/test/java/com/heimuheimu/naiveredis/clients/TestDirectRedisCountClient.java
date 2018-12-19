@@ -28,31 +28,37 @@ import com.heimuheimu.naiveredis.AbstractTestNaiveRedisCountClient;
 import com.heimuheimu.naiveredis.TestRedisProvider;
 import com.heimuheimu.naiveredis.channel.RedisChannel;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * {@link DirectRedisCountClient} 单元测试类。
  *
- * <p><strong>说明：</strong>该单元测试需访问 Redis 才可执行，默认为 Ignore，需手动执行。</p>
+ * <p><strong>注意：</strong>如果没有提供测试 Redis 地址，即 {@link TestRedisProvider#getRedisHost()} 返回空或 {@code null}，测试用例不会执行。</p>
  *
  * @author heimuheimu
  */
-@Ignore
 public class TestDirectRedisCountClient extends AbstractTestNaiveRedisCountClient {
 
     private static DirectRedisCountClient CLIENT;
 
     @BeforeClass
     public static void init() {
-        RedisChannel channel = new RedisChannel(TestRedisProvider.getRedisHost(), null, 30, null);
-        channel.init();
-        CLIENT = new DirectRedisCountClient(channel, 5000, 1000);
+        String redisHost = TestRedisProvider.getRedisHost();
+        if (redisHost == null || redisHost.isEmpty()) {
+            Assume.assumeTrue("TestDirectRedisCountClient will be ignored: `empty redis host`.", false);
+        } else {
+            RedisChannel channel = new RedisChannel(redisHost, null, 30, null);
+            channel.init();
+            CLIENT = new DirectRedisCountClient(channel, 5000, 1000);
+        }
     }
 
     @AfterClass
     public static void clean() {
-        CLIENT.channel.close();
+        if (CLIENT != null) {
+            CLIENT.channel.close();
+        }
     }
 
     @Override

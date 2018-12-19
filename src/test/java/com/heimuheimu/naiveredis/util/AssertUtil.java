@@ -38,7 +38,9 @@ public class AssertUtil {
         try {
             runnable.run();
             Assert.fail("Expected throw `IllegalArgumentException`.");
-        } catch (IllegalArgumentException ignored) {}
+        } catch (IllegalArgumentException ignored) {
+            ignored.printStackTrace();
+        }
     }
 
     public static void assertThrowRedisException(Runnable runnable) {

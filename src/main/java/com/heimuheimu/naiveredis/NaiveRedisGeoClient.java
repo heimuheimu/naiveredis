@@ -46,7 +46,7 @@ public interface NaiveRedisGeoClient extends NaiveRedisKeysClient {
 
     /**
      * 将一个成员的经纬度信息添加到指定的 GEO 成员集合中，并返回成功添加的成员个数（不包括更新经纬度信息的成员），如果成员在 Set 集合中已存在，
-     * 将会更新该成员的经纬度信息。如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作。
+     * 将会更新该成员的经纬度信息，如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作。
      *
      * <p><strong>算法复杂度：</strong> O(log(N))，N 为 GEO 成员总数。</p>
      *
@@ -67,7 +67,7 @@ public interface NaiveRedisGeoClient extends NaiveRedisKeysClient {
 
     /**
      * 将多个成员的经纬度信息添加到指定的 GEO 成员集合中，并返回成功添加的成员个数（不包括更新经纬度信息的成员），如果成员在 Set 集合中已存在，
-     * 将会更新该成员的经纬度信息。如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作。
+     * 将会更新该成员的经纬度信息，如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作，如果 memberMap 为 {@code null} 或空 Map，将会返回 0。
      *
      * <p><strong>算法复杂度：</strong> O(M * log(N))，M 为添加的成员个数，N 为 GEO 成员总数。</p>
      *
@@ -103,14 +103,15 @@ public interface NaiveRedisGeoClient extends NaiveRedisKeysClient {
     int removeGeoMember(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 将列表中的成员从指定的 GEO 成员集合中移除，并返回成功移除的成员个数，如果 key 不存在，将会返回 0。
+     * 将列表中的成员从指定的 GEO 成员集合中移除，并返回成功移除的成员个数，如果 key 不存在，将会返回 0，如果 members 为
+     * {@code null} 或空列表，将会返回 0。
      *
      * <p><strong>算法复杂度：</strong> O(M * log(N))，M 为删除的成员个数，N 为 GEO 成员集合总数。</p>
      *
      * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zrem">ZREM key member [member ...]</a></p>
      *
      * @param key GEO 成员集合 Key，不允许 {@code null} 或空
-     * @param members 需要移除的成员列表，成员不允许为 {@code null}
+     * @param members 需要移除的成员列表，允许为 {@code null} 或空，但不允许含有 {@code null} 的成员
      * @return 成功移除的个数
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalArgumentException 如果 members 含有 {@code null} 的成员，将会抛出此异常
@@ -161,14 +162,14 @@ public interface NaiveRedisGeoClient extends NaiveRedisKeysClient {
 
     /**
      * 查找成员的经纬度信息 Map，Key 为成员，Value 为经纬度信息，如果成员不存在，将不会在 Map 中存在，如果 key 不存在，将会返回空 Map，
-     * 该方法不会返回 {@code null}。
+     * 如果 members 为 {@code null} 或空列表，将会返回空 Map，该方法不会返回 {@code null}。
      *
      * <p><strong>算法复杂度：</strong> O(M * log(N))，M 为查找的成员个数，N 为 GEO 成员总数。</p>
      *
      * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/geopos">GEOPOS key member [member ...]</a></p>
      *
      * @param key GEO 成员集合 Key，不允许 {@code null} 或空
-     * @param members 需要获取经纬度信息的成员列表，不允许包含 {@code null} 的成员
+     * @param members 需要获取经纬度信息的成员列表，允许为 {@code null} 或空，但不允许含有 {@code null} 的成员
      * @return 成员的经纬度信息 Map，Key 为成员，Value 为经纬度信息，不会为 {@code null}
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalArgumentException 如果 {@code members} 包含 {@code null} 的成员，将会抛出此异常

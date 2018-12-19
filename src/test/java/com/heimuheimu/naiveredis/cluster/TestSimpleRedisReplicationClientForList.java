@@ -28,30 +28,38 @@ import com.heimuheimu.naiveredis.AbstractTestNaiveRedisListClient;
 import com.heimuheimu.naiveredis.NaiveRedisListClient;
 import com.heimuheimu.naiveredis.TestRedisProvider;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * {@link SimpleRedisReplicationClient} 单元测试类，仅测试 Redis List 相关方法。
  *
- * <p><strong>说明：</strong>该单元测试需访问 Redis 才可执行，默认为 Ignore，需手动执行。</p>
+ * <p><strong>注意：</strong>如果没有提供测试 Redis Master 地址或 测试 Redis Slave 地址数组，即 {@link TestRedisProvider#getMasterRedisHost()} 返回空或 {@code null}
+ * 或者 {@link TestRedisProvider#getSlaveRedisHosts()} ()} 返回空数组或 {@code null}，测试用例不会执行。</p>
  *
  * @author heimuheimu
  */
-@Ignore
 public class TestSimpleRedisReplicationClientForList extends AbstractTestNaiveRedisListClient {
 
     private static SimpleRedisReplicationClient CLIENT;
 
     @BeforeClass
     public static void init() {
-        CLIENT = new SimpleRedisReplicationClient(TestRedisProvider.getMasterRedisHost(),
-                TestRedisProvider.getSlaveRedisHosts(), null);
+        String redisMasterHost = TestRedisProvider.getMasterRedisHost();
+        String[] redisSlaveHosts = TestRedisProvider.getSlaveRedisHosts();
+        if (redisMasterHost == null || redisMasterHost.isEmpty()
+                || redisSlaveHosts == null || redisSlaveHosts.length == 0) {
+            Assume.assumeTrue("TestSimpleRedisReplicationClientForList will be ignored: `empty redis master host or empty redis slave hosts`.", false);
+        } else {
+            CLIENT = new SimpleRedisReplicationClient(redisMasterHost, redisSlaveHosts, null);
+        }
     }
 
     @AfterClass
     public static void clean() {
-        CLIENT.close();
+        if (CLIENT != null) {
+            CLIENT.close();
+        }
     }
 
     @Override

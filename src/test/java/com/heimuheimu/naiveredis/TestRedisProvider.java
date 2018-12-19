@@ -26,6 +26,9 @@ package com.heimuheimu.naiveredis;
 
 import com.heimuheimu.naiveredis.channel.RedisChannel;
 
+import java.io.InputStream;
+import java.util.Properties;
+
 /**
  * 提供用于单元测试使用的 {@link RedisChannel} 实例。
  *
@@ -33,13 +36,26 @@ import com.heimuheimu.naiveredis.channel.RedisChannel;
  */
 public class TestRedisProvider {
 
+    private static Properties PROPERTIES;
+
+    static {
+        PROPERTIES = new Properties();
+        try {
+            InputStream in = TestRedisProvider.class.getResourceAsStream("/redis-host.properties");
+            PROPERTIES.load(in);
+            in.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * 获得用于单元测试使用的 Redis 地址。
      *
      * @return Redis 地址
      */
     public static String getRedisHost() {
-        return "192.168.16.100:6379";
+        return PROPERTIES.getProperty("redis.host");
     }
 
     /**
@@ -48,7 +64,12 @@ public class TestRedisProvider {
      * @return Redis 地址数组
      */
     public static String[] getRedisHosts() {
-        return new String[] {"192.168.16.100:6379", "192.168.80.24:6379"};
+        String hosts = PROPERTIES.getProperty("redis.cluster.hosts");
+        if (hosts == null || hosts.isEmpty()) {
+            return null;
+        } else {
+            return hosts.split(",");
+        }
     }
 
     /**
@@ -57,7 +78,7 @@ public class TestRedisProvider {
      * @return 处于 Master 模式 Redis 地址
      */
     public static String getMasterRedisHost() {
-        return "192.168.80.24:6379";
+        return PROPERTIES.getProperty("redis.master.host");
     }
 
     /**
@@ -66,6 +87,11 @@ public class TestRedisProvider {
      * @return 处于 Slave 模式 Redis 地址数组
      */
     public static String[] getSlaveRedisHosts() {
-        return new String[] {"192.168.80.24:6380", "192.168.80.24:6381"};
+        String slaveHosts = PROPERTIES.getProperty("redis.slave.hosts");
+        if (slaveHosts == null || slaveHosts.isEmpty()) {
+            return null;
+        } else {
+            return slaveHosts.split(",");
+        }
     }
 }

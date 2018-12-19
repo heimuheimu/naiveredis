@@ -28,29 +28,35 @@ import com.heimuheimu.naiveredis.AbstractTestNaiveRedisListClient;
 import com.heimuheimu.naiveredis.NaiveRedisListClient;
 import com.heimuheimu.naiveredis.TestRedisProvider;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * {@link SimpleRedisClusterClient} 单元测试类，仅测试 Redis List 相关方法。
  *
- * <p><strong>说明：</strong>该单元测试需访问 Redis 才可执行，默认为 Ignore，需手动执行。</p>
+ * <p><strong>注意：</strong>如果没有提供测试 Redis 地址数组，即 {@link TestRedisProvider#getRedisHosts()} 返回空数组或 {@code null}，测试用例不会执行。</p>
  *
  * @author heimuheimu
  */
-@Ignore
 public class TestSimpleRedisClusterClientForList extends AbstractTestNaiveRedisListClient {
 
     private static SimpleRedisClusterClient CLIENT;
 
     @BeforeClass
     public static void init() {
-        CLIENT = new SimpleRedisClusterClient(TestRedisProvider.getRedisHosts(), null);
+        String[] redisHosts = TestRedisProvider.getRedisHosts();
+        if (redisHosts == null || redisHosts.length == 0) {
+            Assume.assumeTrue("TestSimpleRedisClusterClientForList will be ignored: `empty redis hosts`.", false);
+        } else {
+            CLIENT = new SimpleRedisClusterClient(redisHosts, null);
+        }
     }
 
     @AfterClass
     public static void clean() {
-        CLIENT.close();
+        if (CLIENT != null) {
+            CLIENT.close();
+        }
     }
 
     @Override

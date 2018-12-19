@@ -22,33 +22,30 @@
  * SOFTWARE.
  */
 
-package com.heimuheimu.naiveredis.cluster;
+package com.heimuheimu.naiveredis;
 
-import com.heimuheimu.naiveredis.AbstractTestNaiveRedisCountClient;
-import com.heimuheimu.naiveredis.NaiveRedisCountClient;
-import com.heimuheimu.naiveredis.TestRedisProvider;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 
 /**
- * {@link SimpleRedisClusterClient} 单元测试类，仅测试 Redis 计数器相关方法。
+ * {@link DirectRedisClient} 单元测试类，仅测试 GEO 相关方法。
  *
- * <p><strong>注意：</strong>如果没有提供测试 Redis 地址数组，即 {@link TestRedisProvider#getRedisHosts()} 返回空数组或 {@code null}，测试用例不会执行。</p>
+ * <p><strong>注意：</strong>如果没有提供测试 Redis 地址，即 {@link TestRedisProvider#getRedisHost()} 返回空或 {@code null}，测试用例不会执行。</p>
  *
  * @author heimuheimu
  */
-public class TestSimpleRedisClusterClientForCount extends AbstractTestNaiveRedisCountClient {
+public class TestDirectRedisClientForGeo extends AbstractTestNaiveRedisGeoClient {
 
-    private static SimpleRedisClusterClient CLIENT;
+    private static DirectRedisClient CLIENT;
 
     @BeforeClass
     public static void init() {
-        String[] redisHosts = TestRedisProvider.getRedisHosts();
-        if (redisHosts == null || redisHosts.length == 0) {
-            Assume.assumeTrue("TestSimpleRedisClusterClientForCount will be ignored: `empty redis hosts`.", false);
+        String redisHost = TestRedisProvider.getRedisHost();
+        if (redisHost == null || redisHost.isEmpty()) {
+            Assume.assumeTrue("TestDirectRedisClientForGeo will be ignored: `empty redis host`.", false);
         } else {
-            CLIENT = new SimpleRedisClusterClient(redisHosts, null);
+            CLIENT = new DirectRedisClient(redisHost);
         }
     }
 
@@ -60,7 +57,7 @@ public class TestSimpleRedisClusterClientForCount extends AbstractTestNaiveRedis
     }
 
     @Override
-    public NaiveRedisCountClient getClient() {
+    public NaiveRedisGeoClient getClient() {
         return CLIENT;
     }
 }

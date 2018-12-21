@@ -57,7 +57,8 @@ public interface NaiveRedisStorageClient extends NaiveRedisKeysClient {
     <T> T get(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 根据 Key 列表批量获取在 Redis 中存储的值，找到的 Key 将会把对应的 Key 和结果放入 Map 中，未找到或发生异常的 Key 不会出现在返回 Map 中。
+     * 根据 Key 列表批量获取在 Redis 中存储的值，找到的 Key 将会把对应的 Key 和结果放入 Map 中，未找到或发生异常的 Key 不会出现在返回 Map 中，
+     * 如果 keySet 为 {@code null} 或空列表，将返回空 Map，该方法不会返回 {@code null}。
      *
      * <p><strong>算法复杂度：</strong> O(N), N 为获取的 key 数量</p>
      *
@@ -66,7 +67,7 @@ public interface NaiveRedisStorageClient extends NaiveRedisKeysClient {
      * @param keySet Key 列表，列表中不允许包含为 {@code null} 或空字符串的 Key
      * @param <T> Value 类型
      * @return Key 列表对应的 Redis 缓存值 Map，不会为 {@code null}
-     * @throws IllegalArgumentException 如果 keySet 为 {@code null} 或空，或者 keySet 中包含 {@code null} 或空字符串的 Key，将抛出此异常
+     * @throws IllegalArgumentException 如果 keySet 中包含 {@code null} 或空字符串的 Key，将抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
      * @throws TimeoutException 如果操作超时，将会抛出此异常
      * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
@@ -74,7 +75,7 @@ public interface NaiveRedisStorageClient extends NaiveRedisKeysClient {
     <T> Map<String, T> multiGet(Set<String> keySet) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 将 Key 和 Value 存储至 Redis 中，永久保存。
+     * 将 Key 和 Value 存储至 Redis 中，永久保存，如果 Key 已存在，原来的 Value 将会被覆盖。
      *
      * <p><strong>算法复杂度：</strong> O(1)</p>
      *
@@ -91,7 +92,7 @@ public interface NaiveRedisStorageClient extends NaiveRedisKeysClient {
     void set(String key, Object value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 将 Key 和 Value 存储至 Redis 中，并指定过期时间。
+     * 将 Key 和 Value 存储至 Redis 中，并指定过期时间，如果 Key 已存在，原来的 Value 将会被覆盖。
      *
      * <p><strong>算法复杂度：</strong> O(1)</p>
      *

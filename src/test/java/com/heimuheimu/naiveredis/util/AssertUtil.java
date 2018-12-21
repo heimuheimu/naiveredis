@@ -47,7 +47,9 @@ public class AssertUtil {
         try {
             runnable.run();
             Assert.fail("Expected throw `RedisException`.");
-        } catch (RedisException ignored) {}
+        } catch (RedisException ignored) {
+            ignored.printStackTrace();
+        }
     }
 
     public static void assertThrowException(Runnable runnable) {

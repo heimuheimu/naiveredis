@@ -25,10 +25,14 @@
 package com.heimuheimu.naiveredis;
 
 import com.heimuheimu.naiveredis.geo.GeoCoordinate;
+import com.heimuheimu.naiveredis.geo.GeoDistanceUnit;
+import com.heimuheimu.naiveredis.geo.GeoNeighbour;
+import com.heimuheimu.naiveredis.geo.GeoSearchParameter;
 import com.heimuheimu.naiveredis.util.AssertUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -65,13 +69,13 @@ public abstract class AbstractTestNaiveRedisGeoClient {
                 client.addGeoCoordinate(key, 50, 50, member));
         GeoCoordinate coordinate = client.getGeoCoordinate(key, member);
         Assert.assertTrue("Test `addGeoCoordinate` method failed: `invalid coordinate`.",
-                Math.round(coordinate.getLongitude()) == 50 && Math.round(coordinate.getLatitude()) == 50);
+                isSameDegree(coordinate.getLongitude(), 50) && isSameDegree(coordinate.getLatitude(), 50));
 
         Assert.assertEquals("Test `addGeoCoordinate` method failed: `invalid return value`.", 0,
                 client.addGeoCoordinate(key, 60, 60, member));
         coordinate = client.getGeoCoordinate(key, member);
         Assert.assertTrue("Test `addGeoCoordinate` method failed: `invalid coordinate`.",
-                Math.round(coordinate.getLongitude()) == 60 && Math.round(coordinate.getLatitude()) == 60);
+                isSameDegree(coordinate.getLongitude(), 60) && isSameDegree(coordinate.getLongitude(), 60));
         client.delete(key);
     }
 
@@ -110,8 +114,8 @@ public abstract class AbstractTestNaiveRedisGeoClient {
             GeoCoordinate expectedGeoCoordinate = memberMap.get(member);
             GeoCoordinate actualGeoCoordinate = actualGeoCoordinateMap.get(member);
             Assert.assertTrue("Test `addGeoCoordinate` method failed: `invalid coordinate`.",
-                    Math.round(expectedGeoCoordinate.getLongitude()) == Math.round(actualGeoCoordinate.getLongitude())
-                            && Math.round(expectedGeoCoordinate.getLatitude()) == Math.round(actualGeoCoordinate.getLatitude()));
+                    isSameDegree(expectedGeoCoordinate.getLongitude(), actualGeoCoordinate.getLongitude())
+                            && isSameDegree(expectedGeoCoordinate.getLatitude(), actualGeoCoordinate.getLatitude()));
         }
         client.delete(key);
     }
@@ -207,8 +211,8 @@ public abstract class AbstractTestNaiveRedisGeoClient {
             GeoCoordinate expectedGeoCoordinate = memberMap.get(member);
             GeoCoordinate actualGeoCoordinate = client.getGeoCoordinate(key, member);
             Assert.assertTrue("Test `getGeoCoordinate` method failed: `invalid coordinate`.",
-                    Math.round(expectedGeoCoordinate.getLongitude()) == Math.round(actualGeoCoordinate.getLongitude())
-                            && Math.round(expectedGeoCoordinate.getLatitude()) == Math.round(actualGeoCoordinate.getLatitude()));
+                    isSameDegree(expectedGeoCoordinate.getLongitude(), actualGeoCoordinate.getLongitude())
+                            && isSameDegree(expectedGeoCoordinate.getLatitude(), actualGeoCoordinate.getLatitude()));
         }
         client.delete(key);
     }
@@ -249,9 +253,195 @@ public abstract class AbstractTestNaiveRedisGeoClient {
             GeoCoordinate expectedGeoCoordinate = memberMap.get(member);
             GeoCoordinate actualGeoCoordinate = client.getGeoCoordinate(key, member);
             Assert.assertTrue("Test `getGeoCoordinates` method failed: `invalid coordinate`.",
-                    Math.round(expectedGeoCoordinate.getLongitude()) == Math.round(actualGeoCoordinate.getLongitude())
-                            && Math.round(expectedGeoCoordinate.getLatitude()) == Math.round(actualGeoCoordinate.getLatitude()));
+                    isSameDegree(expectedGeoCoordinate.getLongitude(), actualGeoCoordinate.getLongitude())
+                            && isSameDegree(expectedGeoCoordinate.getLatitude(), actualGeoCoordinate.getLatitude()));
         }
         client.delete(key);
+    }
+
+    @Test
+    public void testFindGeoNeighbours() {
+        NaiveRedisGeoClient client = getClient();
+        // 测试数据准备
+        String key = "测试 Key";
+        GeoCoordinate center = new GeoCoordinate(50, 50);
+        Map<String, GeoCoordinate> memberMap = new HashMap<>();  // 0.0001 经度约等于 7.2 米
+        memberMap.put("成员 1", new GeoCoordinate(50.0001, 50));
+        memberMap.put("成员 2", new GeoCoordinate(50.0002, 50));
+        memberMap.put("成员 3", new GeoCoordinate(50.0003, 50));
+        memberMap.put("成员 4", new GeoCoordinate(50.0004, 50));
+        memberMap.put("成员 5", new GeoCoordinate(50.0005, 50));
+
+        GeoSearchParameter geoSearchParameter = new GeoSearchParameter(25, GeoDistanceUnit.M);
+        String[] expectedMembers = new String[]{"成员 1", "成员 2", "成员 3"};
+
+        // findGeoNeighbours(String key, GeoCoordinate center, GeoSearchParameter geoSearchParameter) 参数异常测试
+        client.delete(key);
+        AssertUtil.assertThrowIllegalArgumentException(() -> client.findGeoNeighbours(null, center, geoSearchParameter));
+        AssertUtil.assertThrowIllegalArgumentException(() -> client.findGeoNeighbours("", center, geoSearchParameter));
+        AssertUtil.assertThrowIllegalArgumentException(() -> client.findGeoNeighbours(key, null, geoSearchParameter));
+        AssertUtil.assertThrowIllegalArgumentException(() -> client.findGeoNeighbours(key, center, null));
+
+        // findGeoNeighbours(String key, GeoCoordinate center, GeoSearchParameter geoSearchParameter) 功能测试
+        Assert.assertTrue("Test `findGeoNeighbours` method failed: `invalid list size`.",
+                client.findGeoNeighbours(key, center, geoSearchParameter).isEmpty());
+        client.addGeoCoordinates(key, memberMap);
+
+        // 升序，不返回坐标和距离测试
+        geoSearchParameter.setOrderBy(GeoSearchParameter.ORDER_BY_ASC);
+        geoSearchParameter.setNeedCoordinate(false);
+        geoSearchParameter.setNeedDistance(false);
+        List<GeoNeighbour> geoNeighbours = client.findGeoNeighbours(key, center, geoSearchParameter);
+        Assert.assertTrue("Test `findGeoNeighbours` method failed: `invalid list size`.",
+                geoNeighbours.size() == expectedMembers.length);
+        for (int i = 0; i < expectedMembers.length; i++) {
+            GeoNeighbour neighbour = geoNeighbours.get(i);
+            Assert.assertEquals("Test `findGeoNeighbours` method failed: `invalid member`.", expectedMembers[i], neighbour.getMember());
+            Assert.assertEquals("Test `findGeoNeighbours` method failed: `invalid coordinate`.", null, neighbour.getCoordinate());
+            Assert.assertEquals("Test `findGeoNeighbours` method failed: `invalid distance`.", 0.0d, neighbour.getDistance(), 0.000001);
+        }
+
+        // 降序，返回坐标和距离测试
+        geoSearchParameter.setOrderBy(GeoSearchParameter.ORDER_BY_DESC);
+        geoSearchParameter.setNeedCoordinate(true);
+        geoSearchParameter.setNeedDistance(true);
+        geoNeighbours = client.findGeoNeighbours(key, center, geoSearchParameter);
+        Assert.assertTrue("Test `findGeoNeighbours` method failed: `invalid list size`.", geoNeighbours.size() == expectedMembers.length);
+        for (int i = 0; i < expectedMembers.length; i++) {
+            GeoNeighbour neighbour = geoNeighbours.get(i);
+            int expectedMemberIndex = expectedMembers.length - 1 - i;
+            String expectedMember = expectedMembers[expectedMemberIndex];
+            Assert.assertEquals("Test `findGeoNeighbours` method failed: `invalid member`.", expectedMember, neighbour.getMember());
+            Assert.assertTrue("Test `findGeoNeighbours` method failed: `invalid coordinate`.", isSameCoordinate(memberMap.get(expectedMember), neighbour.getCoordinate()));
+            Assert.assertEquals("Test `findGeoNeighbours` method failed: `invalid distance`.", 7.2d * (expectedMemberIndex + 1), neighbour.getDistance(), 1d);
+        }
+
+        // count 查询参数测试
+        geoSearchParameter.setCount(2);
+        geoNeighbours = client.findGeoNeighbours(key, center, geoSearchParameter);
+        Assert.assertTrue("Test `findGeoNeighbours` method failed: `invalid list size`.", geoNeighbours.size() == 2);
+
+        // 不同距离单位测试
+        GeoSearchParameter kmGeoSearchParameter = new GeoSearchParameter(0.025, GeoDistanceUnit.KM);
+        geoNeighbours = client.findGeoNeighbours(key, center, kmGeoSearchParameter);
+        Assert.assertTrue("Test `findGeoNeighbours` method failed: `invalid list size`.", geoNeighbours.size() == expectedMembers.length);
+
+        GeoSearchParameter ftGeoSearchParameter = new GeoSearchParameter(82.0209974, GeoDistanceUnit.FT);
+        geoNeighbours = client.findGeoNeighbours(key, center, ftGeoSearchParameter);
+        Assert.assertTrue("Test `findGeoNeighbours` method failed: `invalid list size`.", geoNeighbours.size() == expectedMembers.length);
+
+        GeoSearchParameter miGeoSearchParameter = new GeoSearchParameter(0.0155343, GeoDistanceUnit.MI);
+        geoNeighbours = client.findGeoNeighbours(key, center, miGeoSearchParameter);
+        Assert.assertTrue("Test `findGeoNeighbours` method failed: `invalid list size`.", geoNeighbours.size() == expectedMembers.length);
+        client.delete(key);
+    }
+
+    @Test
+    public void testFindGeoNeighboursByMember() {
+        NaiveRedisGeoClient client = getClient();
+        // 测试数据准备
+        String key = "测试 Key";
+        String centerMember = "中心成员";
+        GeoCoordinate centerCoordinate = new GeoCoordinate(50, 50);
+        Map<String, GeoCoordinate> memberMap = new HashMap<>();  // 0.0001 经度约等于 7.2 米
+        memberMap.put("成员 1", new GeoCoordinate(50.0001, 50));
+        memberMap.put("成员 2", new GeoCoordinate(50.0002, 50));
+        memberMap.put("成员 3", new GeoCoordinate(50.0003, 50));
+        memberMap.put("成员 4", new GeoCoordinate(50.0004, 50));
+        memberMap.put("成员 5", new GeoCoordinate(50.0005, 50));
+
+        GeoSearchParameter geoSearchParameter = new GeoSearchParameter(25, GeoDistanceUnit.M);
+        String[] expectedMembers = new String[]{"中心成员", "成员 1", "成员 2", "成员 3"};
+
+        // findGeoNeighboursByMember(String key, String member, GeoSearchParameter geoSearchParameter) 参数异常测试
+        client.delete(key);
+        AssertUtil.assertThrowIllegalArgumentException(() -> client.findGeoNeighboursByMember(null, centerMember, geoSearchParameter));
+        AssertUtil.assertThrowIllegalArgumentException(() -> client.findGeoNeighboursByMember("", centerMember, geoSearchParameter));
+        AssertUtil.assertThrowIllegalArgumentException(() -> client.findGeoNeighboursByMember(key, null, geoSearchParameter));
+        AssertUtil.assertThrowIllegalArgumentException(() -> client.findGeoNeighboursByMember(key, centerMember, null));
+
+        // findGeoNeighboursByMember(String key, String member, GeoSearchParameter geoSearchParameter) 功能测试
+        Assert.assertTrue("Test `findGeoNeighboursByMember` method failed: `invalid list size`.",
+                client.findGeoNeighboursByMember(key, centerMember, geoSearchParameter).isEmpty());
+        client.addGeoCoordinates(key, memberMap);
+
+        AssertUtil.assertThrowRedisException(() -> client.findGeoNeighboursByMember(key, centerMember, geoSearchParameter));
+        client.addGeoCoordinate(key, centerCoordinate.getLongitude(), centerCoordinate.getLatitude(), centerMember);
+
+        // 升序，不返回坐标和距离测试
+        geoSearchParameter.setOrderBy(GeoSearchParameter.ORDER_BY_ASC);
+        geoSearchParameter.setNeedCoordinate(false);
+        geoSearchParameter.setNeedDistance(false);
+        List<GeoNeighbour> geoNeighbours = client.findGeoNeighboursByMember(key, centerMember, geoSearchParameter);
+        Assert.assertEquals("Test `findGeoNeighboursByMember` method failed: `invalid list size`.", geoNeighbours.size(), expectedMembers.length);
+        for (int i = 0; i < expectedMembers.length; i++) {
+            GeoNeighbour neighbour = geoNeighbours.get(i);
+            Assert.assertEquals("Test `findGeoNeighboursByMember` method failed: `invalid member`.", expectedMembers[i], neighbour.getMember());
+            Assert.assertEquals("Test `findGeoNeighboursByMember` method failed: `invalid coordinate`.", null, neighbour.getCoordinate());
+            Assert.assertEquals("Test `findGeoNeighboursByMember` method failed: `invalid distance`.", 0.0d, neighbour.getDistance(), 0.000001);
+        }
+
+        // 降序，返回坐标和距离测试
+        geoSearchParameter.setOrderBy(GeoSearchParameter.ORDER_BY_DESC);
+        geoSearchParameter.setNeedCoordinate(true);
+        geoSearchParameter.setNeedDistance(true);
+        geoNeighbours = client.findGeoNeighboursByMember(key, centerMember, geoSearchParameter);
+        Assert.assertTrue("Test `findGeoNeighboursByMember` method failed: `invalid list size`.", geoNeighbours.size() == expectedMembers.length);
+        for (int i = 0; i < expectedMembers.length; i++) {
+            GeoNeighbour neighbour = geoNeighbours.get(i);
+            int expectedMemberIndex = expectedMembers.length - 1 - i;
+            String expectedMember = expectedMembers[expectedMemberIndex];
+            Assert.assertEquals("Test `findGeoNeighboursByMember` method failed: `invalid member`.", expectedMember, neighbour.getMember());
+            if (expectedMember.equals(centerMember)) {
+                Assert.assertTrue("Test `findGeoNeighboursByMember` method failed: `invalid coordinate`.", isSameCoordinate(centerCoordinate, neighbour.getCoordinate()));
+            } else {
+                Assert.assertTrue("Test `findGeoNeighboursByMember` method failed: `invalid coordinate`.", isSameCoordinate(memberMap.get(expectedMember), neighbour.getCoordinate()));
+            }
+            Assert.assertEquals("Test `findGeoNeighboursByMember` method failed: `invalid distance`.", 7.2d * expectedMemberIndex, neighbour.getDistance(), 1d);
+        }
+
+        // count 查询参数测试
+        geoSearchParameter.setCount(2);
+        geoNeighbours = client.findGeoNeighboursByMember(key, centerMember, geoSearchParameter);
+        Assert.assertTrue("Test `findGeoNeighboursByMember` method failed: `invalid list size`.", geoNeighbours.size() == 2);
+
+        // 不同距离单位测试
+        GeoSearchParameter kmGeoSearchParameter = new GeoSearchParameter(0.025, GeoDistanceUnit.KM);
+        geoNeighbours = client.findGeoNeighboursByMember(key, centerMember, kmGeoSearchParameter);
+        Assert.assertTrue("Test `findGeoNeighboursByMember` method failed: `invalid list size`.", geoNeighbours.size() == expectedMembers.length);
+
+        GeoSearchParameter ftGeoSearchParameter = new GeoSearchParameter(82.0209974, GeoDistanceUnit.FT);
+        geoNeighbours = client.findGeoNeighboursByMember(key, centerMember, ftGeoSearchParameter);
+        Assert.assertTrue("Test `findGeoNeighboursByMember` method failed: `invalid list size`.", geoNeighbours.size() == expectedMembers.length);
+
+        GeoSearchParameter miGeoSearchParameter = new GeoSearchParameter(0.0155343, GeoDistanceUnit.MI);
+        geoNeighbours = client.findGeoNeighboursByMember(key, centerMember, miGeoSearchParameter);
+        Assert.assertTrue("Test `findGeoNeighboursByMember` method failed: `invalid list size`.", geoNeighbours.size() == expectedMembers.length);
+        client.delete(key);
+    }
+
+    /**
+     * 判断经度或纬度是否相等，在进行比较前，角度将会保留 5 位小数，舍入方法使用四舍五入方式。
+     *
+     * @param sourceDegree 目标角度
+     * @param targetDegree 对比角度
+     * @return 角度是否相等
+     */
+    private boolean isSameDegree(double sourceDegree, double targetDegree) {
+        BigDecimal sourceDegreeBigDecimal = new BigDecimal(String.valueOf(sourceDegree)).setScale(5, BigDecimal.ROUND_HALF_DOWN);
+        BigDecimal targetDegreeBigDecimal = new BigDecimal(String.valueOf(targetDegree)).setScale(5, BigDecimal.ROUND_HALF_DOWN);
+        return sourceDegreeBigDecimal.equals(targetDegreeBigDecimal);
+    }
+
+    /**
+     * 判断经纬度坐标是否相等，在进行比较前，角度将会保留 5 位小数，舍入方法使用四舍五入方式。
+     *
+     * @param sourceCoordinate 目标经纬度
+     * @param targetCoordinate 对比经纬度
+     * @return 经纬度坐标是否相等
+     */
+    private boolean isSameCoordinate(GeoCoordinate sourceCoordinate, GeoCoordinate targetCoordinate) {
+        return isSameDegree(sourceCoordinate.getLongitude(), targetCoordinate.getLongitude()) &&
+                isSameDegree(sourceCoordinate.getLatitude(), targetCoordinate.getLatitude());
     }
 }

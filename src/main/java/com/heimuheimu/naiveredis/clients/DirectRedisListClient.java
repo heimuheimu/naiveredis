@@ -236,6 +236,7 @@ public class DirectRedisListClient extends AbstractDirectRedisClient implements 
         return (String) execute(methodName, parameterChecker.getParameterMap(), () -> new LIndexCommand(key, index), RedisDataParser::parseString);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public List<String> getMembersFromList(String key, int startIndex, int endIndex) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         String methodName = methodNamePrefix + "getMembersFromList(String key, int startIndex, int endIndex)";

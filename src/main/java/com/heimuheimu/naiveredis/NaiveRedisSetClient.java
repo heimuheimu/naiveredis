@@ -58,14 +58,15 @@ public interface NaiveRedisSetClient extends NaiveRedisKeysClient {
     int addToSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 将列表中的成员添加到指定的 Set 集合中，并返回成功添加的成员个数（不包括已存在的成员），如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作。
+     * 将列表中的成员添加到指定的 Set 集合中，并返回成功添加的成员个数（不包括已存在的成员），如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作，
+     * 如果 members 为 {@code null} 或空集合，将返回 0。
      *
      * <p><strong>算法复杂度：</strong> O(N)，N 为添加的成员个数。</p>
      *
      * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/sadd">SADD key member [member ...]</a></p>
      *
      * @param key Set key，不允许 {@code null} 或空
-     * @param members 需要添加的成员列表，允许为 {@code null}，但不允许包含 {@code null} 的成员
+     * @param members 需要添加的成员列表，不允许包含 {@code null} 的成员
      * @return 成功添加的成员个数（不包括已存在的成员）
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalArgumentException 如果 members 集合中含有 {@code null} 的成员，将会抛出此异常
@@ -76,7 +77,7 @@ public interface NaiveRedisSetClient extends NaiveRedisKeysClient {
     int addToSet(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 将一个成员从指定的 Set 集合中移除，并返回成功移除的成员个数（不包括不存在的成员），如果 key 不存在，将会返回 0。
+     * 将一个成员从指定的 Set 集合中移除，并返回成功移除的成员个数（不包括不存在的成员），该操作会忽略不存在的成员，如果 key 不存在，将会返回 0。
      *
      * <p><strong>算法复杂度：</strong> O(1)。</p>
      *
@@ -94,14 +95,15 @@ public interface NaiveRedisSetClient extends NaiveRedisKeysClient {
     int removeFromSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 将列表中的成员从指定的 Set 集合中移除，并返回成功移除的成员个数（不包括不存在的成员），如果 key 不存在，将会返回 0。
+     * 将列表中的成员从指定的 Set 集合中移除，并返回成功移除的成员个数（不包括不存在的成员），该操作会忽略不存在的成员，如果 key 不存在，将会返回 0，
+     * 如果 members 为 {@code null} 或空集合，将返回 0。
      *
      * <p><strong>算法复杂度：</strong> O(N)，N 为移除的成员个数。</p>
      *
      * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/srem">SREM key member [member ...]</a></p>
      *
      * @param key Set key，不允许 {@code null} 或空
-     * @param members 需要移除的成员列表，允许为 {@code null}，但不允许包含 {@code null} 的成员
+     * @param members 需要移除的成员列表，不允许包含 {@code null} 的成员
      * @return 成功移除的成员个数（不包括不存在的成员）
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalArgumentException 如果 members 集合中含有 {@code null} 的成员，将会抛出此异常
@@ -168,7 +170,7 @@ public interface NaiveRedisSetClient extends NaiveRedisKeysClient {
 
     /**
      * 从指定的 Set 集合中随机选择指定个数的成员，以列表的形式返回，并将该成员列表从 Set 中移除，如果 key 不存在，将会返回空列表，
-     * 该方法不会返回 {@code null}。
+     * 该方法不会返回 {@code null}，返回的列表不会包含重复成员，即使 count 大于 Set 集合大小，也仅返回该 Set 集合的所有成员。
      *
      * <p><strong>算法复杂度：</strong> O(N)，N 为获取的成员个数。</p>
      *

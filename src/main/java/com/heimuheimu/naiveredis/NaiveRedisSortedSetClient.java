@@ -44,7 +44,7 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
 
     /**
      * 将成员和对应的分值添加到指定的排序 Set 集合中，并返回成功添加的成员个数（不包括更新分值的成员），如果成员在 Set 集合中已存在，
-     * 将会更新该成员的分值。如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作。
+     * 将会更新该成员的分值，如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作。
      *
      * <p><strong>算法复杂度：</strong> O(log(N))，N 为排序 Set 成员总数。</p>
      *
@@ -69,9 +69,9 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
      *
      * <p><strong>添加模式定义：</strong>
      * <ul>
-     * <li>REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，执行更新操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）。</li>
-     * <li>REPLACE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，执行更新操作，操作完成后，返回成功添加或更新的成员个数。</li>
-     * <li>ONLY_UPDATE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，不执行任何操作，如果成员已存在，执行更新操作，操作完成后，返回成功更新的成员个数。</li>
+     * <li>REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，但分值不一致，则执行更新操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）。</li>
+     * <li>REPLACE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，但分值不一致，则执行更新操作，操作完成后，返回成功添加或更新的成员个数。</li>
+     * <li>ONLY_UPDATE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，不执行任何操作，如果成员已存在，但分值不一致，则执行更新操作，操作完成后，返回成功更新的成员个数。</li>
      * <li>ONLY_ADD_AND_RETURN_NEW_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，不执行任何操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）。</li>
      * </ul>
      * </p>
@@ -95,14 +95,14 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
 
     /**
      * 将成员 Map （Key 为成员，Value 为成员对应的分值）添加到指定的排序 Set 集合中，并返回成功添加的成员个数（不包括更新分值的成员），如果成员在 Set 集合中已存在，
-     * 将会更新该成员的分值。如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作。
+     * 将会更新该成员的分值，如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作，如果 memberMap 为{@code null} 或空，将会返回 0。
      *
      * <p><strong>算法复杂度：</strong> O(M * log(N))，M 为添加的成员个数，N 为排序 Set 成员总数。</p>
      *
      * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zadd">ZADD key [NX|XX] [CH] score member [score member ...]</a></p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
-     * @param memberMap 成员 Map，Key 为成员，Value 为成员对应的分值，允许为 {@code null} 或空，但不允许含有 {@code null} 的成员
+     * @param memberMap 成员 Map，Key 为成员，Value 为成员对应的分值，不允许含有 {@code null} 的成员
      * @return 成功添加的成员个数（不包括更新分值的成员）
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
      * @throws IllegalArgumentException 如果 memberMap 含有 {@code null} 的成员，将会抛出此异常
@@ -115,14 +115,14 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
 
     /**
      * 将成员 Map 根据不同的添加模式添加到指定的排序 Set 集合中，Map 的 Key 为成员，Value 为成员对应的分值，如果添加模式为 {@code null}，
-     * 默认使用 {@link SortedSetAddMode#REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER} 模式。如果 key 不存在，
-     * 将会新创建一个 Set 集合后再执行添加操作。
+     * 默认使用 {@link SortedSetAddMode#REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER} 模式，如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作，
+     * 如果 memberMap 为{@code null} 或空，将会返回 0。
      *
      * <p><strong>添加模式定义：</strong>
      * <ul>
-     * <li>REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，执行更新操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）。</li>
-     * <li>REPLACE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，执行更新操作，操作完成后，返回成功添加或更新的成员个数。</li>
-     * <li>ONLY_UPDATE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，不执行任何操作，如果成员已存在，执行更新操作，操作完成后，返回成功更新的成员个数。</li>
+     * <li>REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，但分值不一致，则执行更新操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）。</li>
+     * <li>REPLACE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，但分值不一致，则执行更新操作，操作完成后，返回成功添加或更新的成员个数。</li>
+     * <li>ONLY_UPDATE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，不执行任何操作，如果成员已存在，但分值不一致，则执行更新操作，操作完成后，返回成功更新的成员个数。</li>
      * <li>ONLY_ADD_AND_RETURN_NEW_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，不执行任何操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）。</li>
      * </ul>
      * </p>
@@ -132,7 +132,7 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
      * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/zadd">ZADD key [NX|XX] [CH] score member [score member ...]</a></p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
-     * @param memberMap 成员 Map，Key 为成员，Value 为成员对应的分值，允许为 {@code null} 或空，但不允许含有 {@code null} 的成员
+     * @param memberMap 成员 Map，Key 为成员，Value 为成员对应的分值，不允许含有 {@code null} 的成员
      * @param mode 添加模式，如果为 {@code null}，则默认为 {@link SortedSetAddMode#REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER} 模式
      * @return 成功添加或更新的成员数量，由 {@code mode} 决定
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
@@ -182,7 +182,8 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
     int removeFromSortedSet(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 将列表中的成员从指定的排序 Set 集合中移除，并返回成功移除的成员个数，如果 key 不存在，将会返回 0。
+     * 将列表中的成员从指定的排序 Set 集合中移除，并返回成功移除的成员个数，如果 key 不存在，将会返回 0，如果 members 为 {@code null} 或空，
+     * 将会返回 0。
      *
      * <p><strong>算法复杂度：</strong> O(M * log(N))，M 为删除的成员个数，N 为排序 Set 成员总数。</p>
      *
@@ -493,10 +494,11 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
      * @param maxScore 最大分值，{@link Double#POSITIVE_INFINITY} 代表无穷大
      * @param includeMaxScore 是否包含最大分值
      * @param reverse 是否倒序排序
-     * @param offset 起始索引，在分页获取时使用，与 MYSQL 的 LIMIT 语法类似
-     * @param count 需要获取的成员数量，在分页获取时使用，与 MYSQL 的 LIMIT 语法类似，如果小于等于 0，则获取全部成员列表
+     * @param offset 起始索引，不允许小于 0，在分页获取时使用，与 MYSQL 的 LIMIT 语法类似
+     * @param count 需要获取的成员数量，在分页获取时使用，与 MYSQL 的 LIMIT 语法类似，如果小于等于 0，将忽略 offset 的值，并获取全部成员列表
      * @return 分值区间内的成员有序列表，不会为 {@code null}
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalArgumentException 如果 offset 小于 0，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
      * @throws TimeoutException 如果操作超时，将会抛出此异常
      * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
@@ -560,10 +562,11 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
      * @param maxScore 最大分值，{@link Double#POSITIVE_INFINITY} 代表无穷大
      * @param includeMaxScore 是否包含最大分值
      * @param reverse 是否倒序排序
-     * @param offset 起始索引，在分页获取时使用，与 MYSQL 的 LIMIT 语法类似
-     * @param count 需要获取的成员数量，在分页获取时使用，与 MYSQL 的 LIMIT 语法类似，如果小于等于 0，则获取全部成员列表
+     * @param offset 起始索引，不允许小于 0，在分页获取时使用，与 MYSQL 的 LIMIT 语法类似
+     * @param count 需要获取的成员数量，在分页获取时使用，与 MYSQL 的 LIMIT 语法类似，如果小于等于 0，将忽略 offset 的值，并获取全部成员列表
      * @return 分值区间内的成员有序 Map，Key 为成员，Value 为成员对应的分值，不会为 {@code null}
      * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalArgumentException 如果 offset 小于 0，将会抛出此异常
      * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
      * @throws TimeoutException 如果操作超时，将会抛出此异常
      * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常

@@ -36,6 +36,17 @@ import java.util.Map;
 public class Parameters {
 
     /**
+     * 判断数字类型的参数值是否小于 0。
+     *
+     * @param parameterValue 参数值
+     * @return 是否小于 0
+     */
+    public static boolean isLessThanZero(Object parameterValue) {
+        Number number = (Number) parameterValue;
+        return number.doubleValue() < 0d;
+    }
+
+    /**
      * 判断数字类型的参数值是否小于等于 0。
      *
      * @param parameterValue 参数值
@@ -93,7 +104,9 @@ public class Parameters {
      * @return 转换后错误信息
      */
     public static String getErrorMessage(String parameterName, String errorMessage) {
-        if ("isEqualOrLessThanZero".equals(errorMessage)) {
+        if ("isLessThanZero".equals(errorMessage)) {
+            return parameterName + " could not be less than 0";
+        } else if ("isEqualOrLessThanZero".equals(errorMessage)) {
             return parameterName + " could not be equal or less than 0";
         } else if ("isNull".equals(errorMessage)) {
             return parameterName + " could not be null";

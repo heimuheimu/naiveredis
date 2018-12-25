@@ -309,6 +309,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
         parameterChecker.addParameter("count", count);
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+        parameterChecker.check("offset", "isLessThanZero", Parameters::isLessThanZero);
 
         return (List<String>) execute(methodName, parameterChecker.getParameterMap(),
                 () -> {
@@ -347,6 +348,7 @@ public class DirectRedisSortedSetClient extends AbstractDirectRedisClient implem
         parameterChecker.addParameter("count", count);
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+        parameterChecker.check("offset", "isLessThanZero", Parameters::isLessThanZero);
 
         return (LinkedHashMap<String, Double>) execute(methodName, parameterChecker.getParameterMap(),
                 () -> {

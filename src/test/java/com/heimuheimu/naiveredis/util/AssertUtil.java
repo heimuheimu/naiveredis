@@ -38,18 +38,14 @@ public class AssertUtil {
         try {
             runnable.run();
             Assert.fail("Expected throw `IllegalArgumentException`.");
-        } catch (IllegalArgumentException ignored) {
-            ignored.printStackTrace();
-        }
+        } catch (IllegalArgumentException ignored) {}
     }
 
     public static void assertThrowRedisException(Runnable runnable) {
         try {
             runnable.run();
             Assert.fail("Expected throw `RedisException`.");
-        } catch (RedisException ignored) {
-            ignored.printStackTrace();
-        }
+        } catch (RedisException ignored) {}
     }
 
     public static void assertThrowException(Runnable runnable) {

@@ -24,9 +24,7 @@
 
 package com.heimuheimu.naiveredis.data;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * 提供常用的 Redis 数据解析方法。
@@ -61,6 +59,21 @@ public class RedisDataParser {
     }
 
     /**
+     * 将 Redis 数据转换成长整数类型后返回，有可能返回 {@code null}。
+     *
+     * @param data Redis 数据
+     * @return Redis 数据对应的整数值
+     * @throws NumberFormatException 如果长整数转换失败，将会抛出异常
+     */
+    public static Long parseLong(RedisData data) throws NumberFormatException {
+        if (data.getValueBytes() != null && data.getValueBytes().length > 0) {
+            return Long.valueOf(data.getText());
+        } else {
+            return null;
+        }
+    }
+
+    /**
      * 将 Redis 数据先进行整数类型转换，然后判断值是否为 1 并返回布尔类型。
      *
      * @param data Redis 数据
@@ -84,6 +97,21 @@ public class RedisDataParser {
             members.add(data.get(i).getText());
         }
         return members;
+    }
+
+    /**
+     * 将 Redis 数据转换成 String 类型的 Map 后返回，该方法不会返回 {@code null}。
+     *
+     * @param data Redis 数据
+     * @return String 类型的列表
+     * @throws UnsupportedOperationException 如果 Redis 数据类型不是数组类型，将会抛出此异常
+     */
+    public static Map<String, String> parseStringMap(RedisData data) throws UnsupportedOperationException {
+        Map<String, String> memberMap = new HashMap<>();
+        for (int i = 0; i < data.size(); i += 2) {
+            memberMap.put(data.get(i).getText(), data.get(i + 1).getText());
+        }
+        return memberMap;
     }
 
     /**

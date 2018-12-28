@@ -29,6 +29,7 @@ import com.heimuheimu.naiveredis.geo.GeoDistanceUnit;
 import com.heimuheimu.naiveredis.geo.GeoSearchParameter;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -359,7 +360,82 @@ public enum RedisClientMethod {
     /**
      * @see com.heimuheimu.naiveredis.NaiveRedisListClient#getMembersFromList(String, int, int)
      */
-    GET_MEMBERS_FROM_LIST("getMembersFromList(String key, int startIndex, int endIndex)", true);
+    GET_MEMBERS_FROM_LIST("getMembersFromList(String key, int startIndex, int endIndex)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#putToHashes(String, String, String)
+     */
+    PUT_TO_HASHES("putToHashes(String key, String member, String value)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#putToHashes(String, Map)
+     */
+    MULTI_PUT_TO_HASHES("putToHashes(String key, Map<String, String> memberMap)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#putIfAbsentToHashes(String, String, String)
+     */
+    PUT_IF_ABSENT_TO_HASHES("putIfAbsentToHashes(String key, String member, String value)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#incrForHashes(String, String, long)
+     */
+    INCR_FOR_HASHES("incrForHashes(String key, String member, long increment)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#incrByFloatForHashes(String, String, double)
+     */
+    INCR_BY_FLOAT_FOR_HASHES("incrByFloatForHashes(String key, String member, double increment)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#removeFromHashes(String, String)
+     */
+    REMOVE_FROM_HASHES("removeFromHashes(String key, String member)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#removeFromHashes(String, Collection)
+     */
+    MULTI_REMOVE_FROM_HASHES("removeFromHashes(String key, Collection<String> members)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#isExistInHashes(String, String)
+     */
+    IS_EXIST_IN_HASHES("isExistInHashes(String key, String member)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#getSizeOfHashes(String)
+     */
+    GET_SIZE_OF_HASHES("getSizeOfHashes(String key)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#getValueFromHashes(String, String)
+     */
+    GET_VALUE_FROM_HASHES("getValueFromHashes(String key, String member)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#getValueLengthFromHashes(String, String)
+     */
+    GET_VALUE_LENGTH_FROM_HASHES("getValueLengthFromHashes(String key, String member)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#getMemberMapFromHashes(String, List)
+     */
+    GET_MEMBER_MAP_FROM_HASHES("getMemberMapFromHashes(String key, List<String> members)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#getAllFromHashes(String)
+     */
+    GET_ALL_FROM_HASHES("getAllFromHashes(String key)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#getKeysFromHashes(String)
+     */
+    GET_KEYS_FROM_HASHES("getKeysFromHashes(String key)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#getValuesFromHashes(String)
+     */
+    GET_VALUES_FROM_HASHES("getValuesFromHashes(String key)", true);
 
     private final String methodName;
 

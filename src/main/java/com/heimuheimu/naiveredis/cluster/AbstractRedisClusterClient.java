@@ -667,6 +667,141 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
         return getClient(RedisClientMethod.GET_MEMBERS_FROM_LIST, parameterMap).getMembersFromList(key, startIndex, endIndex);
     }
 
+    @Override
+    public int putToHashes(String key, String member, String value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+        parameterMap.put("value", value);
+
+        return getClient(RedisClientMethod.PUT_TO_HASHES, parameterMap).putToHashes(key, member, value);
+    }
+
+    @Override
+    public void putToHashes(String key, Map<String, String> memberMap) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("memberMap", memberMap);
+
+        getClient(RedisClientMethod.MULTI_PUT_TO_HASHES, parameterMap).putToHashes(key, memberMap);
+    }
+
+    @Override
+    public int putIfAbsentToHashes(String key, String member, String value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+        parameterMap.put("value", value);
+
+        return getClient(RedisClientMethod.PUT_IF_ABSENT_TO_HASHES, parameterMap).putIfAbsentToHashes(key, member, value);
+    }
+
+    @Override
+    public long incrForHashes(String key, String member, long increment) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+        parameterMap.put("increment", increment);
+
+        return getClient(RedisClientMethod.INCR_FOR_HASHES, parameterMap).incrForHashes(key, member, increment);
+    }
+
+    @Override
+    public double incrByFloatForHashes(String key, String member, double increment) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+        parameterMap.put("increment", increment);
+
+        return getClient(RedisClientMethod.INCR_BY_FLOAT_FOR_HASHES, parameterMap).incrByFloatForHashes(key, member, increment);
+    }
+
+    @Override
+    public int removeFromHashes(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+
+        return getClient(RedisClientMethod.REMOVE_FROM_HASHES, parameterMap).removeFromHashes(key, member);
+    }
+
+    @Override
+    public int removeFromHashes(String key, Collection<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("members", members);
+
+        return getClient(RedisClientMethod.MULTI_REMOVE_FROM_HASHES, parameterMap).removeFromHashes(key, members);
+    }
+
+    @Override
+    public boolean isExistInHashes(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+
+        return getClient(RedisClientMethod.IS_EXIST_IN_HASHES, parameterMap).isExistInHashes(key, member);
+    }
+
+    @Override
+    public int getSizeOfHashes(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+
+        return getClient(RedisClientMethod.GET_SIZE_OF_HASHES, parameterMap).getSizeOfHashes(key);
+    }
+
+    @Override
+    public String getValueFromHashes(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+
+        return getClient(RedisClientMethod.GET_VALUE_FROM_HASHES, parameterMap).getValueFromHashes(key, member);
+    }
+
+    @Override
+    public int getValueLengthFromHashes(String key, String member) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("member", member);
+
+        return getClient(RedisClientMethod.GET_VALUE_LENGTH_FROM_HASHES, parameterMap).getValueLengthFromHashes(key, member);
+    }
+
+    @Override
+    public Map<String, String> getMemberMapFromHashes(String key, List<String> members) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("members", members);
+
+        return getClient(RedisClientMethod.GET_MEMBER_MAP_FROM_HASHES, parameterMap).getMemberMapFromHashes(key, members);
+    }
+
+    @Override
+    public Map<String, String> getAllFromHashes(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+
+        return getClient(RedisClientMethod.GET_ALL_FROM_HASHES, parameterMap).getAllFromHashes(key);
+    }
+
+    @Override
+    public List<String> getKeysFromHashes(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+
+        return getClient(RedisClientMethod.GET_KEYS_FROM_HASHES, parameterMap).getKeysFromHashes(key);
+    }
+
+    @Override
+    public List<String> getValuesFromHashes(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+
+        return getClient(RedisClientMethod.GET_VALUES_FROM_HASHES, parameterMap).getValuesFromHashes(key);
+    }
+
     @SuppressWarnings("unchecked")
     private <T> Map<String, T> internalMultiGet(Set<String> keySet, boolean isGetCount) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         if (keySet == null || keySet.isEmpty()) {

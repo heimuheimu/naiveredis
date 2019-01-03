@@ -1,4 +1,4 @@
-# NaiveRedis: 简单易用的 Redis Java 客户端。
+# NaiveRedis: 简单易用的 Redis Java 客户端，适用于高并发应用。
 
 ## 使用要求
 * JDK 版本：1.8+ 
@@ -7,12 +7,24 @@
   * [naivemonitor 1.0+](https://github.com/heimuheimu/naivemonitor)
   * [compress-lzf 1.0.3+](https://github.com/ning/compress)
 
+## 使用限制
+* 不支持需要阻塞的 Redis 操作。
+* 不支持 Redis 原生 Cluster 模式。
+* 部分方法有最低 Redis 版本要求，如果使用的 Redis 版本较老，请阅读 API 文档查找该方法对应的 Redis 命令，并前往 Redis 官网确认该命令的最低版本要求。 
+
+## NaiveRedis 特色：
+* 根据 Redis 不同的数据结构定义对应的接口，方便使用。
+* 自动关闭连续出现超时异常的 Redis 连接，防止应用堵塞。（超时异常大于 50 次的连接将会被自动关闭，每两次超时异常需发生在 1 秒间隔以内）
+* 集群客户端将会自动恢复不可用的 Redis 连接。
+* 集群客户端中的 Redis 连接出现不可用或恢复时，将通过钉钉、短信等方式实时报警，第一时间掌握线上状况。
+* 完善的日志信息、监控信息，方便问题定位。
+
 ## Maven 配置
 ```xml
     <dependency>
         <groupId>com.heimuheimu</groupId>
         <artifactId>naiveredis</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>1.0</version>
     </dependency>
 ```
 
@@ -74,6 +86,8 @@ log4j.appender.NAIVEREDIS_SLOW_EXECUTION_LOG.layout.ConversionPattern=%d{ISO8601
     </bean>
 ```
 
+如果 Redis 使用 Master-Slave 模式，可使用 [SimpleRedisReplicationClient]()。 
+
 ## Falcon 监控数据上报 Spring 配置
 ```xml
     <!-- 监控数据采集器列表 -->
@@ -131,7 +145,18 @@ log4j.appender.NAIVEREDIS_SLOW_EXECUTION_LOG.layout.ConversionPattern=%d{ISO8601
  * naiveredis_threadPool_core_pool_size/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 所有线程池配置的核心线程数总和
  * naiveredis_threadPool_maximum_pool_size/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 所有线程池配置的最大线程数总和
 
-## Redis 客户端示例代码
+## 已支持的 Redis 客户端
+ * [NaiveRedisClient]() 提供所有已支持的 Redis 操作，建议仅在 Service 中需要同时使用多种 Redis 数据结构时才使用此接口。
+ * [NaiveRedisStorageClient]() 提供 Redis 存储相关的操作，将 Redis 作为缓存或 NoSQL 数据库时进行使用。
+ * [NaiveRedisCountClient]() 提供 Redis 计数器相关的操作，使用 Redis 进行数字的原子加、减。
+ * [NaiveRedisGeoClient]() 提供 Redis GEO 数据结构的相关的操作。
+ * [NaiveRedisHashesClient]() 提供 Redis Hashes 数据结构的相关的操作。
+ * [NaiveRedisListClient]() 提供 Redis List 数据结构的相关的操作。
+ * [NaiveRedisSetClient]() 提供 Redis Set 数据结构的相关的操作。
+ * [NaiveRedisSortedSetClient]() 提供 Redis Sorted Set 数据结构的相关的操作。
+ 
+
+## Redis 部分客户端示例代码
 ### 存储客户端
 ```java
     public class RedisStorageDemoService {
@@ -209,6 +234,12 @@ log4j.appender.NAIVEREDIS_SLOW_EXECUTION_LOG.layout.ConversionPattern=%d{ISO8601
             redisSetClient.delete("demo_set"); //删除名称为 "demo_set" 的 Set 集合
         }
     }
-```
-### 其它方式
-**如果在 Service 中需要同时使用多种类型的 Redis 客户端方法，可直接使用 NaiveRedisClient 接口**
+``` 
+
+## 更多信息
+* [Redis 官网](https://redis.io)
+* [NaiveMonitor 项目主页](https://github.com/heimuheimu/naivemonitor)
+* [NaiveRedis v1.0 API Doc](https://heimuheimu.github.io/naiveredis/api/v1.0/)
+* [NaiveRPC v1.0 源码下载](https://heimuheimu.github.io/naiveredis/download/naiveredis-1.0-sources.jar)
+* [NaiveRPC v1.0 Jar包下载](https://heimuheimu.github.io/naiveredis/download/naiveredis-1.0.jar)
+

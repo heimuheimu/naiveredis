@@ -67,14 +67,13 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
      * 将成员和对应的分值根据不同的添加模式添加到指定的排序 Set 集合中，如果添加模式为 {@code null}，默认使用 {@link SortedSetAddMode#REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER} 模式。
      * 如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作。
      *
-     * <p><strong>添加模式定义：</strong>
+     * <p><strong>添加模式定义：</strong></p>
      * <ul>
      * <li>REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，但分值不一致，则执行更新操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）。</li>
      * <li>REPLACE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，但分值不一致，则执行更新操作，操作完成后，返回成功添加或更新的成员个数。</li>
      * <li>ONLY_UPDATE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，不执行任何操作，如果成员已存在，但分值不一致，则执行更新操作，操作完成后，返回成功更新的成员个数。</li>
      * <li>ONLY_ADD_AND_RETURN_NEW_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，不执行任何操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）。</li>
      * </ul>
-     * </p>
      *
      * <p><strong>算法复杂度：</strong> O(log(N))，N 为排序 Set 成员总数。</p>
      *
@@ -118,14 +117,13 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
      * 默认使用 {@link SortedSetAddMode#REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER} 模式，如果 key 不存在，将会新创建一个 Set 集合后再执行添加操作，
      * 如果 memberMap 为{@code null} 或空，将会返回 0。
      *
-     * <p><strong>添加模式定义：</strong>
+     * <p><strong>添加模式定义：</strong></p>
      * <ul>
      * <li>REPLACE_AND_RETURN_NEW_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，但分值不一致，则执行更新操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）。</li>
      * <li>REPLACE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，但分值不一致，则执行更新操作，操作完成后，返回成功添加或更新的成员个数。</li>
      * <li>ONLY_UPDATE_AND_RETURN_UPDATED_ELEMENTS_NUMBER：如果成员不存在，不执行任何操作，如果成员已存在，但分值不一致，则执行更新操作，操作完成后，返回成功更新的成员个数。</li>
      * <li>ONLY_ADD_AND_RETURN_NEW_ELEMENTS_NUMBER：如果成员不存在，执行新增操作，如果成员已存在，不执行任何操作，操作完成后，返回成功添加的成员个数（不包括更新分值的成员）。</li>
      * </ul>
-     * </p>
      *
      * <p><strong>算法复杂度：</strong> O(M * log(N))，M 为添加的成员个数，N 为排序 Set 成员总数。</p>
      *
@@ -205,15 +203,14 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
      *
      * <p>排名定义：成员按分值从小到大排序（同样分值的成员按字母顺序排序），分值最小的成员排名为 0。</p>
      *
-     * <p>
-     * 起始排名、结束排名可以使用负数来代表分值最高的成员，例如：分值从大到小的成员排名依次为 -1，-2, -3...<br>
-     * 代码示例：
+     * <p>起始排名、结束排名可以使用负数来代表分值最高的成员，例如：分值从大到小的成员排名依次为 -1，-2, -3...</p>
+     *
+     * <strong>代码示例：</strong>
      * <blockquote>
      * <pre>
      * naiveRedisSortedSetClient.removeByRankFromSortedSet("my_test_sorted_set", -3, -1); //删除分值最高的三个成员
      * </pre>
      * </blockquote>
-     * </p>
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为删除的成员个数，N 为排序 Set 成员总数。</p>
      *
@@ -297,12 +294,11 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
      *
      * <p><strong>算法复杂度：</strong> O(log(N))，N 为排序 Set 成员总数。</p>
      *
-     * <p><strong>Redis 命令：</strong>
+     * <p><strong>Redis 命令：</strong></p>
      * <ul>
      *     <li>reverse 为 {@code false}：<a href="https://redis.io/commands/zrank">ZRANK key member</a></li>
      *     <li>reverse 为 {@code true}：<a href="https://redis.io/commands/zrevrank">ZREVRANK key member</a></li>
      * </ul>
-     * </p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param member 成员，不允许为 {@code null}
@@ -378,23 +374,23 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
      * <p>
      *     <strong>排名规则：</strong>reverse 为 {@code false}，按分值从低到高排序（同分值按字母顺序排序），reverse 为 {@code true}，
      *     按分值从高到低排序（同分值按字母顺序倒序排序）。起始排名、结束排名可以使用负数来代表排序尾部成员，例如：当 reverse 为 {@code false} 时，
-     *     分值从大到小的成员排名依次为 -1, -2, -3...<br>
-     * 代码示例：
+     *     分值从大到小的成员排名依次为 -1, -2, -3...
+     * </p>
+     *
+     * <strong>代码示例：</strong>
      * <blockquote>
      * <pre>
      * naiveRedisSortedSetClient.getMembersByRankFromSortedSet("my_test_sorted_set", 0, -1, false); // 获取全部成员列表，按分值从低到高排序
      * </pre>
      * </blockquote>
-     * </p>
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为返回的成员数量，N 为排序 Set 成员总数。</p>
      *
-     * <p><strong>Redis 命令：</strong>
+     * <p><strong>Redis 命令：</strong></p>
      * <ul>
      *     <li>reverse 为 {@code false}：<a href="https://redis.io/commands/zrange">ZRANGE key start stop [WITHSCORES]</a></li>
      *     <li>reverse 为 {@code true}：<a href="https://redis.io/commands/zrevrange">ZREVRANGE key start stop [WITHSCORES]</a></li>
      * </ul>
-     * </p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param start 起始排名（包含）
@@ -421,12 +417,11 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为返回的成员数量，N 为排序 Set 成员总数。</p>
      *
-     * <p><strong>Redis 命令：</strong>
+     * <p><strong>Redis 命令：</strong></p>
      * <ul>
      *     <li>reverse 为 {@code false}：<a href="https://redis.io/commands/zrange">ZRANGE key start stop [WITHSCORES]</a></li>
      *     <li>reverse 为 {@code true}：<a href="https://redis.io/commands/zrevrange">ZREVRANGE key start stop [WITHSCORES]</a></li>
      * </ul>
-     * </p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param start 起始排名（包含）
@@ -451,12 +446,11 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为返回的成员数量，N 为排序 Set 成员总数。</p>
      *
-     * <p><strong>Redis 命令：</strong>
+     * <p><strong>Redis 命令：</strong></p>
      * <ul>
      *     <li>reverse 为 {@code false}：<a href="https://redis.io/commands/zrangebyscore">ZRANGEBYSCORE key min max [WITHSCORES] [LIMIT offset count]</a></li>
      *     <li>reverse 为 {@code true}：<a href="https://redis.io/commands/zrevrangebyscore">ZREVRANGEBYSCORE key max min [WITHSCORES] [LIMIT offset count]</a></li>
      * </ul>
-     * </p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param minScore 最小分值（包含），{@link Double#NEGATIVE_INFINITY} 代表无穷小
@@ -481,12 +475,11 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为返回的成员数量（如果 offset 大于 0，M 为 offset + 返回的成员数量），N 为排序 Set 成员总数。</p>
      *
-     * <p><strong>Redis 命令：</strong>
+     * <p><strong>Redis 命令：</strong></p>
      * <ul>
      *     <li>reverse 为 {@code false}：<a href="https://redis.io/commands/zrangebyscore">ZRANGEBYSCORE key min max [WITHSCORES] [LIMIT offset count]</a></li>
      *     <li>reverse 为 {@code true}：<a href="https://redis.io/commands/zrevrangebyscore">ZREVRANGEBYSCORE key max min [WITHSCORES] [LIMIT offset count]</a></li>
      * </ul>
-     * </p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param minScore 最小分值，{@link Double#NEGATIVE_INFINITY} 代表无穷小
@@ -518,12 +511,11 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为返回的成员数量，N 为排序 Set 成员总数。</p>
      *
-     * <p><strong>Redis 命令：</strong>
+     * <p><strong>Redis 命令：</strong></p>
      * <ul>
      *     <li>reverse 为 {@code false}：<a href="https://redis.io/commands/zrangebyscore">ZRANGEBYSCORE key min max [WITHSCORES] [LIMIT offset count]</a></li>
      *     <li>reverse 为 {@code true}：<a href="https://redis.io/commands/zrevrangebyscore">ZREVRANGEBYSCORE key max min [WITHSCORES] [LIMIT offset count]</a></li>
      * </ul>
-     * </p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param minScore 最小分值（包含），{@link Double#NEGATIVE_INFINITY} 代表无穷小
@@ -549,12 +541,11 @@ public interface NaiveRedisSortedSetClient extends NaiveRedisKeysClient {
      *
      * <p><strong>算法复杂度：</strong> O(log(N) + M)，M 为返回的成员数量（如果 offset 大于 0，M 为 offset + 返回的成员数量），N 为排序 Set 成员总数。</p>
      *
-     * <p><strong>Redis 命令：</strong>
+     * <p><strong>Redis 命令：</strong></p>
      * <ul>
      *     <li>reverse 为 {@code false}：<a href="https://redis.io/commands/zrangebyscore">ZRANGEBYSCORE key min max [WITHSCORES] [LIMIT offset count]</a></li>
      *     <li>reverse 为 {@code true}：<a href="https://redis.io/commands/zrevrangebyscore">ZREVRANGEBYSCORE key max min [WITHSCORES] [LIMIT offset count]</a></li>
      * </ul>
-     * </p>
      *
      * @param key Sorted set key，不允许 {@code null} 或空
      * @param minScore 最小分值，{@link Double#NEGATIVE_INFINITY} 代表无穷小

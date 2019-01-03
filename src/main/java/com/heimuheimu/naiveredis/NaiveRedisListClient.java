@@ -63,12 +63,11 @@ public interface NaiveRedisListClient extends NaiveRedisKeysClient {
      *
      * <p><strong>算法复杂度：</strong> O(1)</p>
      *
-     * <p><strong>Redis 命令：</strong>
+     * <p><strong>Redis 命令：</strong></p>
      * <ul>
      *     <li>isAutoCreate 为 {@code true}：<a href="https://redis.io/commands/lpush">LPUSH key value [value ...]</a></li>
      *     <li>isAutoCreate 为 {@code false}：<a href="https://redis.io/commands/lpushx">LPUSHX key value</a></li>
      * </ul>
-     * </p>
      *
      * @param key List key，不允许 {@code null} 或空
      * @param member 成员，不允许为 {@code null}
@@ -125,12 +124,11 @@ public interface NaiveRedisListClient extends NaiveRedisKeysClient {
      *
      * <p><strong>算法复杂度：</strong> O(1)</p>
      *
-     * <p><strong>Redis 命令：</strong>
+     * <p><strong>Redis 命令：</strong></p>
      * <ul>
      *     <li>isAutoCreate 为 {@code true}：<a href="https://redis.io/commands/rpush">RPUSH key value [value ...]</a></li>
      *     <li>isAutoCreate 为 {@code false}：<a href="https://redis.io/commands/rpushx">RPUSHX key value</a></li>
      * </ul>
-     * </p>
      *
      * @param key List key，不允许 {@code null} 或空
      * @param member 成员，不允许为 {@code null}
@@ -247,13 +245,12 @@ public interface NaiveRedisListClient extends NaiveRedisKeysClient {
     /**
      * 将成员从指定的 List 集合中移除，并返回成功移除的成员个数，如果 key 不存在，将会返回 0。
      *
-     * <p><strong>count 参数说明：</strong>
+     * <p><strong>count 参数说明：</strong></p>
      * <ul>
-     *     <li>count > 0：从 List 集合头部向尾部移除指定个数的符合条件成员，例如：<strong>LREM mylist 2 "hello"</strong> 将会移除 mylist 集合中最先出现的两个 "hello" 成员。</li>
-     *     <li>count < 0：从 List 集合尾部向头部移除指定个数的符合条件成员，例如：<strong>LREM mylist -2 "hello"</strong> 将会移除 mylist 集合中最后出现的两个 "hello" 成员。</li>
+     *     <li>count &gt; 0：从 List 集合头部向尾部移除指定个数的符合条件成员，例如：<strong>LREM mylist 2 "hello"</strong> 将会移除 mylist 集合中最先出现的两个 "hello" 成员。</li>
+     *     <li>count &lt; 0：从 List 集合尾部向头部移除指定个数的符合条件成员，例如：<strong>LREM mylist -2 "hello"</strong> 将会移除 mylist 集合中最后出现的两个 "hello" 成员。</li>
      *     <li>count = 0：移除 List 集合中所有符合条件的成员。</li>
      * </ul>
-     * </p>
      *
      * <p><strong>算法复杂度：</strong> O(N), N 为列表所有的成员数量。</p>
      *

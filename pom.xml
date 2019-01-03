@@ -6,7 +6,7 @@
 
     <groupId>com.heimuheimu</groupId>
     <artifactId>naiveredis</artifactId>
-    <version>0.2-SNAPSHOT</version>
+    <version>1.0</version>
 
     <dependencies>
         <!-- Naive monitor Dependence -->

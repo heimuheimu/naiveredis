@@ -245,8 +245,8 @@ public class DirectRedisHashesClient extends AbstractDirectRedisClient implement
 
     @SuppressWarnings("unchecked")
     @Override
-    public List<String> getKeysFromHashes(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = methodNamePrefix + "getKeysFromHashes(String key)";
+    public List<String> getMembersFromHashes(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = methodNamePrefix + "getMembersFromHashes(String key)";
         MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
         parameterChecker.addParameter("key", key);
 

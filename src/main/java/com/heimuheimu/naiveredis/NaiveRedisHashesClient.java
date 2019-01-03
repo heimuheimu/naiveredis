@@ -39,7 +39,7 @@ import java.util.Map;
  *
  * @author heimuheimu
  */
-public interface NaiveRedisHashesClient {
+public interface NaiveRedisHashesClient extends NaiveRedisKeysClient {
 
     /**
      * 将成员和对应的值添加到指定的 Hashes 中，并返回成功添加的成员个数（不包括更新值的成员），如果成员在 Hashes 中已存在，将会更新该成员的值，
@@ -217,6 +217,8 @@ public interface NaiveRedisHashesClient {
     /**
      * 获得 Hashes 中指定成员的值的长度，如果该成员不存在或 key 不存在，将会返回 0。
      *
+     * <p><strong>注意：</strong>长度并不等于字符串字符个数，此方法返回的长度为字符串 UTF-8 编码后的字节长度。</p>
+     *
      * @param key Hashes key，不允许 {@code null} 或空
      * @param member 成员，不允许为 {@code null}
      * @return 成员的值的长度
@@ -265,7 +267,7 @@ public interface NaiveRedisHashesClient {
      * @throws TimeoutException 如果操作超时，将会抛出此异常
      * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
      */
-    List<String> getKeysFromHashes(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
+    List<String> getMembersFromHashes(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
      * 获得 Hashes 中所有的值列表，如果 key 不存在，将返回空列表，该方法不会返回 {@code null}。

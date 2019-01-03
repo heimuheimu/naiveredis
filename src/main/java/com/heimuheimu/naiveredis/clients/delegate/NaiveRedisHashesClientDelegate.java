@@ -107,8 +107,8 @@ public interface NaiveRedisHashesClientDelegate extends NaiveRedisHashesClient {
     }
 
     @Override
-    default List<String> getKeysFromHashes(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return getNaiveRedisHashesClient().getKeysFromHashes(key);
+    default List<String> getMembersFromHashes(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return getNaiveRedisHashesClient().getMembersFromHashes(key);
     }
 
     @Override

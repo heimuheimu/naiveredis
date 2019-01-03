@@ -428,9 +428,9 @@ public enum RedisClientMethod {
     GET_ALL_FROM_HASHES("getAllFromHashes(String key)", true),
 
     /**
-     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#getKeysFromHashes(String)
+     * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#getMembersFromHashes(String)
      */
-    GET_KEYS_FROM_HASHES("getKeysFromHashes(String key)", true),
+    GET_MEMBERS_FROM_HASHES("getMembersFromHashes(String key)", true),
 
     /**
      * @see com.heimuheimu.naiveredis.NaiveRedisHashesClient#getValuesFromHashes(String)

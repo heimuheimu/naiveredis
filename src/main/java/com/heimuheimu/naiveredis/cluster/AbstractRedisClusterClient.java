@@ -787,11 +787,11 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
     }
 
     @Override
-    public List<String> getKeysFromHashes(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+    public List<String> getMembersFromHashes(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         Map<String, Object> parameterMap = new LinkedHashMap<>();
         parameterMap.put("key", key);
 
-        return getClient(RedisClientMethod.GET_KEYS_FROM_HASHES, parameterMap).getKeysFromHashes(key);
+        return getClient(RedisClientMethod.GET_MEMBERS_FROM_HASHES, parameterMap).getMembersFromHashes(key);
     }
 
     @Override

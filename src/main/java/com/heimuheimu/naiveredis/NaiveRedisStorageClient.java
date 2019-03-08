@@ -136,6 +136,8 @@ public interface NaiveRedisStorageClient extends NaiveRedisKeysClient {
      *
      * <p><strong>算法复杂度：</strong> O(1)</p>
      *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/setnx">SETNX key value</a></p>
+     *
      * @param key Redis key，不允许 {@code null} 或空
      * @param value Redis value，不允许 {@code null}
      * @param expiry 过期时间，单位：秒，如果小于等于 0，则为永久保存

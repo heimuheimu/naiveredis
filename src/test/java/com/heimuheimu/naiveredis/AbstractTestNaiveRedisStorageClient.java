@@ -218,6 +218,79 @@ public abstract class AbstractTestNaiveRedisStorageClient {
         client.delete(key);
     }
 
+    @Test
+    public void testSetIfAbsent() {
+        NaiveRedisStorageClient client = getClient();
+
+        // 测试数据准备
+        String key = "测试 Key";
+        Integer value = 1;
+        Integer newValue = 2;
+
+        // setIfAbsent(String key, Object value) 参数异常测试
+        client.delete(key);
+        AssertUtil.assertThrowIllegalArgumentException(() -> client.setIfAbsent(null, value));
+        AssertUtil.assertThrowIllegalArgumentException(() -> client.setIfAbsent("", value));
+        AssertUtil.assertThrowIllegalArgumentException(() -> client.setIfAbsent(key, null));
+
+        // setIfAbsent(String key, Object value) 功能测试
+        Assert.assertTrue("Test `setIfAbsent` method failed: `invalid return value`.", client.setIfAbsent(key, value));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid value`.", value, client.get(key));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid return expiry`.", -1, client.getTimeToLive(key));
+
+        Assert.assertFalse("Test `setIfAbsent` method failed: `invalid return value`.", client.setIfAbsent(key, newValue));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid value`.", value, client.get(key));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid return expiry`.", -1, client.getTimeToLive(key));
+
+        client.delete(key);
+    }
+
+    @Test
+    public void testSetIfAbsentWithExpiry() {
+        NaiveRedisStorageClient client = getClient();
+
+        // 测试数据准备
+        String key = "测试 Key";
+        Integer value = 1;
+        Integer newValue = 2;
+        int expiry = 30;
+
+        // setIfAbsent(String key, Object value, int expiry) 参数异常测试
+        client.delete(key);
+        AssertUtil.assertThrowIllegalArgumentException(() -> client.setIfAbsent(null, value, expiry));
+        AssertUtil.assertThrowIllegalArgumentException(() -> client.setIfAbsent("", value, expiry));
+        AssertUtil.assertThrowIllegalArgumentException(() -> client.setIfAbsent(key, null, expiry));
+
+        // setIfAbsent(String key, Object value, int expiry) 功能测试
+        Assert.assertTrue("Test `setIfAbsent` method failed: `invalid return value`.", client.setIfAbsent(key, value, 0));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid value`.", value, client.get(key));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid return expiry`.", -1, client.getTimeToLive(key));
+
+        Assert.assertFalse("Test `setIfAbsent` method failed: `invalid return value`.", client.setIfAbsent(key, newValue, 0));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid value`.", value, client.get(key));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid return expiry`.", -1, client.getTimeToLive(key));
+
+        client.delete(key);
+        Assert.assertTrue("Test `setIfAbsent` method failed: `invalid return value`.", client.setIfAbsent(key, value, -1));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid value`.", value, client.get(key));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid return expiry`.", -1, client.getTimeToLive(key));
+
+        Assert.assertFalse("Test `setIfAbsent` method failed: `invalid return value`.", client.setIfAbsent(key, newValue, -1));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid value`.", value, client.get(key));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid return expiry`.", -1, client.getTimeToLive(key));
+
+        client.delete(key);
+        Assert.assertTrue("Test `setIfAbsent` method failed: `invalid return value`.", client.setIfAbsent(key, value, expiry));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid value`.", value, client.get(key));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid return expiry`.", expiry, client.getTimeToLive(key), 2);
+
+        Assert.assertFalse("Test `setIfAbsent` method failed: `invalid return value`.", client.setIfAbsent(key, newValue, expiry));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid value`.", value, client.get(key));
+        Assert.assertEquals("Test `setIfAbsent` method failed: `invalid return expiry`.", expiry, client.getTimeToLive(key), 4);
+
+        client.delete(key);
+    }
+
     private void deleteKeys(String[] keys) {
         NaiveRedisStorageClient client = getClient();
         for (String key : keys) {

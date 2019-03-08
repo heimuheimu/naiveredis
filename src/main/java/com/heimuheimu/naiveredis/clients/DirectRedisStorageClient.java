@@ -29,7 +29,9 @@ import com.heimuheimu.naiveredis.channel.RedisChannel;
 import com.heimuheimu.naiveredis.command.storage.GetCommand;
 import com.heimuheimu.naiveredis.command.storage.MGetCommand;
 import com.heimuheimu.naiveredis.command.storage.SetCommand;
+import com.heimuheimu.naiveredis.command.storage.SetNXCommand;
 import com.heimuheimu.naiveredis.data.RedisData;
+import com.heimuheimu.naiveredis.data.RedisDataParser;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 import com.heimuheimu.naiveredis.facility.parameter.MethodParameterChecker;
@@ -126,7 +128,7 @@ public class DirectRedisStorageClient extends AbstractDirectRedisClient implemen
 
     @Override
     public void set(String key, Object value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        String methodName = methodNamePrefix + "set(String key, Object value)";
+        String methodName = methodNamePrefix + "set(String key, Object value, int expiry)";
         MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
         parameterChecker.addParameter("key", key);
         parameterChecker.addParameter("value", value);
@@ -137,5 +139,29 @@ public class DirectRedisStorageClient extends AbstractDirectRedisClient implemen
 
 
         execute(methodName, parameterChecker.getParameterMap(), () -> new SetCommand(key, transcoder.encode(value), expiry), null);
+    }
+
+    @Override
+    public boolean setIfAbsent(String key, Object value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return setIfAbsent(key, value, -1);
+    }
+
+    @Override
+    public boolean setIfAbsent(String key, Object value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = methodNamePrefix + "setIfAbsent(String key, Object value, int expiry)";
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("value", value);
+        parameterChecker.addParameter("expiry", expiry);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+        parameterChecker.check("value", "isNull", Parameters::isNull);
+
+        boolean isSuccess = (boolean) execute(methodName, parameterChecker.getParameterMap(),
+                () -> new SetNXCommand(key, transcoder.encode(value)), RedisDataParser::parseBoolean);
+        if (isSuccess && expiry > 0) {
+            expire(key, expiry);
+        }
+        return isSuccess;
     }
 }

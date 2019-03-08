@@ -116,6 +116,25 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
     }
 
     @Override
+    public boolean setIfAbsent(String key, Object value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("value", value);
+
+        return getClient(RedisClientMethod.SET_IF_ABSENT, parameterMap).setIfAbsent(key, value);
+    }
+
+    @Override
+    public boolean setIfAbsent(String key, Object value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("value", value);
+        parameterMap.put("expiry", expiry);
+
+        return getClient(RedisClientMethod.SET_IF_ABSENT_WITH_EXPIRE, parameterMap).setIfAbsent(key, value, expiry);
+    }
+
+    @Override
     public Long getCount(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         Map<String, Object> parameterMap = new LinkedHashMap<>();
         parameterMap.put("key", key);

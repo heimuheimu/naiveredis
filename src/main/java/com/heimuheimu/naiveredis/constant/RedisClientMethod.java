@@ -76,6 +76,16 @@ public enum RedisClientMethod {
     SET_WITH_EXPIRE("#set(String key, Object value, int expiry)", false),
 
     /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#setIfAbsent(String, Object)
+     */
+    SET_IF_ABSENT("#setIfAbsent(String key, Object value)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#setIfAbsent(String, Object, int)
+     */
+    SET_IF_ABSENT_WITH_EXPIRE("#setIfAbsent(String key, Object value, int expiry)", false),
+
+    /**
      * @see com.heimuheimu.naiveredis.NaiveRedisClient#getCount(String)
      */
     GET_COUNT("#getCount(String key)", true),

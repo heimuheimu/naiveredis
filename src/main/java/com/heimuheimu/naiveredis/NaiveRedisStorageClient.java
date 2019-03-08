@@ -129,7 +129,7 @@ public interface NaiveRedisStorageClient extends NaiveRedisKeysClient {
     boolean setIfAbsent(String key, Object value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 
     /**
-     * 仅在 Key 不存在时，将 Value 存储至 Redis 中，永久保存，并返回 {@code true}，如果 Key 已存在，不会替换原来的 Value，
+     * 仅在 Key 不存在时，将 Value 存储至 Redis 中，并指定过期时间，返回 {@code true}，如果 Key 已存在，不会替换原来的 Value，
      * 并返回 {@code false}。
      *
      * <p><strong>说明：</strong>Redis SETNX 不支持过期时间设置，如设置了过期时间，在保存成功后调用 {@link #expire(String, int)} 实现。</p>

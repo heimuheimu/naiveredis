@@ -302,7 +302,7 @@ public class RedisChannel implements Closeable {
             this.outputStream = new MonitoredSocketOutputStream(socket.getOutputStream(), socketMonitor);
 
             this.sendBufferSize = sendBufferSize != null ? sendBufferSize : 64 * 1024;
-            this.sendBuffer = new byte[sendBufferSize];
+            this.sendBuffer = new byte[this.sendBufferSize];
 
             receiveBufferSize = receiveBufferSize != null ? receiveBufferSize : 64 * 1024;
             this.reader = new RedisDataReader(socketMonitor, socket.getInputStream(), receiveBufferSize);

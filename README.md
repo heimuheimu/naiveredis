@@ -1,5 +1,7 @@
 # NaiveRedis: 简单易用的 Redis Java 客户端，适用于高并发应用。
 
+[![Language grade: Java](https://img.shields.io/lgtm/grade/java/g/heimuheimu/naiveredis.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/heimuheimu/naiveredis/context:java)
+
 ## 使用要求
 * JDK 版本：1.8+ 
 * 依赖类库：

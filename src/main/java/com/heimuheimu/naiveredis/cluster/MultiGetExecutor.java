@@ -92,7 +92,7 @@ class MultiGetExecutor implements Closeable {
 
         @SuppressWarnings("unchecked")
         @Override
-        public Map<String, T> call() throws Exception {
+        public Map<String, T> call() {
             if (!keySet.isEmpty()) {
                 if (isGetCount) {
                     return (Map<String, T>) client.multiGetCount(keySet);

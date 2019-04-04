@@ -71,7 +71,7 @@ public class SimpleRedisClusterClientFactory implements FactoryBean<SimpleRedisC
     }
 
     @Override
-    public SimpleRedisClusterClient getObject() throws Exception {
+    public SimpleRedisClusterClient getObject() {
         return client;
     }
 

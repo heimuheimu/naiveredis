@@ -76,7 +76,7 @@ public class SimpleRedisReplicationClientFactory implements FactoryBean<SimpleRe
     }
 
     @Override
-    public SimpleRedisReplicationClient getObject() throws Exception {
+    public SimpleRedisReplicationClient getObject() {
         return client;
     }
 

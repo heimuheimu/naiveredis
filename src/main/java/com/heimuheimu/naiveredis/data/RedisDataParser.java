@@ -81,7 +81,8 @@ public class RedisDataParser {
      * @throws NumberFormatException 如果整数转换失败，将会抛出异常
      */
     public static boolean parseBoolean(RedisData data) throws NumberFormatException {
-        return parseInt(data) == 1;
+        Integer intValue = parseInt(data);
+        return intValue != null && intValue == 1;
     }
 
     /**

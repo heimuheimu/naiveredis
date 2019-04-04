@@ -119,7 +119,6 @@ public class DirectRedisCountClient extends AbstractDirectRedisClient implements
 
         parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
 
-        //noinspection ConstantConditions
         return (Long) execute(methodName, parameterChecker.getParameterMap(), () -> new IncrByCommand(key, delta), response -> {
             long value = Long.valueOf(response.getText());
             if (expiry > 0 && value == delta) { // 如果是该 Key 的第一次操作，则进行过期时间设置

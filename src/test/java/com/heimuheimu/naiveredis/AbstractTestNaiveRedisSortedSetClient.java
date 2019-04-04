@@ -370,7 +370,7 @@ public abstract class AbstractTestNaiveRedisSortedSetClient {
 
         // removeFromSortedSet(String key, Collection<String> members) 功能测试
         Assert.assertEquals("Test `removeFromSortedSet` method failed: `invalid return value`.", 0,
-                client.removeFromSortedSet(key, (Collection) null));
+                client.removeFromSortedSet(key, (Collection<String>) null));
         Assert.assertEquals("Test `removeFromSortedSet` method failed: `invalid return value`.", 0,
                 client.removeFromSortedSet(key, new ArrayList<>()));
         Assert.assertEquals("Test `removeFromSortedSet` method failed: `invalid return value`.", 0,

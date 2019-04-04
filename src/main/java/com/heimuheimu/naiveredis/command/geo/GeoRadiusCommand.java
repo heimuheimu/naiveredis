@@ -91,7 +91,7 @@ public class GeoRadiusCommand extends AbstractCommand {
         } else if (GeoSearchParameter.ORDER_BY_DESC.equals(geoSearchParameter.getOrderBy())) {
             commandDataList.add(new RedisBulkString("DESC".getBytes(RedisData.UTF8)));
         }
-        RedisData[] commandDataArray = commandDataList.toArray(new RedisData[commandDataList.size()]);
+        RedisData[] commandDataArray = commandDataList.toArray(new RedisData[0]);
 
         this.requestByteArray = new RedisArray(commandDataArray).getRespByteArray();
     }

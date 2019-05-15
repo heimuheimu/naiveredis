@@ -26,6 +26,7 @@ package com.heimuheimu.naiveredis.cluster;
 
 import com.heimuheimu.naivemonitor.monitor.ThreadPoolMonitor;
 import com.heimuheimu.naiveredis.DirectRedisClient;
+import com.heimuheimu.naiveredis.constant.RedisClientMethod;
 import com.heimuheimu.naiveredis.monitor.ThreadPoolMonitorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,12 +61,12 @@ class MultiGetExecutor implements Closeable {
     }
 
     @SuppressWarnings("unchecked")
-    <T> Future<Map<String, T>> submit(DirectRedisClient client, Set<String> keySet, boolean isGetCount) {
+    <T> Future<Map<String, T>> submit(DirectRedisClient client, Set<String> keySet, RedisClientMethod method) {
         try {
-            return executorService.submit(new MultiGetTask(client, keySet, isGetCount));
+            return executorService.submit(new MultiGetTask(client, keySet, method));
         } catch (RejectedExecutionException e) {
-            LOG.error("Redis Multi-Get failed: `thread pool is too busy`. `host`:`" + client.getHost() + "`. `isGetCount`: `"
-                    + isGetCount + "`. `keySet`: `" + keySet + "`.", e);
+            LOG.error("Redis Multi-Get failed: `thread pool is too busy`. `host`:`" + client.getHost() + "`. `method`: `"
+                    + method + "`. `keySet`: `" + keySet + "`.", e);
             threadPoolMonitor.onRejected();
             return null;
         }
@@ -82,22 +83,24 @@ class MultiGetExecutor implements Closeable {
 
         private final Set<String> keySet;
 
-        private final boolean isGetCount;
+        private final RedisClientMethod method;
 
-        private MultiGetTask(DirectRedisClient client, Set<String> keySet, boolean isGetCount) {
+        private MultiGetTask(DirectRedisClient client, Set<String> keySet, RedisClientMethod method) {
             this.client = client;
             this.keySet = keySet;
-            this.isGetCount = isGetCount;
+            this.method = method;
         }
 
         @SuppressWarnings("unchecked")
         @Override
         public Map<String, T> call() {
             if (!keySet.isEmpty()) {
-                if (isGetCount) {
-                    return (Map<String, T>) client.multiGetCount(keySet);
-                } else {
+                if (method == RedisClientMethod.MULTI_GET) {
                     return client.multiGet(keySet);
+                } else if (method == RedisClientMethod.MULTI_GET_STRING){
+                    return (Map<String, T>) client.multiGetString(keySet);
+                } else {
+                    return (Map<String, T>) client.multiGetCount(keySet);
                 }
             } else {
                 return new HashMap<>();

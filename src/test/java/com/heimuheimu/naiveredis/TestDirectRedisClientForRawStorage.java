@@ -24,12 +24,40 @@
 
 package com.heimuheimu.naiveredis;
 
-/**
- * Redis 客户端。可访问以下网站来获得更多 Redis 信息：<a href="https://redis.io">https://redis.io</a>
- *
- * <p><strong>说明：</strong>{@code NaiveRedisClient} 的实现类必须是线程安全的。</p>
- */
-public interface NaiveRedisClient extends NaiveRedisCountClient, NaiveRedisStorageClient, NaiveRedisRawStorageClient,
-        NaiveRedisSetClient, NaiveRedisSortedSetClient, NaiveRedisGeoClient, NaiveRedisListClient, NaiveRedisHashesClient {
+import org.junit.AfterClass;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 
+/**
+ * {@link DirectRedisClient} 单元测试类，仅测试和 Raw Storage 相关方法。
+ *
+ * <p><strong>注意：</strong>如果没有提供测试 Redis 地址，即 {@link TestRedisProvider#getRedisHost()} 返回空或 {@code null}，测试用例不会执行。</p>
+ *
+ * @author heimuheimu
+ */
+public class TestDirectRedisClientForRawStorage extends AbstractTestNaiveRedisRawStorageClient {
+
+    private static DirectRedisClient CLIENT;
+
+    @BeforeClass
+    public static void init() {
+        String redisHost = TestRedisProvider.getRedisHost();
+        if (redisHost == null || redisHost.isEmpty()) {
+            Assume.assumeTrue("TestDirectRedisClientForRawStorage will be ignored: `empty redis host`.", false);
+        } else {
+            CLIENT = new DirectRedisClient(redisHost);
+        }
+    }
+
+    @AfterClass
+    public static void clean() {
+        if (CLIENT != null) {
+            CLIENT.close();
+        }
+    }
+
+    @Override
+    public NaiveRedisRawStorageClient getClient() {
+        return CLIENT;
+    }
 }

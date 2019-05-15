@@ -32,9 +32,9 @@ import com.heimuheimu.naiveredis.exception.TimeoutException;
  *
  * @author heimuheimu
  */
-public interface NaiveRedisClientDelegate extends NaiveRedisStorageClientDelegate, NaiveRedisCountClientDelegate,
-        NaiveRedisSetClientDelegate, NaiveRedisSortedSetClientDelegate, NaiveRedisGeoClientDelegate,
-        NaiveRedisListClientDelegate, NaiveRedisHashesClientDelegate {
+public interface NaiveRedisClientDelegate extends NaiveRedisStorageClientDelegate, NaiveRedisRawStorageClientDelegate,
+        NaiveRedisCountClientDelegate, NaiveRedisSetClientDelegate, NaiveRedisSortedSetClientDelegate,
+        NaiveRedisGeoClientDelegate, NaiveRedisListClientDelegate, NaiveRedisHashesClientDelegate {
 
     @Override
     default void expire(String key, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {

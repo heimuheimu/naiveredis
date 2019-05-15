@@ -78,6 +78,11 @@ public class DirectRedisClient implements NaiveRedisClientDelegate, Closeable {
     private final NaiveRedisStorageClient naiveRedisStorageClient;
 
     /**
+     * Redis 字符串存储客户端
+     */
+    private final NaiveRedisRawStorageClient naiveRedisRawStorageClient;
+
+    /**
      * Redis 计数器客户端
      */
     private final NaiveRedisCountClient naiveRedisCountClient;
@@ -173,6 +178,7 @@ public class DirectRedisClient implements NaiveRedisClientDelegate, Closeable {
         this.slowExecutionThreshold = TimeUnit.NANOSECONDS.convert(slowExecutionThreshold, TimeUnit.MILLISECONDS); //将毫秒转换为纳秒
 
         this.naiveRedisStorageClient = new DirectRedisStorageClient(redisChannel, timeout, this.slowExecutionThreshold, compressionThreshold);
+        this.naiveRedisRawStorageClient = new DirectRedisRawStorageClient(redisChannel, timeout, this.slowExecutionThreshold, compressionThreshold);
         this.naiveRedisCountClient = new DirectRedisCountClient(redisChannel, timeout, this.slowExecutionThreshold);
         this.naiveRedisSetClient = new DirectRedisSetClient(redisChannel, timeout, this.slowExecutionThreshold);
         this.naiveRedisSortedSetClient = new DirectRedisSortedSetClient(redisChannel, timeout, this.slowExecutionThreshold);
@@ -184,6 +190,11 @@ public class DirectRedisClient implements NaiveRedisClientDelegate, Closeable {
     @Override
     public NaiveRedisStorageClient getNaiveRedisStorageClient() {
         return naiveRedisStorageClient;
+    }
+
+    @Override
+    public NaiveRedisRawStorageClient getNaiveRedisRawStorageClient() {
+        return naiveRedisRawStorageClient;
     }
 
     @Override

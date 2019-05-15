@@ -86,6 +86,36 @@ public enum RedisClientMethod {
     SET_IF_ABSENT_WITH_EXPIRE("#setIfAbsent(String key, Object value, int expiry)", false),
 
     /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#getString(String)
+     */
+    GET_STRING("#getString(String key)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#multiGetString(Set)
+     */
+    MULTI_GET_STRING("#multiGetString(Set<String> keySet)", true),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#setString(String, String)
+     */
+    SET_STRING("#setString(String key, String value)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#setString(String, String, int)
+     */
+    SET_STRING_WITH_EXPIRE("#setString(String key, String value, int expiry)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#setStringIfAbsent(String, String)
+     */
+    SET_STRING_IF_ABSENT("#setStringIfAbsent(String key, String value)", false),
+
+    /**
+     * @see com.heimuheimu.naiveredis.NaiveRedisClient#setStringIfAbsent(String, String, int)
+     */
+    SET_STRING_IF_ABSENT_WITH_EXPIRE("#setStringIfAbsent(String key, String value, int expiry)", false),
+
+    /**
      * @see com.heimuheimu.naiveredis.NaiveRedisClient#getCount(String)
      */
     GET_COUNT("#getCount(String key)", true),

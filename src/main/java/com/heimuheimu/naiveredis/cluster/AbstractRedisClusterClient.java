@@ -93,7 +93,7 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
 
     @Override
     public <T> Map<String, T> multiGet(Set<String> keySet) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return internalMultiGet(keySet, false);
+        return internalMultiGet(keySet, RedisClientMethod.MULTI_GET);
     }
 
     @Override
@@ -135,6 +135,57 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
     }
 
     @Override
+    public String getString(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+
+        return getClient(RedisClientMethod.GET_STRING, parameterMap).getString(key);
+    }
+
+    @Override
+    public Map<String, String> multiGetString(Set<String> keySet) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return internalMultiGet(keySet, RedisClientMethod.MULTI_GET_STRING);
+    }
+
+    @Override
+    public void setString(String key, String value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("value", value);
+
+        getClient(RedisClientMethod.SET_STRING, parameterMap).setString(key, value);
+    }
+
+    @Override
+    public void setString(String key, String value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("value", value);
+        parameterMap.put("expiry", expiry);
+
+        getClient(RedisClientMethod.SET_STRING_WITH_EXPIRE, parameterMap).setString(key, value, expiry);
+    }
+
+    @Override
+    public boolean setStringIfAbsent(String key, String value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("value", value);
+
+        return getClient(RedisClientMethod.SET_STRING_IF_ABSENT, parameterMap).setStringIfAbsent(key, value);
+    }
+
+    @Override
+    public boolean setStringIfAbsent(String key, String value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        parameterMap.put("key", key);
+        parameterMap.put("value", value);
+        parameterMap.put("expiry", expiry);
+
+        return getClient(RedisClientMethod.SET_STRING_IF_ABSENT_WITH_EXPIRE, parameterMap).setStringIfAbsent(key, value, expiry);
+    }
+
+    @Override
     public Long getCount(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         Map<String, Object> parameterMap = new LinkedHashMap<>();
         parameterMap.put("key", key);
@@ -144,7 +195,7 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
 
     @Override
     public Map<String, Long> multiGetCount(Set<String> keySet) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        return internalMultiGet(keySet, true);
+        return internalMultiGet(keySet, RedisClientMethod.MULTI_GET_COUNT);
     }
 
     @Override
@@ -822,21 +873,20 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> Map<String, T> internalMultiGet(Set<String> keySet, boolean isGetCount) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+    private <T> Map<String, T> internalMultiGet(Set<String> keySet, RedisClientMethod method) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         if (keySet == null || keySet.isEmpty()) {
             return new HashMap<>();
         }
 
         Map<String, Object> parameterMap = new LinkedHashMap<>();
-        parameterMap.put("isGetCount", isGetCount);
+        parameterMap.put("method", method);
         parameterMap.put("keySet", keySet);
 
-        RedisClientMethod redisClientMethod = isGetCount ? RedisClientMethod.MULTI_GET_COUNT : RedisClientMethod.MULTI_GET;
         Map<DirectRedisClient, Set<String>> clusterKeyMap = new HashMap<>();
         for (String key : keySet) {
             parameterMap.put("key", key);
 
-            DirectRedisClient client = getClient(redisClientMethod, parameterMap);
+            DirectRedisClient client = getClient(method, parameterMap);
             Set<String> thisClientKeySet = clusterKeyMap.get(client);
             //noinspection Java8MapApi
             if (thisClientKeySet == null) {
@@ -850,7 +900,7 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
             Map<String, T> result = new HashMap<>();
             List<Future<Map<String, T>>> futureList = new ArrayList<>();
             for (DirectRedisClient client : clusterKeyMap.keySet()) {
-                Future<Map<String, T>> future = multiGetExecutor.submit(client, clusterKeyMap.get(client), isGetCount);
+                Future<Map<String, T>> future = multiGetExecutor.submit(client, clusterKeyMap.get(client), method);
                 if (future != null) {
                     futureList.add(future);
                 }
@@ -860,7 +910,7 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
                     result.putAll(future.get());
                 } catch (Exception e) { // should not happen
                     Map<String, Object> errorParameterMap = new LinkedHashMap<>();
-                    errorParameterMap.put("isGetCount", isGetCount);
+                    errorParameterMap.put("method", method);
                     errorParameterMap.put("keySet", keySet);
                     String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog("AbstractRedisClusterClient#internalMultiGet(Set<String> keySet, boolean isGetCount)",
                             e.getMessage(), errorParameterMap);
@@ -872,13 +922,15 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
             return result;
         } else if (clusterKeyMap.size() == 1) { //如果只有一个 Client，不需要使用线程池执行
             DirectRedisClient singleClient = clusterKeyMap.keySet().iterator().next();
-            if (isGetCount) {
-                return (Map<String, T>) singleClient.multiGetCount(clusterKeyMap.get(singleClient));
-            } else {
+            if (method == RedisClientMethod.MULTI_GET) {
                 return singleClient.multiGet(clusterKeyMap.get(singleClient));
+            } else if (method == RedisClientMethod.MULTI_GET_STRING){
+                return (Map<String, T>) singleClient.multiGetString(clusterKeyMap.get(singleClient));
+            } else {
+                return (Map<String, T>) singleClient.multiGetCount(clusterKeyMap.get(singleClient));
             }
         } else { //should not happen, just for bug detect
-            LOG.error("Empty cluster key map. `isGetCount`: `{}`. `keySet`:`{}`.", isGetCount, keySet);
+            LOG.error("Empty cluster key map. `method`: `{}`. `keySet`:`{}`.", method, keySet);
             return new HashMap<>();
         }
     }

@@ -912,7 +912,7 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient {
                     Map<String, Object> errorParameterMap = new LinkedHashMap<>();
                     errorParameterMap.put("method", method);
                     errorParameterMap.put("keySet", keySet);
-                    String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog("AbstractRedisClusterClient#internalMultiGet(Set<String> keySet, boolean isGetCount)",
+                    String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog("AbstractRedisClusterClient#internalMultiGet(Set<String> keySet, RedisClientMethod method)",
                             e.getMessage(), errorParameterMap);
                     LOG.error(errorMessage, e);
                     clusterMonitor.onMultiGetError();

@@ -30,14 +30,8 @@ import com.heimuheimu.naiveredis.facility.ConsistentHashLocator;
 import com.heimuheimu.naiveredis.facility.clients.DirectRedisClientList;
 import com.heimuheimu.naiveredis.facility.clients.DirectRedisClientListListener;
 import com.heimuheimu.naiveredis.net.SocketConfiguration;
-import com.heimuheimu.naiveredis.util.LogBuildUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * 一个简单的 Redis 集群客户端，连接多个 Redis 服务，根据 Key 进行 Hash 选择。
@@ -46,12 +40,7 @@ import java.util.Map;
  *
  * @author heimuheimu
  */
-public class SimpleRedisClusterClient extends AbstractRedisClusterClient implements Closeable {
-
-    /**
-     * Redis 命令执行错误日志
-     */
-    private static final Logger NAIVEREDIS_ERROR_LOG = LoggerFactory.getLogger("NAIVEREDIS_ERROR_LOG");
+public class SimpleRedisClusterClient extends AbstractRedisClusterClient {
 
     /**
      * Redis 地址数组
@@ -103,6 +92,7 @@ public class SimpleRedisClusterClient extends AbstractRedisClusterClient impleme
 
     @Override
     public void close() {
+        super.close();
         directRedisClientList.close();
     }
 
@@ -115,19 +105,8 @@ public class SimpleRedisClusterClient extends AbstractRedisClusterClient impleme
     }
 
     @Override
-    protected DirectRedisClient getClient(RedisClientMethod method, Map<String, Object> parameterMap) throws IllegalStateException {
-        String key = (String) parameterMap.get("key");
+    protected DirectRedisClient getClient(RedisClientMethod method, String key) {
         int clientIndex = consistentHashLocator.getIndex(key, hosts.length);
-        DirectRedisClient client = directRedisClientList.get(clientIndex);
-        if (client == null || !client.isAvailable()) {
-            Map<String, Object> errorParameterMap = new LinkedHashMap<>(parameterMap);
-            errorParameterMap.put("clientIndex", clientIndex);
-            String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog("SimpleRedisClusterClient" + method.getMethodName(),
-                    "no available client", errorParameterMap);
-            NAIVEREDIS_ERROR_LOG.error(errorMessage);
-            clusterMonitor.onUnavailable();
-            throw new IllegalStateException(errorMessage);
-        }
-        return client;
+        return directRedisClientList.get(clientIndex);
     }
 }

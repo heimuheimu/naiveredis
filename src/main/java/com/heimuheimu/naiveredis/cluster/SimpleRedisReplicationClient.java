@@ -31,14 +31,8 @@ import com.heimuheimu.naiveredis.facility.clients.DirectRedisClientListListener;
 import com.heimuheimu.naiveredis.facility.parameter.ConstructorParameterChecker;
 import com.heimuheimu.naiveredis.facility.parameter.Parameters;
 import com.heimuheimu.naiveredis.net.SocketConfiguration;
-import com.heimuheimu.naiveredis.util.LogBuildUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -49,14 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author heimuheimu
  */
-public class SimpleRedisReplicationClient extends AbstractRedisClusterClient implements Closeable {
-
-    private static final Logger LOG = LoggerFactory.getLogger(SimpleRedisReplicationClient.class);
-
-    /**
-     * Redis 命令执行错误日志
-     */
-    private static final Logger NAIVEREDIS_ERROR_LOG = LoggerFactory.getLogger("NAIVEREDIS_ERROR_LOG");
+public class SimpleRedisReplicationClient extends AbstractRedisClusterClient {
 
     /**
      * 记录已获取 Slave {@code DirectRedisClient} 的次数，用于做负载均衡
@@ -138,6 +125,7 @@ public class SimpleRedisReplicationClient extends AbstractRedisClusterClient imp
 
     @Override
     public void close() {
+        super.close();
         directRedisClientList.close();
     }
 
@@ -152,7 +140,7 @@ public class SimpleRedisReplicationClient extends AbstractRedisClusterClient imp
     }
 
     @Override
-    protected DirectRedisClient getClient(RedisClientMethod method, Map<String, Object> parameterMap) throws IllegalStateException {
+    protected DirectRedisClient getClient(RedisClientMethod method, String key) {
         boolean useSlave = method.isReadOnly();
         DirectRedisClient client;
         if (useSlave) { // 获取 Slave 直连客户端
@@ -160,15 +148,6 @@ public class SimpleRedisReplicationClient extends AbstractRedisClusterClient imp
             client = directRedisClientList.orAvailableClient(clientIndex, 0);
         } else { // 获取 Master 直连客户端
             client = directRedisClientList.get(0);
-        }
-        if (client == null || !client.isAvailable()) {
-            Map<String, Object> errorParameterMap = new LinkedHashMap<>(parameterMap);
-            errorParameterMap.put("useSlave", useSlave);
-            String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog("SimpleRedisReplicationClient" + method.getMethodName(),
-                    "no available client", errorParameterMap);
-            NAIVEREDIS_ERROR_LOG.error(errorMessage);
-            clusterMonitor.onUnavailable();
-            throw new IllegalStateException(errorMessage);
         }
         return client;
     }

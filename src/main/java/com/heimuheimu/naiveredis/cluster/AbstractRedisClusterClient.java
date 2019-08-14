@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * Redis 集群客户端抽象类。
@@ -50,13 +51,25 @@ import java.util.concurrent.Future;
  */
 public abstract class AbstractRedisClusterClient implements NaiveRedisClient, Closeable {
 
+    /**
+     * Redis 命令执行错误日志
+     */
     protected static final Logger NAIVEREDIS_ERROR_LOG = LoggerFactory.getLogger("NAIVEREDIS_ERROR_LOG");
-    
+
+    /**
+     * 错误日志
+     */
     protected final Logger LOG = LoggerFactory.getLogger(getClass());
 
-    private final ClusterMonitor clusterMonitor = ClusterMonitor.getInstance();
+    /**
+     * Redis 集群客户端信息监控器
+     */
+    protected final ClusterMonitor clusterMonitor = ClusterMonitor.getInstance();
 
-    private final RedisMethodAsyncExecutor asyncExecutor = new RedisMethodAsyncExecutor();
+    /**
+     * Redis 方法异步执行器
+     */
+    protected final RedisMethodAsyncExecutor asyncExecutor = new RedisMethodAsyncExecutor();
 
     /**
      * 根据调用的 Redis 方法和 Key 获得 Cluster 中对应的 Redis 直连客户端，如果该直连客户端当前不可用，允许返回 {@code null}。
@@ -67,11 +80,16 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient, Cl
      */
     protected abstract DirectRedisClient getClient(RedisClientMethod method, String key);
 
-    @SuppressWarnings("unchecked")
-    protected <T> T execute(RedisClientMethod method, String key, RedisMethodDelegate delegate) throws IllegalArgumentException {
+    /**
+     * 检查 Key 是否为 {@code null} 或空，如果满足，则抛出 IllegalArgumentException 异常。
+     *
+     * @param method 调用的 Redis 方法
+     * @param key Redis key
+     * @throws IllegalArgumentException 如果 Key 为 {@code null} 或空，将会抛出此异常
+     */
+    protected void checkKey(RedisClientMethod method, String key) throws IllegalArgumentException {
         if (key == null || key.isEmpty()) {
             Map<String, Object> errorParameterMap = new LinkedHashMap<>();
-            errorParameterMap.put("method", method);
             errorParameterMap.put("key", key);
             String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog(getClass().getSimpleName() + method.getMethodName(),
                     "key could not be empty", errorParameterMap);
@@ -79,111 +97,167 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient, Cl
             LOG.error(errorMessage);
             throw new IllegalArgumentException(errorMessage);
         }
+    }
+
+    /**
+     * 调用 {@link #getClient(RedisClientMethod, String)} 方法获取可用的 Redis 直连客户端，如果获取过程中发生错误，
+     * 或者当前没有可用的 Redis 直连客户端，将会抛出 IllegalArgumentException 异常，该方法不会返回 {@code null}。
+     *
+     * @param method 调用的 Redis 方法
+     * @param key Redis key
+     * @return Redis 直连客户端，不会为 {@code null}
+     * @throws IllegalStateException 如果 Redis 直连客户端为 {@code null} 或不可用，将会抛出此异常
+     */
+    protected DirectRedisClient getAvailableClient(RedisClientMethod method, String key) throws IllegalStateException {
         DirectRedisClient client = null;
+        Exception exception = null;
         try {
             client = getClient(method, key);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            exception = e;
+        }
         if (client == null || !client.isAvailable()) {
+            clusterMonitor.onUnavailable();
             Map<String, Object> errorParameterMap = new LinkedHashMap<>();
             errorParameterMap.put("key", key);
             String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog(getClass().getSimpleName() + method.getMethodName(),
                     "DirectRedisClient is not available", errorParameterMap);
             NAIVEREDIS_ERROR_LOG.error(errorMessage);
-            LOG.error(errorMessage);
-            clusterMonitor.onUnavailable();
-            throw new IllegalStateException(errorMessage);
+            if (exception == null) {
+                LOG.error(errorMessage);
+                throw new IllegalStateException(errorMessage);
+            } else {
+                LOG.error(errorMessage, exception);
+                throw new IllegalStateException(errorMessage, exception);
+            }
         }
+        return client;
+    }
+
+    /**
+     * 根据调用的 Redis 方法和 Key 获得 Cluster 中对应的 Redis 直连客户端，并使用该直连客户端执行 Redis 方法代理，返回执行结果。
+     *
+     * @param method 调用的 Redis 方法
+     * @param key Redis Key
+     * @param delegate Redis 方法执行代理
+     * @param <T> Redis Value 类型
+     * @return Redis 方法执行结果
+     * @throws IllegalArgumentException 如果 Key 为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalStateException 如果 Redis 直连客户端为 {@code null} 或不可用，将会抛出此异常
+     */
+    @SuppressWarnings("unchecked")
+    protected <T> T execute(RedisClientMethod method, String key, RedisMethodDelegate delegate)
+            throws IllegalArgumentException, IllegalStateException {
+        checkKey(method, key);
+        DirectRedisClient client = getAvailableClient(method, key);
         return (T) delegate.delegate(client);
     }
 
-    protected Map<DirectRedisClient, Set<String>> partitions(RedisClientMethod method, Set<String> keySet) throws IllegalArgumentException {
-        List<String> failedKeyList = new ArrayList<>();
-        Map<DirectRedisClient, Set<String>> clusterKeyMap = new HashMap<>();
-        for (String key : keySet) {
-            if (key == null || key.isEmpty()) {
-                Map<String, Object> errorParameterMap = new LinkedHashMap<>();
-                errorParameterMap.put("keySet", keySet);
-                String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog(getClass().getSimpleName() + method.getMethodName(),
-                        "keySet could not contain empty key", errorParameterMap);
-                NAIVEREDIS_ERROR_LOG.error(errorMessage);
-                LOG.error(errorMessage);
-                throw new IllegalArgumentException(errorMessage);
-            }
-            DirectRedisClient client = null;
-            try {
-                client = getClient(method, key);
-            } catch (Exception ignored) {}
-            if (client != null && client.isAvailable()) {
-                Set<String> thisClientKeySet = clusterKeyMap.computeIfAbsent(client, k -> new HashSet<>());
-                thisClientKeySet.add(key);
-            } else {
-                failedKeyList.add(key);
-            }
-        }
-        if (!failedKeyList.isEmpty()) {
-            Map<String, Object> errorParameterMap = new LinkedHashMap<>();
-            errorParameterMap.put("keySet", failedKeyList);
-            String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog(getClass().getSimpleName() + method.getMethodName(),
-                    "DirectRedisClient is not available", errorParameterMap);
-            NAIVEREDIS_ERROR_LOG.error(errorMessage);
+    /**
+     * 构造一个 Redis Multi Get 方法执行代理，该方法不会返回 {@code null}。
+     *
+     * @param method 调用的 Redis Multi Get 方法
+     * @param keySet Key 列表
+     * @return Redis Multi Get 方法执行代理
+     * @throws UnsupportedOperationException 如果 Redis 方法不属于 Multi Get 方法中的一种，将会抛出此异常
+     */
+    protected RedisMethodDelegate buildMultiGetDelegate(RedisClientMethod method, Set<String> keySet) throws UnsupportedOperationException {
+        if (method == RedisClientMethod.MULTI_GET) {
+            return client -> client.multiGet(keySet);
+        } else if (method == RedisClientMethod.MULTI_GET_STRING) {
+            return client -> client.multiGetString(keySet);
+        } else if (method == RedisClientMethod.MULTI_GET_COUNT) {
+            return client -> client.multiGetCount(keySet);
+        } else { // should not happen, just for bug detection
+            String errorMessage = getClass().getSimpleName() + method.getMethodName() + " is not supported.";
             LOG.error(errorMessage);
-            clusterMonitor.onUnavailable();
+            throw new UnsupportedOperationException(errorMessage);
         }
-        return clusterKeyMap;
     }
 
+    /**
+     * 执行 Redis Multi Get 方法失败后，统一调用此方法进行日志打印及监控。
+     *
+     * @param method 调用的 Redis Multi Get 方法
+     * @param keySet Key 列表
+     * @param errorMessage 错误描述信息
+     * @param error 异常信息，允许为 {@code null}
+     */
+    protected void onMultiGetFailed(RedisClientMethod method, Set<String> keySet, String errorMessage, Exception error) {
+        Map<String, Object> errorParameterMap = new LinkedHashMap<>();
+        errorParameterMap.put("keySet", keySet);
+        String log = LogBuildUtil.buildMethodExecuteFailedLog(getClass().getSimpleName() + method.getMethodName(),
+                errorMessage, errorParameterMap);
+        NAIVEREDIS_ERROR_LOG.error(errorMessage);
+        if (error != null) {
+            LOG.error(log, error);
+        } else {
+            LOG.error(log);
+        }
+        clusterMonitor.onMultiGetError();
+    }
+
+    /**
+     * 合并 Redis Multi Get 方法返回的结果。
+     *
+     * @param method 调用的 Redis Multi Get 方法
+     * @param result 合并后的结果 Map
+     * @param futureMap Redis Multi Get 方法执行任务 Map，Key 为执行中的任务，Value 为该 Multi Get 方法使用的 Key 列表
+     * @param <T> Redis Value 类型
+     */
+    protected <T> void mergeMultiGetResult(RedisClientMethod method, Map<String, T> result,
+                                           Map<Future<Map<String, T>>, Set<String>> futureMap) {
+        for (Future<Map<String, T>> future : futureMap.keySet()) {
+            try {
+                result.putAll(future.get());
+            } catch (Exception e) {
+                onMultiGetFailed(method, futureMap.get(future), "unexpected error", e);
+            }
+        }
+    }
+
+    /**
+     * 执行指定的 Redis Multi Get 方法。
+     *
+     * @param method 调用的 Redis Multi Get 方法
+     * @param keySet Key 列表
+     * @param <T> Redis Value 类型
+     * @return Key 列表对应的 Redis Value Map，不会为 {@code null}
+     * @throws IllegalArgumentException 如果 Key 列表中包含的 Key 为 {@code null} 或空，将会抛出此异常
+     */
     protected <T> Map<String, T> internalMultiGet(RedisClientMethod method, Set<String> keySet) throws IllegalArgumentException {
         Map<String, T> result = new HashMap<>();
         if (keySet == null || keySet.isEmpty()) {
             return result;
         }
-        Map<DirectRedisClient, Set<String>> keysMap;
-        try {
-            keysMap = partitions(method, keySet);
-        } catch (Exception e) {
-            clusterMonitor.onMultiGetError();
-            throw e;
+        Map<DirectRedisClient, Set<String>> keysMap = new HashMap<>();
+        for (String key : keySet) {
+            try {
+                checkKey(method, key);
+            } catch (IllegalArgumentException e) {
+                onMultiGetFailed(method, keySet, "keySet could not contain empty key", e);
+                throw e;
+            }
+            DirectRedisClient client = null;
+            try {
+                client = getAvailableClient(method, key);
+            } catch (Exception ignored) {}
+            if (client != null) {
+                Set<String> thisClientKeySet = keysMap.computeIfAbsent(client, k -> new HashSet<>());
+                thisClientKeySet.add(key);
+            }
         }
         Map<Future<Map<String, T>>, Set<String>> futureMap = new HashMap<>();
         for (DirectRedisClient client : keysMap.keySet()) {
             Set<String> subKeySet = keysMap.get(client);
             try {
-                RedisMethodDelegate delegate;
-                if (method == RedisClientMethod.MULTI_GET) {
-                    delegate = theClient -> theClient.multiGet(subKeySet);
-                } else if (method == RedisClientMethod.MULTI_GET_STRING) {
-                    delegate = theClient -> theClient.multiGetString(subKeySet);
-                } else if (method == RedisClientMethod.MULTI_GET_COUNT) {
-                    delegate = theClient -> theClient.multiGetCount(subKeySet);
-                } else { // should not happen, just for bug detection
-                    String errorMessage = getClass().getSimpleName() + method.getMethodName() + " is not supported.";
-                    LOG.error(errorMessage);
-                    throw new UnsupportedOperationException(errorMessage);
-                }
+                RedisMethodDelegate delegate = buildMultiGetDelegate(method, subKeySet);
                 futureMap.put(asyncExecutor.submit(client, delegate), subKeySet);
-            } catch (Exception e) {
-                Map<String, Object> errorParameterMap = new LinkedHashMap<>();
-                errorParameterMap.put("keySet", subKeySet);
-                String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog(getClass().getSimpleName() + method.getMethodName(),
-                        "thread pool is too busy", errorParameterMap);
-                NAIVEREDIS_ERROR_LOG.error(errorMessage);
-                LOG.error(errorMessage, e);
-                clusterMonitor.onMultiGetError();
+            } catch (RejectedExecutionException e) {
+                onMultiGetFailed(method, subKeySet, "thread pool is too busy", e);
             }
         }
-        for (Future<Map<String, T>> future : futureMap.keySet()) {
-            try {
-                result.putAll(future.get());
-            } catch (Exception e) {
-                Map<String, Object> errorParameterMap = new LinkedHashMap<>();
-                errorParameterMap.put("keySet", futureMap.get(future));
-                String errorMessage = LogBuildUtil.buildMethodExecuteFailedLog(getClass().getSimpleName() + method.getMethodName(),
-                        "unexpected error", errorParameterMap);
-                NAIVEREDIS_ERROR_LOG.error(errorMessage);
-                LOG.error(errorMessage, e);
-                clusterMonitor.onMultiGetError();
-            }
-        }
+        mergeMultiGetResult(method, result, futureMap);
         return result;
     }
 

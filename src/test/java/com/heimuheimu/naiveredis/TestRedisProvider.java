@@ -94,4 +94,18 @@ public class TestRedisProvider {
             return slaveHosts.split(",");
         }
     }
+
+    /**
+     * 获得用于单元测试使用的 Redis 集群启动主机地址数组。
+     *
+     * @returnRedis 集群启动主机地址数组
+     */
+    public static String[] getClusterBootstrapHosts() {
+        String hosts = PROPERTIES.getProperty("redis.standard.cluster.bootstrap.hosts");
+        if (hosts == null || hosts.isEmpty()) {
+            return null;
+        } else {
+            return hosts.split(",");
+        }
+    }
 }

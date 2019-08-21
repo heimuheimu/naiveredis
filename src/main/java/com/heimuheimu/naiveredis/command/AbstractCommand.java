@@ -50,6 +50,11 @@ public abstract class AbstractCommand implements Command {
     }
 
     @Override
+    public boolean hasResponseData() {
+        return responseData == null;
+    }
+
+    @Override
     public RedisData getResponseData(long timeout) throws TimeoutException, IllegalStateException {
         boolean latchFlag;
         try {

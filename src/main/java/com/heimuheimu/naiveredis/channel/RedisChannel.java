@@ -192,6 +192,7 @@ public class RedisChannel implements Closeable {
         } catch (TimeoutException e) {
             //如果两次超时异常发生在 1s 以内，则认为是连续失败
             if (System.currentTimeMillis() - lastTimeoutExceptionTime < 1000) {
+                //noinspection NonAtomicOperationOnVolatileField
                 continuousTimeoutExceptionTimes ++;
             } else {
                 continuousTimeoutExceptionTimes = 1;
@@ -319,29 +320,25 @@ public class RedisChannel implements Closeable {
                         command = commandQueue.poll(pingPeriod, TimeUnit.SECONDS);
                         if (command == null) { // 如果心跳检测时间内没有请求，创建一个 Ping 命令进行发送
                             final PingCommand pingCommand = new PingCommand();
-                            new Thread() { // 启动一个异步线程检查心跳是否有正常返回
-
-                                @Override
-                                public void run() {
-                                    try {
-                                        RedisData responseData = pingCommand.getResponseData(5000);
-                                        if (!responseData.isSimpleString() || !"PONG".equals(responseData.getText())) { // PING 命令非预期返回
-                                            REDIS_CONNECTION_LOG.info("RedisChannel need to be closed: `invalid response for PING command`. Host: `{}`. Timeout: `5000ms`. Response: `{}`.", host, responseData);
-                                            RedisChannel.this.close();
-                                        } else {
-                                            LOG.debug("Receive response for PING command success. Host: `{}`.", host);
-                                        }
-                                    } catch (TimeoutException e) {
-                                        REDIS_CONNECTION_LOG.info("RedisChannel need to be closed: `wait response timeout for PING command`. Host: `{}`. Timeout: `5000ms`.", host);
+                            // 启动一个异步线程检查心跳是否有正常返回
+                            new Thread(() -> {
+                                try {
+                                    RedisData responseData = pingCommand.getResponseData(5000);
+                                    if (!responseData.isSimpleString() || !"PONG".equals(responseData.getText())) { // PING 命令非预期返回
+                                        REDIS_CONNECTION_LOG.info("RedisChannel need to be closed: `invalid response for PING command`. Host: `{}`. Timeout: `5000ms`. Response: `{}`.", host, responseData);
                                         RedisChannel.this.close();
-                                    } catch (Exception e) {
-                                        REDIS_CONNECTION_LOG.info("RedisChannel need to be closed: `unexpected error for PING command. See the naiveredis log for more information. `. Host: `{}`. Timeout: `5000ms`.", host);
-                                        LOG.error("RedisChannel need to be closed: `unexpected error for PING command`. Host: `" + host + "`. Timeout: `5000ms`.", e);
-                                        RedisChannel.this.close();
+                                    } else {
+                                        LOG.debug("Receive response for PING command success. Host: `{}`.", host);
                                     }
+                                } catch (TimeoutException e) {
+                                    REDIS_CONNECTION_LOG.info("RedisChannel need to be closed: `wait response timeout for PING command`. Host: `{}`. Timeout: `5000ms`.", host);
+                                    RedisChannel.this.close();
+                                } catch (Exception e) {
+                                    REDIS_CONNECTION_LOG.info("RedisChannel need to be closed: `unexpected error for PING command. See the naiveredis log for more information. `. Host: `{}`. Timeout: `5000ms`.", host);
+                                    LOG.error("RedisChannel need to be closed: `unexpected error for PING command`. Host: `" + host + "`. Timeout: `5000ms`.", e);
+                                    RedisChannel.this.close();
                                 }
-
-                            }.start();
+                            }).start();
                             command = pingCommand;
                         }
                     }
@@ -372,7 +369,9 @@ public class RedisChannel implements Closeable {
                         RedisData responseData = reader.read();
                         if (responseData != null) {
                             command.receiveResponseData(responseData);
-                            waitingQueue.poll();
+                            if (!command.hasResponseData()) {
+                                waitingQueue.poll();
+                            }
                         } else {
                             REDIS_CONNECTION_LOG.info("RedisChannel need to be closed: `end of the input stream has been reached`. Host: `{}`.", host);
                             close();
@@ -410,7 +409,9 @@ public class RedisChannel implements Closeable {
                 System.arraycopy(requestPacket, 0, sendBuffer, sendBufferOffset, requestPacket.length);
                 sendBufferOffset += requestPacket.length;
 
-                mergedCommandList.add(command);
+                if (command.hasResponseData()) {
+                    mergedCommandList.add(command);
+                }
                 return true;
             } else {
                 return false;
@@ -429,8 +430,9 @@ public class RedisChannel implements Closeable {
 
         private void sendPacket(Command command, byte[] requestPacket) throws IOException {
             outputStream.write(requestPacket);
-
-            waitingQueue.add(command);
+            if (command.hasResponseData()) {
+                waitingQueue.add(command);
+            }
         }
     }
 }

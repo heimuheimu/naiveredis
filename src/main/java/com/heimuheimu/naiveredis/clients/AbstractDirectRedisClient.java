@@ -28,6 +28,7 @@ import com.heimuheimu.naivemonitor.monitor.ExecutionMonitor;
 import com.heimuheimu.naiveredis.NaiveRedisKeysClient;
 import com.heimuheimu.naiveredis.channel.RedisChannel;
 import com.heimuheimu.naiveredis.command.Command;
+import com.heimuheimu.naiveredis.command.cluster.AskingCommand;
 import com.heimuheimu.naiveredis.command.keys.DeleteCommand;
 import com.heimuheimu.naiveredis.command.keys.ExpireCommand;
 import com.heimuheimu.naiveredis.command.keys.TTLCommand;
@@ -35,6 +36,7 @@ import com.heimuheimu.naiveredis.data.RedisData;
 import com.heimuheimu.naiveredis.data.RedisDataParser;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
+import com.heimuheimu.naiveredis.facility.ASKRedirectionHelper;
 import com.heimuheimu.naiveredis.facility.parameter.MethodParameterChecker;
 import com.heimuheimu.naiveredis.facility.parameter.Parameters;
 import com.heimuheimu.naiveredis.monitor.ExecutionMonitorFactory;
@@ -168,6 +170,9 @@ public abstract class AbstractDirectRedisClient implements NaiveRedisKeysClient 
         long startTime = System.nanoTime();
         try {
             Command command = builder.build();
+            if (ASKRedirectionHelper.isASKRedirection()) {
+                command = new AskingCommand(command);
+            }
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Client will send following redis command:\n\r" + command.toString());
             }

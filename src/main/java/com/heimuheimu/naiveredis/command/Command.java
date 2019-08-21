@@ -44,6 +44,13 @@ public interface Command {
     byte[] getRequestByteArray();
 
     /**
+     * {@link com.heimuheimu.naiveredis.channel.RedisChannel}  在发送完命令对应的命令后，会通过该方法判断该命令是否需要继续接收响应数据。
+     *
+     * @return 该命令是否需要继续接收响应数据
+     */
+    boolean hasResponseData();
+
+    /**
      * {@link com.heimuheimu.naiveredis.channel.RedisChannel} 接收到该命令的响应数据后，会调用此方法进行设置。
      *
      * @param responseData 响应数据

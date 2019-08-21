@@ -2,6 +2,7 @@ package com.heimuheimu.naiveredis.cluster;
 
 import com.heimuheimu.naivemonitor.monitor.ThreadPoolMonitor;
 import com.heimuheimu.naiveredis.DirectRedisClient;
+import com.heimuheimu.naiveredis.facility.ASKRedirectionHelper;
 import com.heimuheimu.naiveredis.monitor.ThreadPoolMonitorFactory;
 
 import java.io.Closeable;
@@ -42,10 +43,24 @@ class RedisMethodAsyncExecutor implements Closeable {
      * @return Future 实例
      * @throws RejectedExecutionException 如果线程池繁忙，将会抛出此异常
      */
-    @SuppressWarnings("unchecked")
     <T> Future<T> submit(DirectRedisClient client, RedisMethodDelegate delegate) throws RejectedExecutionException {
+        return submit(client, delegate, false);
+    }
+
+    /**
+     * 提交一个异步执行 Redis 方法的任务。
+     *
+     * @param client 执行该 Redis 方法使用的 Redis 直连客户端，不允许为 {@code null}
+     * @param delegate Redis 方法执行代理，不允许为 {@code null}
+     * @param isASKRedirection 执行 Redis 方法前是否需要发起 ASKING 命令
+     * @param <T> Redis 方法返回值，可能为 {@code null}
+     * @return Future 实例
+     * @throws RejectedExecutionException 如果线程池繁忙，将会抛出此异常
+     */
+    @SuppressWarnings("unchecked")
+    <T> Future<T> submit(DirectRedisClient client, RedisMethodDelegate delegate, boolean isASKRedirection) throws RejectedExecutionException {
         try {
-            return (Future<T>) executorService.submit(new RedisMethodExecuteTask(client, delegate));
+            return (Future<T>) executorService.submit(new RedisMethodExecuteTask(client, delegate, isASKRedirection));
         } catch (RejectedExecutionException e) {
             threadPoolMonitor.onRejected();
             throw e;
@@ -58,14 +73,26 @@ class RedisMethodAsyncExecutor implements Closeable {
 
         private final RedisMethodDelegate delegate;
 
-        public RedisMethodExecuteTask(DirectRedisClient client, RedisMethodDelegate delegate) {
+        private final boolean isASKRedirection;
+
+        public RedisMethodExecuteTask(DirectRedisClient client, RedisMethodDelegate delegate, boolean isASKRedirection) {
             this.client = client;
             this.delegate = delegate;
+            this.isASKRedirection = isASKRedirection;
         }
 
         @Override
         public Object call() {
-            return delegate.delegate(client);
+            if (isASKRedirection) {
+                try {
+                    ASKRedirectionHelper.onASKRedirection();
+                    return delegate.delegate(client);
+                } finally {
+                    ASKRedirectionHelper.removeASKRedirection();
+                }
+            } else {
+                return delegate.delegate(client);
+            }
         }
     }
 

@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Redis 直连客户端列表，提供客户端自动恢复功能。
@@ -62,6 +63,8 @@ public class DirectRedisClientList implements Closeable {
     private static final Logger REDIS_CONNECTION_LOG = LoggerFactory.getLogger("NAIVEREDIS_CONNECTION_LOG");
 
     private static final Logger LOG = LoggerFactory.getLogger(DirectRedisClientList.class);
+
+    private static final AtomicLong NAME_INDEX = new AtomicLong(0);
 
     /**
      * Redis 直连客户端列表名称
@@ -146,7 +149,7 @@ public class DirectRedisClientList implements Closeable {
      */
     public DirectRedisClientList(String name, String[] hosts, SocketConfiguration configuration, int timeout, int compressionThreshold,
                                  int slowExecutionThreshold, int pingPeriod, DirectRedisClientListListener listener) throws IllegalStateException {
-        this.name = name;
+        this.name = name + "-" + NAME_INDEX.incrementAndGet();
         this.hosts = hosts;
         this.configuration = configuration;
         this.timeout = timeout;
@@ -155,22 +158,28 @@ public class DirectRedisClientList implements Closeable {
         this.pingPeriod = pingPeriod;
         this.listener = listener;
         boolean hasAvailableClient = false;
+        boolean isNeedStartRescueTask = false;
         for (String host : hosts) {
             boolean isSuccess = createClient(-1, host);
             if (isSuccess) {
                 hasAvailableClient = true;
-                REDIS_CONNECTION_LOG.info("Add `{}` to `{}` is success. Hosts: `{}`.", host, name, hosts); // lgtm [java/print-array]
+                REDIS_CONNECTION_LOG.info("Add `{}` to `{}` is success. Hosts: `{}`.", host, this.name, hosts); // lgtm [java/print-array]
                 Methods.invokeIfNotNull("DirectRedisClientListListener#onCreated(String host)", getParameterMap(-1, host),
-                        listener, () -> listener.onCreated(name, host));
+                        listener, () -> listener.onCreated(this.name, host));
             } else {
-                REDIS_CONNECTION_LOG.error("Add `{}` to `{}` failed. Hosts: `{}`.", host, name, hosts); // lgtm [java/print-array]
+                isNeedStartRescueTask = true;
+                REDIS_CONNECTION_LOG.error("Add `{}` to `{}` failed. Hosts: `{}`.", host, this.name, hosts); // lgtm [java/print-array]
                 Methods.invokeIfNotNull("DirectRedisClientListListener#onClosed(String host)", getParameterMap(-1, host),
-                        listener, () -> listener.onClosed(name, host));
+                        listener, () -> listener.onClosed(this.name, host));
             }
         }
         if ( !hasAvailableClient ) {
-            LOG.error("There is no available `DirectRedisClient`. `name`:`" + name + "`. hosts:`" + Arrays.toString(hosts) + "`.");
-            throw new IllegalStateException("There is no available `DirectRedisClient`. `name`:`" + name + "`. hosts:`" + Arrays.toString(hosts) + "`.");
+            LOG.error("There is no available `DirectRedisClient`. `name`:`" + this.name + "`. hosts:`" + Arrays.toString(hosts) + "`.");
+            close();
+            throw new IllegalStateException("There is no available `DirectRedisClient`. `name`:`" + this.name + "`. hosts:`" + Arrays.toString(hosts) + "`.");
+        }
+        if (isNeedStartRescueTask) {
+            startRescueTask();
         }
     }
 
@@ -305,7 +314,10 @@ public class DirectRedisClientList implements Closeable {
      * @param host Redis 地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
      * @return 是否创建成功
      */
-    private boolean createClient(int clientIndex, String host) {
+    private synchronized boolean createClient(int clientIndex, String host) {
+        if (state == BeanStatusEnum.CLOSED) { // 如果已经关闭，返回创建失败
+            return false;
+        }
         DirectRedisClient client = null;
         try {
             client = new DirectRedisClient(host, configuration, timeout, compressionThreshold, slowExecutionThreshold, pingPeriod,

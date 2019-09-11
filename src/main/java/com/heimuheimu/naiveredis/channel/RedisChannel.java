@@ -381,10 +381,12 @@ public class RedisChannel implements Closeable {
                 } catch (InterruptedException ignored) { //do nothing
 
                 } catch (IOException e) {
-                    REDIS_CONNECTION_LOG.error("RedisChannel need to be closed: `[IOException] {}`. Host: `{}`.", e.getMessage(), host);
-                    LOG.error("RedisChannel need to be closed: `[IOException] " + e.getMessage() + "`. Host: `" + host
-                            + "`. Socket: `" + socket + "`.", e);
-                    close();
+                    if (state != BeanStatusEnum.CLOSED) {
+                        REDIS_CONNECTION_LOG.error("RedisChannel need to be closed: `[IOException] {}`. Host: `{}`.", e.getMessage(), host);
+                        LOG.error("RedisChannel need to be closed: `[IOException] " + e.getMessage() + "`. Host: `" + host
+                                + "`. Socket: `" + socket + "`.", e);
+                        close();
+                    }
                 } catch (Exception e) {
                     REDIS_CONNECTION_LOG.error("RedisChannel need to be closed: `{}`. Host: `{}`.", e.getMessage(), host);
                     LOG.error("RedisChannel need to be closed: `" + e.getMessage() + "`. Host: `" + host

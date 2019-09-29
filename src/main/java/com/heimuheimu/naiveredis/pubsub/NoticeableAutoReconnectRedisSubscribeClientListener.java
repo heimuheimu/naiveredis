@@ -66,7 +66,7 @@ public class NoticeableAutoReconnectRedisSubscribeClientListener implements Auto
      * @param notifierList 服务不可用或从不可用状态恢复的报警消息通知器列表，不允许 {@code null} 或空
      * @throws IllegalArgumentException 如果 notifierList 为 {@code null} 或空时，抛出此异常
      */
-    public NoticeableAutoReconnectRedisSubscribeClientListener(String project , List<ServiceAlarmMessageNotifier> notifierList)
+    public NoticeableAutoReconnectRedisSubscribeClientListener(String project, List<ServiceAlarmMessageNotifier> notifierList)
             throws IllegalArgumentException {
         this(project, notifierList, null);
     }

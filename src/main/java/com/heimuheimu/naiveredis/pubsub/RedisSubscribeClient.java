@@ -144,12 +144,14 @@ public class RedisSubscribeClient implements Closeable {
      * @throws IllegalArgumentException 如果某个 Redis channel 消息订阅者返回的 channel 列表为 {@code null} 或空，或者包含 {@code null} 或空的 channel，将会抛出此异常
      * @throws IllegalArgumentException 如果某个 Redis pattern 消息订阅者返回的 pattern 列表为 {@code null} 或空，或者包含 {@code null} 或空的 pattern，将会抛出此异常
      * @throws IllegalArgumentException 如果 Redis channel 消息订阅者列表和 Redis pattern 消息订阅者列表同时为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalStateException 如果创建 RedisSubscribeClient 过程中发生其它错误，例如 Socket 连接无法建立，将会抛出此异常
      */
     public RedisSubscribeClient(String host, SocketConfiguration configuration,
                                 int pingPeriod, Transcoder transcoder,
                                 List<NaiveRedisChannelSubscriber> channelSubscriberList,
                                 List<NaiveRedisPatternSubscriber> patternSubscriberList,
-                                UnusableServiceNotifier<RedisSubscribeClient> unusableServiceNotifier) throws IllegalArgumentException {
+                                UnusableServiceNotifier<RedisSubscribeClient> unusableServiceNotifier)
+            throws IllegalArgumentException, IllegalStateException {
         this.host = host;
         this.pingPeriod = pingPeriod;
         this.channelSubscribersMap = toChannelSubscribersMap(channelSubscriberList);
@@ -513,7 +515,7 @@ public class RedisSubscribeClient implements Closeable {
                 while (state == BeanStatusEnum.NORMAL) {
                     RedisData response = reader.read();
                     lastActiveTime = System.currentTimeMillis();
-                    if (response.isArray()) {
+                    if (response != null) {
                         byte[] valueBytes = response.get(0).getValueBytes();
                         if (Arrays.equals(MESSAGE_TYPE_VALUE_BYTES, valueBytes)) {
                             onChannelMessageReceived(response);
@@ -532,6 +534,8 @@ public class RedisSubscribeClient implements Closeable {
                                     + LogBuildUtil.build(buildParameterMap(-1));
                             REDIS_SUBSCRIBER_LOG.error(errorMessage);
                         }
+                    } else {
+                        closeDueToError("end of the input stream has been reached", null);
                     }
                 }
             } catch (Exception e) {

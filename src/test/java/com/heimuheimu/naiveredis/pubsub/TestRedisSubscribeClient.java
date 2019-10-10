@@ -30,7 +30,7 @@ public class TestRedisSubscribeClient {
     }
 
     @Test
-    public void testConstructor() throws InterruptedException {
+    public void testConstructor() {
         try {
             new RedisSubscribeClient(HOST, null, 30, null,
                     null, null, null);

@@ -178,7 +178,7 @@ public class DirectRedisClient implements NaiveRedisClientDelegate, Closeable {
         this.slowExecutionThreshold = TimeUnit.NANOSECONDS.convert(slowExecutionThreshold, TimeUnit.MILLISECONDS); //将毫秒转换为纳秒
 
         this.naiveRedisStorageClient = new DirectRedisStorageClient(redisChannel, timeout, this.slowExecutionThreshold, compressionThreshold);
-        this.naiveRedisRawStorageClient = new DirectRedisRawStorageClient(redisChannel, timeout, this.slowExecutionThreshold, compressionThreshold);
+        this.naiveRedisRawStorageClient = new DirectRedisRawStorageClient(redisChannel, timeout, this.slowExecutionThreshold);
         this.naiveRedisCountClient = new DirectRedisCountClient(redisChannel, timeout, this.slowExecutionThreshold);
         this.naiveRedisSetClient = new DirectRedisSetClient(redisChannel, timeout, this.slowExecutionThreshold);
         this.naiveRedisSortedSetClient = new DirectRedisSortedSetClient(redisChannel, timeout, this.slowExecutionThreshold);

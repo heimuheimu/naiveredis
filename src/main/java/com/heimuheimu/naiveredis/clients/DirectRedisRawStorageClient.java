@@ -28,6 +28,7 @@ import com.heimuheimu.naiveredis.NaiveRedisRawStorageClient;
 import com.heimuheimu.naiveredis.channel.RedisChannel;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
+import com.heimuheimu.naiveredis.transcoder.StringTranscoder;
 import com.heimuheimu.naiveredis.transcoder.Transcoder;
 
 import java.util.Map;
@@ -41,15 +42,20 @@ import java.util.Set;
 public class DirectRedisRawStorageClient extends AbstractDirectRedisStorageClient implements NaiveRedisRawStorageClient {
 
     /**
+     * Java 对象与字节数组转换器
+     */
+    private final Transcoder transcoder;
+
+    /**
      * 构造一个 Redis 字符串存储客户端。
      *
      * @param channel 与 Redis 服务进行数据交互的管道
      * @param timeout Redis 操作超时时间，单位：毫秒，不能小于等于 0
      * @param slowExecutionThreshold 执行 Redis 命令过慢最小时间，单位：纳秒，不能小于等于 0
-     * @param compressionThreshold 最小压缩字节数，当 Value 字节数小于或等于该值，不进行压缩，不能小于等于 0
      */
-    public DirectRedisRawStorageClient(RedisChannel channel, int timeout, long slowExecutionThreshold, int compressionThreshold) {
+    public DirectRedisRawStorageClient(RedisChannel channel, int timeout, long slowExecutionThreshold) {
         super(channel, timeout, slowExecutionThreshold);
+        this.transcoder = new StringTranscoder();
     }
 
     @Override
@@ -88,6 +94,6 @@ public class DirectRedisRawStorageClient extends AbstractDirectRedisStorageClien
 
     @Override
     protected Transcoder getTranscoder() {
-        return null;
+        return transcoder;
     }
 }

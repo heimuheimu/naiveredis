@@ -32,6 +32,11 @@ public abstract class AbstractDirectRedisStorageClient extends AbstractDirectRed
         super(channel, timeout, slowExecutionThreshold);
     }
 
+    /**
+     * 获得 Java 对象与字节数组转换器，不允许返回 {@code null}
+     *
+     * @return Java 对象与字节数组转换器
+     */
     protected abstract Transcoder getTranscoder();
 
     @SuppressWarnings("unchecked")
@@ -49,8 +54,7 @@ public abstract class AbstractDirectRedisStorageClient extends AbstractDirectRed
                 executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_KEY_NOT_FOUND);
                 return null;
             } else {
-                Transcoder transcoder = getTranscoder();
-                return transcoder != null ? transcoder.decode(response.getValueBytes()) : response.getText();
+                return getTranscoder().decode(response.getValueBytes());
             }
         });
     }
@@ -75,8 +79,7 @@ public abstract class AbstractDirectRedisStorageClient extends AbstractDirectRed
                     }
                     executionMonitor.onError(ExecutionMonitorFactory.ERROR_CODE_KEY_NOT_FOUND);
                 } else {
-                    Transcoder transcoder = getTranscoder();
-                    Object value = transcoder != null ? transcoder.decode(redisData.getValueBytes()) : redisData.getText();
+                    Object value = getTranscoder().decode(redisData.getValueBytes());
                     result.put(key, value);
                 }
             }
@@ -85,35 +88,39 @@ public abstract class AbstractDirectRedisStorageClient extends AbstractDirectRed
     }
 
     protected void set(String methodName, String key, Object value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-        parameterChecker.addParameter("value", value);
-        parameterChecker.addParameter("expiry", expiry);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-        parameterChecker.check("value", "isNull", Parameters::isNull);
-
-        Transcoder transcoder = getTranscoder();
-        execute(methodName, parameterChecker.getParameterMap(), () -> new SetCommand(key,
-                transcoder != null ? transcoder.encode(value) : String.valueOf(value).getBytes(RedisData.UTF8), expiry), null);
+        Map<String, Object> parameterMap = checkParameterForSet(methodName, key, value, expiry);
+        execute(methodName, parameterMap, () -> new SetCommand(key, getTranscoder().encode(value), expiry), null);
     }
 
     protected boolean setIfAbsent(String methodName, String key, Object value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
-        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
-        parameterChecker.addParameter("key", key);
-        parameterChecker.addParameter("value", value);
-        parameterChecker.addParameter("expiry", expiry);
-
-        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
-        parameterChecker.check("value", "isNull", Parameters::isNull);
-
-        Transcoder transcoder = getTranscoder();
-        boolean isSuccess = (boolean) execute(methodName, parameterChecker.getParameterMap(),
-                () -> new SetNXCommand(key, transcoder != null ? transcoder.encode(value) : String.valueOf(value).getBytes(RedisData.UTF8)),
-                RedisDataParser::parseBoolean);
+        Map<String, Object> parameterMap = checkParameterForSet(methodName, key, value, expiry);
+        boolean isSuccess = (boolean) execute(methodName, parameterMap,
+                () -> new SetNXCommand(key, getTranscoder().encode(value)), RedisDataParser::parseBoolean);
         if (isSuccess && expiry > 0) {
             expire(key, expiry);
         }
         return isSuccess;
+    }
+
+    /**
+     * 执行 Set 相关方法执行参数有效性检查，如果有效，则返回执行参数 Map，否则将抛出 IllegalArgumentException 异常。
+     *
+     * @param methodName Set 相关方法名称
+     * @param key Redis key，不允许 {@code null} 或空
+     * @param value 字符串，不允许 {@code null}
+     * @param expiry 过期时间，单位：秒，如果小于等于 0，则为永久保存
+     * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalArgumentException 如果 value 为 {@code null}，将会抛出此异常
+     * @return 执行参数 Map，Key 为参数名称，Value 为参数值
+     */
+    private Map<String, Object> checkParameterForSet(String methodName, String key, Object value, int expiry) throws IllegalArgumentException {
+        MethodParameterChecker parameterChecker = buildRedisCommandMethodParameterChecker(methodName);
+        parameterChecker.addParameter("key", key);
+        parameterChecker.addParameter("value", value);
+        parameterChecker.addParameter("expiry", expiry);
+
+        parameterChecker.check("key", "isEmpty", Parameters::isEmpty);
+        parameterChecker.check("value", "isNull", Parameters::isNull);
+        return parameterChecker.getParameterMap();
     }
 }

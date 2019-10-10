@@ -52,7 +52,7 @@ public class TestDirectRedisRawStorageClient extends AbstractTestNaiveRedisRawSt
         } else {
             RedisChannel channel = new RedisChannel(redisHost, null, 30, null);
             channel.init();
-            CLIENT = new DirectRedisRawStorageClient(channel, 5000, 1000, 64 * 1024);
+            CLIENT = new DirectRedisRawStorageClient(channel, 5000, 1000);
         }
     }
 

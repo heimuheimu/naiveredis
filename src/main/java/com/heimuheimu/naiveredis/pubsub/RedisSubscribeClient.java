@@ -36,7 +36,7 @@ import com.heimuheimu.naiveredis.facility.UnusableServiceNotifier;
 import com.heimuheimu.naiveredis.monitor.SocketMonitorFactory;
 import com.heimuheimu.naiveredis.net.SocketBuilder;
 import com.heimuheimu.naiveredis.net.SocketConfiguration;
-import com.heimuheimu.naiveredis.transcoder.StringTranscoder;
+import com.heimuheimu.naiveredis.transcoder.SimpleTranscoder;
 import com.heimuheimu.naiveredis.transcoder.Transcoder;
 import com.heimuheimu.naiveredis.util.LogBuildUtil;
 import org.slf4j.Logger;
@@ -136,7 +136,7 @@ public class RedisSubscribeClient implements Closeable {
      * @param host Redis 地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
      * @param configuration {@link Socket} 配置信息，如果传 {@code null}，将会使用 {@link SocketConfiguration#DEFAULT} 配置信息
      * @param pingPeriod PING 命令发送时间间隔，单位：秒。用于心跳检测，如果该值小于等于 0，则不进行心跳检测
-     * @param transcoder Java 对象与字节数组转换器，如果传 {@code null}，将会使用 {@link StringTranscoder} 转换器
+     * @param transcoder Java 对象与字节数组转换器，如果传 {@code null}，将会使用 {@link SimpleTranscoder} 转换器，compressionThreshold 默认为 64 KB
      * @param channelSubscriberList Redis channel 消息订阅者列表，允许为 {@code null} 或空
      * @param patternSubscriberList Redis pattern 消息订阅者列表，允许为 {@code null} 或空
      * @param unusableServiceNotifier RedisSubscribeClient 不可用通知器，允许为 {@code null}
@@ -164,7 +164,7 @@ public class RedisSubscribeClient implements Closeable {
             throw new IllegalArgumentException(errorMessage);
         }
         try {
-            this.transcoder = transcoder == null ? new StringTranscoder() : transcoder;
+            this.transcoder = transcoder == null ? new SimpleTranscoder(64 * 1024) : transcoder;
             if (configuration == null) {
                 configuration = SocketConfiguration.DEFAULT;
             }

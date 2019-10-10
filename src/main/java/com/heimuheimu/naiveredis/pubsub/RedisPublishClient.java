@@ -35,7 +35,7 @@ import com.heimuheimu.naiveredis.facility.parameter.MethodParameterChecker;
 import com.heimuheimu.naiveredis.facility.parameter.Parameters;
 import com.heimuheimu.naiveredis.monitor.ExecutionMonitorFactory;
 import com.heimuheimu.naiveredis.net.SocketConfiguration;
-import com.heimuheimu.naiveredis.transcoder.StringTranscoder;
+import com.heimuheimu.naiveredis.transcoder.SimpleTranscoder;
 import com.heimuheimu.naiveredis.transcoder.Transcoder;
 import com.heimuheimu.naiveredis.util.LogBuildUtil;
 import org.slf4j.Logger;
@@ -81,7 +81,7 @@ public class RedisPublishClient implements Closeable {
      * @param timeout Redis 操作超时时间，单位：毫秒，不能小于等于 0
      * @param slowExecutionThreshold Redis 操作过慢最小时间，单位：毫秒，不能小于等于 0
      * @param pingPeriod PING 命令发送时间间隔，单位：秒。用于心跳检测，如果该值小于等于 0，则不进行心跳检测
-     * @param transcoder Java 对象与字节数组转换器，如果传 {@code null}，将会使用 {@link StringTranscoder} 转换器
+     * @param transcoder Java 对象与字节数组转换器，如果传 {@code null}，将会使用 {@link SimpleTranscoder} 转换器，compressionThreshold 默认为 64 KB
      */
     public RedisPublishClient(String host, SocketConfiguration configuration, int timeout, long slowExecutionThreshold,
                               int pingPeriod, Transcoder transcoder,
@@ -95,7 +95,7 @@ public class RedisPublishClient implements Closeable {
         parameterMap.put("transcoder", transcoder);
         try {
             this.host = host;
-            this.transcoder = transcoder == null ? new StringTranscoder() : transcoder;
+            this.transcoder = transcoder == null ? new SimpleTranscoder(64 * 1024) : transcoder;
             RedisChannel channel = new RedisChannel(this.host, configuration, pingPeriod, unavailableChannel -> {
                 REDIS_PUBLISHER_LOG.info("RedisPublishClient has been closed.{}", LogBuildUtil.build(parameterMap));
                 if (unusableServiceNotifier != null) {

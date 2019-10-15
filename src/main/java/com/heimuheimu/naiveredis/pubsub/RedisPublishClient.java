@@ -83,6 +83,7 @@ public class RedisPublishClient implements Closeable {
      * @param pingPeriod PING 命令发送时间间隔，单位：秒。用于心跳检测，如果该值小于等于 0，则不进行心跳检测
      * @param transcoder Java 对象与字节数组转换器，如果传 {@code null}，将会使用 {@link SimpleTranscoder} 转换器，compressionThreshold 默认为 64 KB
      */
+    @SuppressWarnings("Duplicates")
     public RedisPublishClient(String host, SocketConfiguration configuration, int timeout, long slowExecutionThreshold,
                               int pingPeriod, Transcoder transcoder,
                               UnusableServiceNotifier<RedisPublishClient> unusableServiceNotifier) {
@@ -114,13 +115,6 @@ public class RedisPublishClient implements Closeable {
         }
     }
 
-    @Override
-    public void close() {
-        if (client != null) {
-            client.close();
-        }
-    }
-
     /**
      * 发布一条 Redis 消息，并返回接收到该消息的 Redis 客户端数量。
      *
@@ -142,7 +136,7 @@ public class RedisPublishClient implements Closeable {
         try {
             long startTime = System.currentTimeMillis();
             int receivedClients = client.publish(channel, message);
-            if (REDIS_PUBLISHER_LOG.isDebugEnabled()) {
+            if (receivedClients > 0 && REDIS_PUBLISHER_LOG.isDebugEnabled()) {
                 LinkedHashMap<String, Object> parameterMap = new LinkedHashMap<>();
                 parameterMap.put("cost", (System.currentTimeMillis() - startTime) + "ms");
                 parameterMap.put("receivedClients", receivedClients);
@@ -150,6 +144,8 @@ public class RedisPublishClient implements Closeable {
                 parameterMap.put("channel", channel);
                 parameterMap.put("message", message);
                 REDIS_PUBLISHER_LOG.debug("Publish message success.{}", LogBuildUtil.build(parameterMap));
+            } else if (receivedClients == 0) {
+                REDIS_PUBLISHER_LOG.warn("There is no client for channel: `" + channel + "`. `message`: `" + message + "`.");
             }
             return receivedClients;
         } catch (Exception e) {
@@ -159,6 +155,22 @@ public class RedisPublishClient implements Closeable {
             parameterMap.put("message", message);
             REDIS_PUBLISHER_LOG.error("Fails to publish message." + LogBuildUtil.build(parameterMap), e);
             throw e;
+        }
+    }
+
+    /**
+     * 判断当前 Redis 消息发布直连客户端是否可用。
+     *
+     * @return 是否可用
+     */
+    public boolean isAvailable() {
+        return client != null && client.isAvailable();
+    }
+
+    @Override
+    public void close() {
+        if (client != null) {
+            client.close();
         }
     }
 
@@ -206,6 +218,15 @@ public class RedisPublishClient implements Closeable {
 
             return (int) execute(methodName, parameterChecker.getParameterMap(),
                     () -> new PublishCommand(channel, transcoder.encode(message)), RedisDataParser::parseInt);
+        }
+
+        /**
+         * 判断当前 Redis 消息发布直连客户端是否可用。
+         *
+         * @return 是否可用
+         */
+        public boolean isAvailable() {
+            return channel.isAvailable();
         }
 
         /**

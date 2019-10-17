@@ -71,7 +71,7 @@ public class StandardRedisNodesLoader {
         for (String bootstrapHost : bootstrapHosts) {
             try (RedisChannel channel = new RedisChannel(bootstrapHost, socketConfiguration, -1, null)) {
                 channel.init();
-                DirectClusterSlotsClient slotsClient = new DirectClusterSlotsClient(channel, 5000, TimeUnit.NANOSECONDS.convert(200, TimeUnit.MICROSECONDS));
+                DirectClusterSlotsClient slotsClient = new DirectClusterSlotsClient(channel, 5000, TimeUnit.NANOSECONDS.convert(200, TimeUnit.MILLISECONDS));
                 List<StandardRedisNode> nodes = slotsClient.getClusterSlots();
                 nodes.sort(Comparator.comparingInt(StandardRedisNode::getStartSlot));
                 if (isCoverAllSlots(nodes)) {

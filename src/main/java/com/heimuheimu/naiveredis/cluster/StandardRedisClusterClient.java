@@ -26,12 +26,15 @@ package com.heimuheimu.naiveredis.cluster;
 
 import com.heimuheimu.naiveredis.DirectRedisClient;
 import com.heimuheimu.naiveredis.cluster.standard.StandardRedisNodeRouter;
+import com.heimuheimu.naiveredis.constant.BeanStatusEnum;
 import com.heimuheimu.naiveredis.constant.RedisClientMethod;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.facility.ASKRedirectionHelper;
 import com.heimuheimu.naiveredis.facility.clients.DirectRedisClientListListener;
 import com.heimuheimu.naiveredis.net.SocketConfiguration;
 import com.heimuheimu.naiveredis.util.LogBuildUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -51,6 +54,8 @@ import java.util.function.Supplier;
  * @author heimuheimu
  */
 public class StandardRedisClusterClient extends AbstractRedisClusterClient {
+
+    private static final Logger REDIS_CONNECTION_LOG = LoggerFactory.getLogger("NAIVEREDIS_CONNECTION_LOG");
 
     /**
      * 创建 Redis 直连客户端所使用的 Socket 配置信息
@@ -88,9 +93,24 @@ public class StandardRedisClusterClient extends AbstractRedisClusterClient {
     private final boolean isSlaveActive;
 
     /**
+     * 重载 Redis 集群客户端路由器任务使用的私有锁
+     */
+    private final Object reloadRouterTaskLock = new Object();
+
+    /**
+     * 重载 Redis 集群客户端路由器任务是否运行，访问或设置此变量需获取锁 {@link #reloadRouterTaskLock}
+     */
+    private boolean isReloadRouterTaskRunning = false;
+
+    /**
      * Redis 集群客户端路由器
      */
     private volatile StandardRedisNodeRouter standardRedisNodeRouter;
+
+    /**
+     * Redis 集群客户端所处状态
+     */
+    private volatile BeanStatusEnum state = BeanStatusEnum.NORMAL;
 
     /**
      * 构造一个 StandardRedisClusterClient 实例，创建直连客户端的 {@link java.net.Socket} 配置信息使用
@@ -133,9 +153,14 @@ public class StandardRedisClusterClient extends AbstractRedisClusterClient {
     }
 
     @Override
-    public void close() {
-        super.close();
-        this.standardRedisNodeRouter.close();
+    public synchronized void close() {
+        if (state != BeanStatusEnum.CLOSED) {
+            state = BeanStatusEnum.CLOSED;
+            try {
+                super.close();
+            } catch (Exception ignored) {}
+            this.standardRedisNodeRouter.close();
+        }
     }
 
     @Override
@@ -149,6 +174,7 @@ public class StandardRedisClusterClient extends AbstractRedisClusterClient {
                                                    boolean isThrowException) throws IllegalStateException {
         if (redirectionErrorMessage.type == RedirectionType.MOVED) {
             standardRedisNodeRouter.moved(redirectionErrorMessage.slot, redirectionErrorMessage.host);
+            startReloadRouterTask();
         }
         DirectRedisClient redirectionClient = null;
         Exception redirectionClientException = null;
@@ -381,6 +407,67 @@ public class StandardRedisClusterClient extends AbstractRedisClusterClient {
                     ", slot=" + slot +
                     ", host='" + host + '\'' +
                     '}';
+        }
+    }
+
+    /**
+     * 当发生 MOVED 错误时，启动重载 Redis 集群客户端路由器任务，重新加载 slot 和 Redis 主机地址映射关系。
+     */
+    private void startReloadRouterTask() {
+        if (state == BeanStatusEnum.NORMAL) {
+            synchronized (reloadRouterTaskLock) {
+                if (!isReloadRouterTaskRunning) {
+                    Thread reloadThread = new Thread(() -> {
+                        try {
+                            try {
+                                Thread.sleep(2000 + new Random().nextInt(3000)); // 随机延迟 2-5 秒后开始重新加载
+                            } catch (InterruptedException ignored) {}
+                            long startTime = System.currentTimeMillis();
+                            REDIS_CONNECTION_LOG.info("StandardRedisNodeRouter reload task has been started. `currentNodes`:`{}`.", standardRedisNodeRouter.getNodes());
+                            while (state == BeanStatusEnum.NORMAL) {
+                                StandardRedisNodeRouter newRouter = null;
+                                try {
+                                    newRouter = new StandardRedisNodeRouter(standardRedisNodeRouter.getHosts(),
+                                            configuration, timeout, compressionThreshold, slowExecutionThreshold, pingPeriod, listener, isSlaveActive);
+                                } catch (Exception e) {
+                                    REDIS_CONNECTION_LOG.error("Reload StandardRedisNodeRouter failed. `currentNodes`:`"
+                                            + standardRedisNodeRouter.getNodes() + "`.", e);
+                                }
+                                if (newRouter != null) {
+                                    StandardRedisNodeRouter oldRouter = this.standardRedisNodeRouter;
+                                    this.standardRedisNodeRouter = newRouter;
+                                    REDIS_CONNECTION_LOG.info("StandardRedisNodeRouter reload task has been finished. `cost`:`{}ms`. `currentNodes`:`{}`. `previousNodes`:`{}`.",
+                                            System.currentTimeMillis() - startTime, standardRedisNodeRouter.getNodes(), oldRouter.getNodes()); // lgtm [java/print-array]
+                                    Thread closeThread = new Thread(() -> { // (3 + timeout) 秒后关闭已弃用的 Redis 集群客户端路由器
+                                        try {
+                                            Thread.sleep(3000 + oldRouter.getTimeout());
+                                        } catch (InterruptedException ignored) {
+                                        }
+                                        oldRouter.close();
+                                    });
+                                    closeThread.setName("naiveredis-cluster-router-close-task");
+                                    closeThread.setDaemon(true);
+                                    closeThread.start();
+                                    break;
+                                } else {
+                                    try {
+                                        Thread.sleep(1000); // 新 Router 创建失败，等待 1 秒后重试
+                                    } catch (InterruptedException ignored) {
+                                    }
+                                }
+                            }
+                        } finally {
+                            synchronized (reloadRouterTaskLock) {
+                                isReloadRouterTaskRunning = false;
+                            }
+                        }
+                    });
+                    reloadThread.setName("naiveredis-cluster-router-reload-task");
+                    reloadThread.setDaemon(true);
+                    reloadThread.start();
+                    isReloadRouterTaskRunning = true;
+                }
+            }
         }
     }
 }

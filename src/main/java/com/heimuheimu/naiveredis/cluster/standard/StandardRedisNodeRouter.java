@@ -109,34 +109,49 @@ public class StandardRedisNodeRouter implements Closeable {
     public StandardRedisNodeRouter(String[] bootstrapHosts, SocketConfiguration configuration, int timeout,
                                    int compressionThreshold, int slowExecutionThreshold, int pingPeriod,
                                    DirectRedisClientListListener listener, boolean isSlaveActive) throws IllegalStateException {
-        this.configuration = configuration;
-        this.timeout = timeout;
-        this.compressionThreshold = compressionThreshold;
-        this.slowExecutionThreshold = slowExecutionThreshold;
-        this.pingPeriod = pingPeriod;
-        StandardRedisNodesLoader nodesLoader = new StandardRedisNodesLoader();
-        nodes = nodesLoader.load(bootstrapHosts);
-        hostIndexMap = new HashMap<>();
-        List<String> hostList = new ArrayList<>();
-        for (StandardRedisNode node : nodes) {
-            String nodeMasterHost = node.getMasterHost();
-            if (!hostIndexMap.containsKey(nodeMasterHost)) {
-                hostIndexMap.put(nodeMasterHost, hostList.size());
-                hostList.add(nodeMasterHost);
-            }
-            if (isSlaveActive) {
-                for (String nodeSlaveHost : node.getSlaveHosts()) {
-                    if (!hostIndexMap.containsKey(nodeSlaveHost)) {
-                        hostIndexMap.put(nodeSlaveHost, hostList.size());
-                        hostList.add(nodeSlaveHost);
+        try {
+            this.configuration = configuration;
+            this.timeout = timeout;
+            this.compressionThreshold = compressionThreshold;
+            this.slowExecutionThreshold = slowExecutionThreshold;
+            this.pingPeriod = pingPeriod;
+            StandardRedisNodesLoader nodesLoader = new StandardRedisNodesLoader();
+            nodes = nodesLoader.load(bootstrapHosts);
+            hostIndexMap = new HashMap<>();
+            List<String> hostList = new ArrayList<>();
+            for (StandardRedisNode node : nodes) {
+                String nodeMasterHost = node.getMasterHost();
+                if (!hostIndexMap.containsKey(nodeMasterHost)) {
+                    hostIndexMap.put(nodeMasterHost, hostList.size());
+                    hostList.add(nodeMasterHost);
+                }
+                if (isSlaveActive) {
+                    for (String nodeSlaveHost : node.getSlaveHosts()) {
+                        if (!hostIndexMap.containsKey(nodeSlaveHost)) {
+                            hostIndexMap.put(nodeSlaveHost, hostList.size());
+                            hostList.add(nodeSlaveHost);
+                        }
                     }
                 }
             }
+            this.directRedisClientList = new DirectRedisClientList("StandardRedisNodeRouter",
+                    hostList.toArray(new String[0]), configuration, timeout, compressionThreshold, slowExecutionThreshold,
+                    pingPeriod, listener);
+            this.redisClusterHashSlotLocator = new RedisClusterHashSlotLocator();
+        } catch (Exception e) {
+            LinkedHashMap<String, Object> parameterMap = new LinkedHashMap<>();
+            parameterMap.put("bootstrapHosts", bootstrapHosts);
+            parameterMap.put("configuration", configuration);
+            parameterMap.put("timeout", timeout);
+            parameterMap.put("compressionThreshold", compressionThreshold);
+            parameterMap.put("slowExecutionThreshold", slowExecutionThreshold);
+            parameterMap.put("pingPeriod", pingPeriod);
+            parameterMap.put("listener", listener);
+            parameterMap.put("isSlaveActive", isSlaveActive);
+            String errorMessage = "Fails to construct StandardRedisNodeRouter." + LogBuildUtil.build(parameterMap);
+            LOG.error(errorMessage, e);
+            throw new IllegalStateException(errorMessage, e);
         }
-        this.directRedisClientList = new DirectRedisClientList("StandardRedisNodeRouter",
-                hostList.toArray(new String[0]), configuration, timeout, compressionThreshold, slowExecutionThreshold,
-                pingPeriod, listener);
-        this.redisClusterHashSlotLocator = new RedisClusterHashSlotLocator();
     }
 
     /**
@@ -272,6 +287,33 @@ public class StandardRedisNodeRouter implements Closeable {
      */
     public void moved(int slot, String host) {
         movedSlotHostMap.put(slot, host);
+    }
+
+    /**
+     * 获得 Redis 操作超时时间，单位：毫秒。
+     *
+     * @return  Redis 操作超时时间
+     */
+    public int getTimeout() {
+        return timeout;
+    }
+
+    /**
+     * 获得 Redis 集群节点信息的只读列表。
+     *
+     * @return Redis 集群节点信息的只读列表
+     */
+    public List<StandardRedisNode> getNodes() {
+        return Collections.unmodifiableList(nodes);
+    }
+
+    /**
+     * 获得 Redis 集群中所有的主机地址数组。
+     *
+     * @return Redis 集群中所有的主机地址数组
+     */
+    public String[] getHosts() {
+        return hostIndexMap.keySet().toArray(new String[0]);
     }
 
     @Override

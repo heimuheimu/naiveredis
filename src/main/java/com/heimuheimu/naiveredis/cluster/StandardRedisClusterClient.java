@@ -115,7 +115,7 @@ public class StandardRedisClusterClient extends AbstractRedisClusterClient {
     /**
      * 构造一个 StandardRedisClusterClient 实例，创建直连客户端的 {@link java.net.Socket} 配置信息使用
      * {@link SocketConfiguration#DEFAULT}，Redis 操作超时时间设置为 5 秒，最小压缩字节数设置为 64 KB，
-     * Redis 操作过慢最小时间设置为 50 毫秒，心跳检测时间设置为 30 秒。
+     * Redis 操作过慢最小时间设置为 50 毫秒，心跳检测时间设置为 30 秒，不启用 Slave 节点。
      *
      * @param bootstrapHosts Redis 集群启动主机地址列表，用于加载集群信息，不允许为 {@code null} 或空数组
      * @param listener Redis 直连客户端列表事件监听器，允许为 {@code null}

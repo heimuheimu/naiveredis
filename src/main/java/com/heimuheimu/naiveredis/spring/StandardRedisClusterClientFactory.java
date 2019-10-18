@@ -92,8 +92,6 @@ public class StandardRedisClusterClientFactory implements FactoryBean<StandardRe
 
     @Override
     public void close() {
-        if (client != null) {
-            client.close();
-        }
+        client.close();
     }
 }

@@ -85,8 +85,10 @@ public class AutoReconnectRedisPublishClient implements Closeable {
      *
      * @param host Redis 服务主机地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
      * @param listener 自动重连 Redis 消息发布客户端事件监听器，允许为 {@code null}
+     * @throws IllegalStateException 如果 AutoReconnectRedisPublishClient 创建过程中发生错误，将会抛出此异常
      */
-    public AutoReconnectRedisPublishClient(String host, AutoReconnectRedisPublishClientListener listener) {
+    public AutoReconnectRedisPublishClient(String host, AutoReconnectRedisPublishClientListener listener)
+            throws IllegalStateException {
         this(host, null, 5000, 50, 30, null, listener);
     }
 
@@ -100,6 +102,7 @@ public class AutoReconnectRedisPublishClient implements Closeable {
      * @param pingPeriod PING 命令发送时间间隔，单位：秒。用于心跳检测，如果该值小于等于 0，则不进行心跳检测
      * @param transcoder Java 对象与字节数组转换器，如果传 {@code null}，将会使用 {@link RedisPublishClient} 实现指定的默认转换器
      * @param listener 自动重连 Redis 消息发布客户端事件监听器，允许为 {@code null}
+     * @throws IllegalStateException 如果 AutoReconnectRedisPublishClient 创建过程中发生错误，将会抛出此异常
      */
     public AutoReconnectRedisPublishClient(String host, SocketConfiguration configuration, int timeout,
                                            long slowExecutionThreshold, int pingPeriod, Transcoder transcoder,

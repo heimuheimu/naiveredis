@@ -82,11 +82,12 @@ public class RedisPublishClient implements Closeable {
      * @param slowExecutionThreshold Redis 操作过慢最小时间，单位：毫秒，不能小于等于 0
      * @param pingPeriod PING 命令发送时间间隔，单位：秒。用于心跳检测，如果该值小于等于 0，则不进行心跳检测
      * @param transcoder Java 对象与字节数组转换器，如果传 {@code null}，将会使用 {@link SimpleTranscoder} 转换器，compressionThreshold 默认为 64 KB
+     * @throws IllegalStateException 如果 RedisPublishClient 创建过程中发生错误，将会抛出此异常
      */
     @SuppressWarnings("Duplicates")
     public RedisPublishClient(String host, SocketConfiguration configuration, int timeout, long slowExecutionThreshold,
                               int pingPeriod, Transcoder transcoder,
-                              UnusableServiceNotifier<RedisPublishClient> unusableServiceNotifier) {
+                              UnusableServiceNotifier<RedisPublishClient> unusableServiceNotifier) throws IllegalStateException {
         LinkedHashMap<String, Object> parameterMap = new LinkedHashMap<>();
         parameterMap.put("host", host);
         parameterMap.put("configuration", configuration);

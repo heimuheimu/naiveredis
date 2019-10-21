@@ -65,6 +65,8 @@ public class RedisSubscribeClient implements Closeable {
 
     private static final Logger REDIS_SUBSCRIBER_LOG = LoggerFactory.getLogger("NAIVEREDIS_SUBSCRIBER_LOG");
 
+    private static final Logger REDIS_SUBSCRIBER_SLOW_CONSUME_LOG = LoggerFactory.getLogger("NAIVEREDIS_SUBSCRIBER_SLOW_CONSUME_LOG");
+
     /**
      * Redis 服务主机地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
      */
@@ -94,6 +96,11 @@ public class RedisSubscribeClient implements Closeable {
      * Java 对象与字节数组转换器
      */
     private final Transcoder transcoder;
+
+    /**
+     * 单个 Redis 消息订阅者消费过慢最小时间，单位：毫秒，不能小于等于 0
+     */
+    private final int slowConsumeThreshold;
 
     /**
      * Redis channel 消息订阅者 Map，Key 为 channel，Value 为该 channel 对应的订阅者列表，不会为 {@code null}
@@ -137,6 +144,7 @@ public class RedisSubscribeClient implements Closeable {
      * @param configuration {@link Socket} 配置信息，如果传 {@code null}，将会使用 {@link SocketConfiguration#DEFAULT} 配置信息
      * @param pingPeriod PING 命令发送时间间隔，单位：秒。用于心跳检测，如果该值小于等于 0，则不进行心跳检测
      * @param transcoder Java 对象与字节数组转换器，如果传 {@code null}，将会使用 {@link SimpleTranscoder} 转换器，compressionThreshold 默认为 64 KB
+     * @param slowConsumeThreshold 单个 Redis 消息订阅者消费过慢最小时间，单位：毫秒，如果小于等于 0，将会使用 50 毫秒的默认值
      * @param channelSubscriberList Redis channel 消息订阅者列表，允许为 {@code null} 或空
      * @param patternSubscriberList Redis pattern 消息订阅者列表，允许为 {@code null} 或空
      * @param unusableServiceNotifier RedisSubscribeClient 不可用通知器，允许为 {@code null}
@@ -147,13 +155,14 @@ public class RedisSubscribeClient implements Closeable {
      * @throws IllegalStateException 如果创建 RedisSubscribeClient 过程中发生其它错误，例如 Socket 连接无法建立，将会抛出此异常
      */
     public RedisSubscribeClient(String host, SocketConfiguration configuration,
-                                int pingPeriod, Transcoder transcoder,
+                                int pingPeriod, Transcoder transcoder, int slowConsumeThreshold,
                                 List<NaiveRedisChannelSubscriber> channelSubscriberList,
                                 List<NaiveRedisPatternSubscriber> patternSubscriberList,
                                 UnusableServiceNotifier<RedisSubscribeClient> unusableServiceNotifier)
             throws IllegalArgumentException, IllegalStateException {
         this.host = host;
         this.pingPeriod = pingPeriod;
+        this.slowConsumeThreshold = slowConsumeThreshold <= 0 ? 50 : slowConsumeThreshold;
         this.channelSubscribersMap = toChannelSubscribersMap(channelSubscriberList);
         this.patternSubscribersMap = toPatternSubscribersMap(patternSubscriberList);
         if (this.channelSubscribersMap.isEmpty() && this.patternSubscribersMap.isEmpty()) {
@@ -576,6 +585,7 @@ public class RedisSubscribeClient implements Closeable {
                 return;
             }
             for (NaiveRedisChannelSubscriber subscriber : subscriberList) {
+                long startConsumerTime = System.currentTimeMillis();
                 try {
                     subscriber.consume(channel, message);
                 } catch (Exception e) {
@@ -586,6 +596,12 @@ public class RedisSubscribeClient implements Closeable {
                     parameter.put("subscriber", subscriber);
                     String errorMessage = "Fails to consume channel message." + LogBuildUtil.build(parameter);
                     REDIS_SUBSCRIBER_LOG.error(errorMessage , e);
+                } finally {
+                    long consumeTime = System.currentTimeMillis() - startConsumerTime;
+                    if (consumeTime > slowConsumeThreshold) {
+                        REDIS_SUBSCRIBER_SLOW_CONSUME_LOG.info("[channel] `cost`:`{}ms`. `host`:`{}`. `channel`:`{}`. `message`:`{}`. `subscriber`:`{}`.",
+                                System.currentTimeMillis() - startConsumerTime, host, channel, message, subscriber);
+                    }
                 }
             }
             if (REDIS_SUBSCRIBER_LOG.isDebugEnabled()) {
@@ -631,6 +647,7 @@ public class RedisSubscribeClient implements Closeable {
                 return;
             }
             for (NaiveRedisPatternSubscriber subscriber : patternSubscriberList) {
+                long startConsumerTime = System.currentTimeMillis();
                 try {
                     subscriber.consume(pattern, channel, message);
                 } catch (Exception e) {
@@ -642,6 +659,12 @@ public class RedisSubscribeClient implements Closeable {
                     parameter.put("subscriber", subscriber);
                     String errorMessage = "Fails to consume pattern message." + LogBuildUtil.build(parameter);
                     REDIS_SUBSCRIBER_LOG.error(errorMessage , e);
+                } finally {
+                    long consumeTime = System.currentTimeMillis() - startConsumerTime;
+                    if (consumeTime > slowConsumeThreshold) {
+                        REDIS_SUBSCRIBER_SLOW_CONSUME_LOG.info("[pattern] `cost`:`{}ms`. `host`:`{}`. `pattern`:`{}`. `channel`:`{}`. `message`:`{}`. `subscriber`:`{}`.",
+                                System.currentTimeMillis() - startConsumerTime, host, pattern, channel, message, subscriber);
+                    }
                 }
             }
             if (REDIS_SUBSCRIBER_LOG.isDebugEnabled()) {

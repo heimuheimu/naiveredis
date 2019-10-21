@@ -72,6 +72,11 @@ public class AutoReconnectRedisSubscribeClient implements Closeable {
     private final Transcoder transcoder;
 
     /**
+     * 单个 Redis 消息订阅者消费过慢最小时间，单位：毫秒，如果小于等于 0，将会使用 {@link RedisSubscribeClient} 实现指定的默认值
+     */
+    private final int slowConsumeThreshold;
+
+    /**
      * Redis channel 消息订阅者列表，允许为 {@code null} 或空
      */
     private final List<NaiveRedisChannelSubscriber> channelSubscriberList;
@@ -103,7 +108,8 @@ public class AutoReconnectRedisSubscribeClient implements Closeable {
 
     /**
      * 构造一个 AutoReconnectRedisSubscribeClient 实例，Socket 配置信息将会使用 {@link SocketConfiguration#DEFAULT}，
-     * PING 命令发送时间间隔为 30 秒，Java 对象与字节数组转换器将会使用 {@link RedisSubscribeClient} 实现指定的默认转换器。
+     * PING 命令发送时间间隔为 30 秒，Java 对象与字节数组转换器将会使用 {@link RedisSubscribeClient} 实现指定的默认转换器，
+     * 单个 Redis 消息订阅者消费过慢最小时间为 50 毫秒。
      *
      * @param host Redis 服务主机地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
      * @param channelSubscriberList Redis channel 消息订阅者列表，允许为 {@code null} 或空，但不允许与 patternSubscriberList 同时为空
@@ -114,7 +120,7 @@ public class AutoReconnectRedisSubscribeClient implements Closeable {
     public AutoReconnectRedisSubscribeClient(String host, List<NaiveRedisChannelSubscriber> channelSubscriberList,
                                              List<NaiveRedisPatternSubscriber> patternSubscriberList,
                                              AutoReconnectRedisSubscribeClientListener listener) throws IllegalStateException {
-        this(host, null, 30, null, channelSubscriberList, patternSubscriberList, listener);
+        this(host, null, 30, null, 50, channelSubscriberList, patternSubscriberList, listener);
     }
 
     /**
@@ -124,13 +130,14 @@ public class AutoReconnectRedisSubscribeClient implements Closeable {
      * @param configuration Socket 配置信息，如果传 {@code null}，将会使用 {@link SocketConfiguration#DEFAULT} 配置信息
      * @param pingPeriod PING 命令发送时间间隔，单位：秒。用于心跳检测，如果该值小于等于 0，则不进行心跳检测
      * @param transcoder Java 对象与字节数组转换器，如果传 {@code null}，将会使用 {@link RedisSubscribeClient} 实现指定的默认转换器
+     * @param slowConsumeThreshold 单个 Redis 消息订阅者消费过慢最小时间，单位：毫秒，如果小于等于 0，将会使用 {@link RedisSubscribeClient} 实现指定的默认值
      * @param channelSubscriberList Redis channel 消息订阅者列表，允许为 {@code null} 或空，但不允许与 patternSubscriberList 同时为空
      * @param patternSubscriberList Redis pattern 消息订阅者列表，允许为 {@code null} 或空，但不允许与 channelSubscriberList 同时为空
      * @param listener 自动重连 Redis 订阅客户端事件监听器，允许为 {@code null}
      * @throws IllegalStateException 如果创建 AutoReconnectRedisSubscribeClient 过程中发生错误，将会抛出此异常
      */
     public AutoReconnectRedisSubscribeClient(String host, SocketConfiguration configuration,
-                                             int pingPeriod, Transcoder transcoder,
+                                             int pingPeriod, Transcoder transcoder, int slowConsumeThreshold,
                                              List<NaiveRedisChannelSubscriber> channelSubscriberList,
                                              List<NaiveRedisPatternSubscriber> patternSubscriberList,
                                              AutoReconnectRedisSubscribeClientListener listener) throws IllegalStateException {
@@ -138,12 +145,14 @@ public class AutoReconnectRedisSubscribeClient implements Closeable {
         this.configuration = configuration;
         this.pingPeriod = pingPeriod;
         this.transcoder = transcoder;
+        this.slowConsumeThreshold = slowConsumeThreshold;
         this.channelSubscriberList = channelSubscriberList;
         this.patternSubscriberList = patternSubscriberList;
         this.listener = listener;
         try {
             this.redisSubscribeClient = new RedisSubscribeClient(this.host, this.configuration, this.pingPeriod,
-                    this.transcoder, this.channelSubscriberList, this.patternSubscriberList, this::startRescueTask);
+                    this.transcoder, this.slowConsumeThreshold, this.channelSubscriberList, this.patternSubscriberList,
+                    this::startRescueTask);
             this.redisSubscribeClient.init();
         } catch (Exception e) {
             String errorMessage = "Fails to construct AutoReconnectRedisSubscribeClient: `create RedisSubscribeClient failed`."
@@ -202,7 +211,8 @@ public class AutoReconnectRedisSubscribeClient implements Closeable {
                             RedisSubscribeClient client;
                             try {
                                 client = new RedisSubscribeClient(this.host, this.configuration, this.pingPeriod,
-                                        this.transcoder, this.channelSubscriberList, this.patternSubscriberList, this::startRescueTask);
+                                        this.transcoder, this.slowConsumeThreshold, this.channelSubscriberList,
+                                        this.patternSubscriberList, this::startRescueTask);
                                 client.init();
                                 if (client.isAvailable()) {
                                     this.redisSubscribeClient = client;

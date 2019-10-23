@@ -25,6 +25,7 @@
 package com.heimuheimu.naiveredis.pubsub;
 
 import com.heimuheimu.naivemonitor.facility.MonitoredSocketOutputStream;
+import com.heimuheimu.naivemonitor.monitor.ExecutionMonitor;
 import com.heimuheimu.naivemonitor.monitor.SocketMonitor;
 import com.heimuheimu.naiveredis.command.keys.PingCommand;
 import com.heimuheimu.naiveredis.command.pubsub.PSubscribeCommand;
@@ -34,6 +35,7 @@ import com.heimuheimu.naiveredis.data.RedisData;
 import com.heimuheimu.naiveredis.data.RedisDataReader;
 import com.heimuheimu.naiveredis.facility.UnusableServiceNotifier;
 import com.heimuheimu.naiveredis.monitor.SocketMonitorFactory;
+import com.heimuheimu.naiveredis.monitor.SubscriberMonitorFactory;
 import com.heimuheimu.naiveredis.net.SocketBuilder;
 import com.heimuheimu.naiveredis.net.SocketConfiguration;
 import com.heimuheimu.naiveredis.transcoder.SimpleTranscoder;
@@ -116,6 +118,11 @@ public class RedisSubscribeClient implements Closeable {
      * RedisSubscribeClient 不可用通知器，可能为 {@code null}
      */
     private final UnusableServiceNotifier<RedisSubscribeClient> unusableServiceNotifier;
+
+    /**
+     * Redis 订阅客户端使用的执行信息监控器
+     */
+    private final ExecutionMonitor monitor = SubscriberMonitorFactory.get();
 
     /**
      * 当前实例所处状态
@@ -561,56 +568,66 @@ public class RedisSubscribeClient implements Closeable {
          * @param response Redis 响应数据
          */
         private void onChannelMessageReceived(RedisData response) {
-            long startTime = System.currentTimeMillis();
-            String channel;
-            Object message;
+            long startNanoTime = System.nanoTime();
             try {
-                channel = response.get(1).getText();
-                message = transcoder.decode(response.get(2).getValueBytes());
-            } catch (Exception e) {
-                Map<String, Object> parameter = buildParameterMap(-1);
-                parameter.put("response", response);
-                String errorMessage = "Fails to receive channel message: `decode message failed`." + LogBuildUtil.build(parameter);
-                REDIS_SUBSCRIBER_LOG.error(errorMessage, e);
-                return;
-            }
-            List<NaiveRedisChannelSubscriber> subscriberList = channelSubscribersMap.get(channel);
-            if (subscriberList == null || subscriberList.isEmpty()) { // should not happen, just for bug detection
-                Map<String, Object> parameter = buildParameterMap(-1);
-                parameter.put("channel", channel);
-                parameter.put("message", message);
-                parameter.put("response", response);
-                String errorMessage = "Fails to receive channel message: `empty subscriber list`." + LogBuildUtil.build(parameter);
-                REDIS_SUBSCRIBER_LOG.error(errorMessage);
-                return;
-            }
-            for (NaiveRedisChannelSubscriber subscriber : subscriberList) {
-                long startConsumerTime = System.currentTimeMillis();
+                String channel;
+                Object message;
                 try {
-                    subscriber.consume(channel, message);
+                    channel = response.get(1).getText();
+                    message = transcoder.decode(response.get(2).getValueBytes());
                 } catch (Exception e) {
+                    monitor.onError(SubscriberMonitorFactory.ERROR_CODE_DECODE_ERROR);
+                    Map<String, Object> parameter = buildParameterMap(-1);
+                    parameter.put("response", response);
+                    String errorMessage = "[channel] Fails to receive channel message: `decode message failed`." + LogBuildUtil.build(parameter);
+                    REDIS_SUBSCRIBER_LOG.error(errorMessage, e);
+                    return;
+                }
+                List<NaiveRedisChannelSubscriber> subscriberList = channelSubscribersMap.get(channel);
+                if (subscriberList == null || subscriberList.isEmpty()) { // should not happen, just for bug detection
+                    monitor.onError(SubscriberMonitorFactory.ERROR_CODE_UNEXPECTED_ERROR);
+                    Map<String, Object> parameter = buildParameterMap(-1);
+                    parameter.put("channel", channel);
+                    parameter.put("message", message);
+                    parameter.put("response", response);
+                    String errorMessage = "[channel] Fails to receive channel message: `empty subscriber list`." + LogBuildUtil.build(parameter);
+                    REDIS_SUBSCRIBER_LOG.error(errorMessage);
+                    return;
+                }
+                for (NaiveRedisChannelSubscriber subscriber : subscriberList) {
+                    long startConsumerTime = System.currentTimeMillis();
+                    //noinspection Duplicates
+                    try {
+                        subscriber.consume(channel, message);
+                    } catch (Exception e) {
+                        monitor.onError(SubscriberMonitorFactory.ERROR_CODE_CONSUME_ERROR);
+                        Map<String, Object> parameter = new LinkedHashMap<>();
+                        parameter.put("host", host);
+                        parameter.put("channel", channel);
+                        parameter.put("message", message);
+                        parameter.put("subscriber", subscriber);
+                        String errorMessage = "[channel] Fails to consume channel message." + LogBuildUtil.build(parameter);
+                        REDIS_SUBSCRIBER_LOG.error(errorMessage, e);
+                    } finally {
+                        long consumeTime = System.currentTimeMillis() - startConsumerTime;
+                        if (consumeTime > slowConsumeThreshold) {
+                            monitor.onError(SubscriberMonitorFactory.ERROR_CODE_SLOW_CONSUMPTION);
+                            REDIS_SUBSCRIBER_SLOW_CONSUME_LOG.info("[channel] `cost`:`{}ms`. `host`:`{}`. `channel`:`{}`. `message`:`{}`. `subscriber`:`{}`.",
+                                    System.currentTimeMillis() - startConsumerTime, host, channel, message, subscriber);
+                        }
+                    }
+                }
+                if (REDIS_SUBSCRIBER_LOG.isDebugEnabled()) {
                     Map<String, Object> parameter = new LinkedHashMap<>();
+                    long cost = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanoTime, TimeUnit.NANOSECONDS);
+                    parameter.put("cost", cost + "ms");
                     parameter.put("host", host);
                     parameter.put("channel", channel);
                     parameter.put("message", message);
-                    parameter.put("subscriber", subscriber);
-                    String errorMessage = "Fails to consume channel message." + LogBuildUtil.build(parameter);
-                    REDIS_SUBSCRIBER_LOG.error(errorMessage , e);
-                } finally {
-                    long consumeTime = System.currentTimeMillis() - startConsumerTime;
-                    if (consumeTime > slowConsumeThreshold) {
-                        REDIS_SUBSCRIBER_SLOW_CONSUME_LOG.info("[channel] `cost`:`{}ms`. `host`:`{}`. `channel`:`{}`. `message`:`{}`. `subscriber`:`{}`.",
-                                System.currentTimeMillis() - startConsumerTime, host, channel, message, subscriber);
-                    }
+                    REDIS_SUBSCRIBER_LOG.debug("[channel] Consume channel message success." + LogBuildUtil.build(parameter));
                 }
-            }
-            if (REDIS_SUBSCRIBER_LOG.isDebugEnabled()) {
-                Map<String, Object> parameter = new LinkedHashMap<>();
-                parameter.put("cost", (System.currentTimeMillis() - startTime) + "ms");
-                parameter.put("host", host);
-                parameter.put("channel", channel);
-                parameter.put("message", message);
-                REDIS_SUBSCRIBER_LOG.debug("Consume channel message success." + LogBuildUtil.build(parameter));
+            } finally {
+                monitor.onExecuted(startNanoTime);
             }
         }
 
@@ -620,61 +637,70 @@ public class RedisSubscribeClient implements Closeable {
          * @param response Redis 响应数据
          */
         private void onPatternMessageReceived(RedisData response) {
-            long startTime = System.currentTimeMillis();
-            String pattern;
-            String channel;
-            Object message;
+            long startNanoTime = System.nanoTime();
             try {
-                pattern = response.get(1).getText();
-                channel = response.get(2).getText();
-                message = transcoder.decode(response.get(3).getValueBytes());
-            } catch (Exception e) {
-                Map<String, Object> parameter = buildParameterMap(-1);
-                parameter.put("response", response);
-                String errorMessage = "Fails to receive pattern message: `decode message failed`." + LogBuildUtil.build(parameter);
-                REDIS_SUBSCRIBER_LOG.error(errorMessage, e);
-                return;
-            }
-            List<NaiveRedisPatternSubscriber> patternSubscriberList = patternSubscribersMap.get(pattern);
-            if (patternSubscriberList == null || patternSubscriberList.isEmpty()) { // should not happen, just for bug detection
-                Map<String, Object> parameter = buildParameterMap(-1);
-                parameter.put("pattern", pattern);
-                parameter.put("channel", channel);
-                parameter.put("message", message);
-                parameter.put("response", response);
-                String errorMessage = "Fails to receive pattern message: `empty subscriber list`." + LogBuildUtil.build(parameter);
-                REDIS_SUBSCRIBER_LOG.error(errorMessage);
-                return;
-            }
-            for (NaiveRedisPatternSubscriber subscriber : patternSubscriberList) {
-                long startConsumerTime = System.currentTimeMillis();
+                String pattern;
+                String channel;
+                Object message;
                 try {
-                    subscriber.consume(pattern, channel, message);
+                    pattern = response.get(1).getText();
+                    channel = response.get(2).getText();
+                    message = transcoder.decode(response.get(3).getValueBytes());
                 } catch (Exception e) {
+                    monitor.onError(SubscriberMonitorFactory.ERROR_CODE_DECODE_ERROR);
+                    Map<String, Object> parameter = buildParameterMap(-1);
+                    parameter.put("response", response);
+                    String errorMessage = "[pattern] Fails to receive pattern message: `decode message failed`." + LogBuildUtil.build(parameter);
+                    REDIS_SUBSCRIBER_LOG.error(errorMessage, e);
+                    return;
+                }
+                List<NaiveRedisPatternSubscriber> patternSubscriberList = patternSubscribersMap.get(pattern);
+                if (patternSubscriberList == null || patternSubscriberList.isEmpty()) { // should not happen, just for bug detection
+                    monitor.onError(SubscriberMonitorFactory.ERROR_CODE_UNEXPECTED_ERROR);
+                    Map<String, Object> parameter = buildParameterMap(-1);
+                    parameter.put("pattern", pattern);
+                    parameter.put("channel", channel);
+                    parameter.put("message", message);
+                    parameter.put("response", response);
+                    String errorMessage = "[pattern] Fails to receive pattern message: `empty subscriber list`." + LogBuildUtil.build(parameter);
+                    REDIS_SUBSCRIBER_LOG.error(errorMessage);
+                    return;
+                }
+                for (NaiveRedisPatternSubscriber subscriber : patternSubscriberList) {
+                    long startConsumerTime = System.currentTimeMillis();
+                    try {
+                        subscriber.consume(pattern, channel, message);
+                    } catch (Exception e) {
+                        monitor.onError(SubscriberMonitorFactory.ERROR_CODE_CONSUME_ERROR);
+                        Map<String, Object> parameter = new LinkedHashMap<>();
+                        parameter.put("host", host);
+                        parameter.put("pattern", pattern);
+                        parameter.put("channel", channel);
+                        parameter.put("message", message);
+                        parameter.put("subscriber", subscriber);
+                        String errorMessage = "[pattern] Fails to consume pattern message." + LogBuildUtil.build(parameter);
+                        REDIS_SUBSCRIBER_LOG.error(errorMessage, e);
+                    } finally {
+                        long consumeTime = System.currentTimeMillis() - startConsumerTime;
+                        if (consumeTime > slowConsumeThreshold) {
+                            monitor.onError(SubscriberMonitorFactory.ERROR_CODE_SLOW_CONSUMPTION);
+                            REDIS_SUBSCRIBER_SLOW_CONSUME_LOG.info("[pattern] `cost`:`{}ms`. `host`:`{}`. `pattern`:`{}`. `channel`:`{}`. `message`:`{}`. `subscriber`:`{}`.",
+                                    System.currentTimeMillis() - startConsumerTime, host, pattern, channel, message, subscriber);
+                        }
+                    }
+                }
+                if (REDIS_SUBSCRIBER_LOG.isDebugEnabled()) {
                     Map<String, Object> parameter = new LinkedHashMap<>();
+                    long cost = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanoTime, TimeUnit.NANOSECONDS);
+                    parameter.put("cost", cost + "ms");
                     parameter.put("host", host);
                     parameter.put("pattern", pattern);
                     parameter.put("channel", channel);
                     parameter.put("message", message);
-                    parameter.put("subscriber", subscriber);
-                    String errorMessage = "Fails to consume pattern message." + LogBuildUtil.build(parameter);
-                    REDIS_SUBSCRIBER_LOG.error(errorMessage , e);
-                } finally {
-                    long consumeTime = System.currentTimeMillis() - startConsumerTime;
-                    if (consumeTime > slowConsumeThreshold) {
-                        REDIS_SUBSCRIBER_SLOW_CONSUME_LOG.info("[pattern] `cost`:`{}ms`. `host`:`{}`. `pattern`:`{}`. `channel`:`{}`. `message`:`{}`. `subscriber`:`{}`.",
-                                System.currentTimeMillis() - startConsumerTime, host, pattern, channel, message, subscriber);
-                    }
+                    REDIS_SUBSCRIBER_LOG.debug("[pattern] Consume pattern message success." + LogBuildUtil.build(parameter));
                 }
-            }
-            if (REDIS_SUBSCRIBER_LOG.isDebugEnabled()) {
-                Map<String, Object> parameter = new LinkedHashMap<>();
-                parameter.put("cost", (System.currentTimeMillis() - startTime) + "ms");
-                parameter.put("host", host);
-                parameter.put("pattern", pattern);
-                parameter.put("channel", channel);
-                parameter.put("message", message);
-                REDIS_SUBSCRIBER_LOG.debug("Consume pattern message success." + LogBuildUtil.build(parameter));
+            } finally {
+                monitor.onExecuted(startNanoTime);
             }
         }
 

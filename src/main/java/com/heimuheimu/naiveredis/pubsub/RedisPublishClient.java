@@ -24,6 +24,7 @@
 
 package com.heimuheimu.naiveredis.pubsub;
 
+import com.heimuheimu.naivemonitor.monitor.ExecutionMonitor;
 import com.heimuheimu.naiveredis.channel.RedisChannel;
 import com.heimuheimu.naiveredis.clients.AbstractDirectRedisClient;
 import com.heimuheimu.naiveredis.command.pubsub.PublishCommand;
@@ -34,6 +35,7 @@ import com.heimuheimu.naiveredis.facility.UnusableServiceNotifier;
 import com.heimuheimu.naiveredis.facility.parameter.MethodParameterChecker;
 import com.heimuheimu.naiveredis.facility.parameter.Parameters;
 import com.heimuheimu.naiveredis.monitor.ExecutionMonitorFactory;
+import com.heimuheimu.naiveredis.monitor.PublisherMonitorFactory;
 import com.heimuheimu.naiveredis.net.SocketConfiguration;
 import com.heimuheimu.naiveredis.transcoder.SimpleTranscoder;
 import com.heimuheimu.naiveredis.transcoder.Transcoder;
@@ -72,6 +74,11 @@ public class RedisPublishClient implements Closeable {
      * Redis 服务主机地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
      */
     private final DirectRedisPublishClient client;
+
+    /**
+     * Redis 消息发布客户端使用的执行信息监控器
+     */
+    private final ExecutionMonitor monitor = PublisherMonitorFactory.get();
 
     /**
      * 构造一个 RedisPublishClient 实例。
@@ -134,28 +141,34 @@ public class RedisPublishClient implements Closeable {
      */
     public int publish(String channel, Object message) throws IllegalArgumentException, IllegalStateException,
             TimeoutException, RedisException {
+        long startNanoTime = System.nanoTime();
         try {
-            long startTime = System.currentTimeMillis();
             int receivedClients = client.publish(channel, message);
-            if (receivedClients > 0 && REDIS_PUBLISHER_LOG.isDebugEnabled()) {
+            if (receivedClients > 0 && REDIS_PUBLISHER_LOG.isDebugEnabled()) //noinspection Duplicates
+            {
                 LinkedHashMap<String, Object> parameterMap = new LinkedHashMap<>();
-                parameterMap.put("cost", (System.currentTimeMillis() - startTime) + "ms");
+                long cost = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startNanoTime, TimeUnit.NANOSECONDS);
+                parameterMap.put("cost", cost + "ms");
                 parameterMap.put("receivedClients", receivedClients);
                 parameterMap.put("host", host);
                 parameterMap.put("channel", channel);
                 parameterMap.put("message", message);
                 REDIS_PUBLISHER_LOG.debug("Publish message success.{}", LogBuildUtil.build(parameterMap));
             } else if (receivedClients == 0) {
+                monitor.onError(PublisherMonitorFactory.ERROR_CODE_NO_CLIENT);
                 REDIS_PUBLISHER_LOG.warn("There is no client for channel: `" + channel + "`. `message`: `" + message + "`.");
             }
             return receivedClients;
         } catch (Exception e) {
+            monitor.onError(PublisherMonitorFactory.ERROR_CODE_PUBLISH_ERROR);
             LinkedHashMap<String, Object> parameterMap = new LinkedHashMap<>();
             parameterMap.put("host", host);
             parameterMap.put("channel", channel);
             parameterMap.put("message", message);
             REDIS_PUBLISHER_LOG.error("Fails to publish message." + LogBuildUtil.build(parameterMap), e);
             throw e;
+        } finally {
+            monitor.onExecuted(startNanoTime);
         }
     }
 

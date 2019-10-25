@@ -25,6 +25,7 @@
 package com.heimuheimu.naiveredis.command.storage;
 
 import com.heimuheimu.naiveredis.command.AbstractCommand;
+import com.heimuheimu.naiveredis.constant.SetMode;
 import com.heimuheimu.naiveredis.data.RedisArray;
 import com.heimuheimu.naiveredis.data.RedisBulkString;
 import com.heimuheimu.naiveredis.data.RedisData;
@@ -44,7 +45,7 @@ public class SetCommand extends AbstractCommand {
     private final byte[] requestByteArray;
 
     /**
-     * 构造一个 Redis SET 命令。
+     * 构造一个 Redis SET 命令，SET 模式为 {@link SetMode#SET_ANYWAY}。
      *
      * @param key Redis key，不允许为 {@code null} 或空字符串
      * @param value Redis value
@@ -52,19 +53,46 @@ public class SetCommand extends AbstractCommand {
      * @throws IllegalArgumentException 如果 Redis key 为 {@code null} 或空字符串，将抛出此异常
      */
     public SetCommand(String key, byte[] value, int seconds) throws IllegalArgumentException {
+        this(key, value, seconds, SetMode.SET_ANYWAY);
+    }
+
+    /**
+     * 构造一个 Redis SET 命令。
+     *
+     * @param key Redis key，不允许为 {@code null} 或空字符串
+     * @param value Redis value
+     * @param seconds 有效时间，单位：秒，如果小于等于 0，则不进行设置
+     * @param mode SET 命令使用的模式，如果为 {@code null}，则默认为 {@link SetMode#SET_ANYWAY}
+     * @throws IllegalArgumentException 如果 Redis key 为 {@code null} 或空字符串，将抛出此异常
+     */
+    public SetCommand(String key, byte[] value, int seconds, SetMode mode) {
+        if (mode == null) {
+            mode = SetMode.SET_ANYWAY;
+        }
+
         ConstructorParameterChecker checker = new ConstructorParameterChecker("SetCommand", null);
         checker.addParameter("key", key);
 
         checker.check("key", "isEmpty", Parameters::isEmpty);
-
         int commandDataArrayLength = seconds > 0 ? 5 : 3;
+        if (mode != SetMode.SET_ANYWAY) {
+            commandDataArrayLength += 1;
+        }
+        int arrayIndex = 0;
         RedisData[] commandDataArray = new RedisData[commandDataArrayLength];
-        commandDataArray[0] = new RedisBulkString("SET".getBytes(RedisData.UTF8));
-        commandDataArray[1] = new RedisBulkString(key.getBytes(RedisData.UTF8));
-        commandDataArray[2] = new RedisBulkString(value);
+        commandDataArray[arrayIndex++] = new RedisBulkString("SET".getBytes(RedisData.UTF8));
+        commandDataArray[arrayIndex++] = new RedisBulkString(key.getBytes(RedisData.UTF8));
+        commandDataArray[arrayIndex++] = new RedisBulkString(value);
         if (seconds > 0) {
-            commandDataArray[3] = new RedisBulkString("EX".getBytes(RedisData.UTF8));
-            commandDataArray[4] = new RedisBulkString(String.valueOf(seconds).getBytes(RedisData.UTF8));
+            commandDataArray[arrayIndex++] = new RedisBulkString("EX".getBytes(RedisData.UTF8));
+            commandDataArray[arrayIndex++] = new RedisBulkString(String.valueOf(seconds).getBytes(RedisData.UTF8));
+        }
+        if (mode != SetMode.SET_ANYWAY) {
+            if (mode == SetMode.SET_IF_ABSENT) {
+                commandDataArray[arrayIndex] = new RedisBulkString("NX".getBytes(RedisData.UTF8));
+            } else if (mode == SetMode.SET_IF_EXIST) {
+                commandDataArray[arrayIndex] = new RedisBulkString("XX".getBytes(RedisData.UTF8));
+            }
         }
         this.requestByteArray = new RedisArray(commandDataArray).getRespByteArray();
     }

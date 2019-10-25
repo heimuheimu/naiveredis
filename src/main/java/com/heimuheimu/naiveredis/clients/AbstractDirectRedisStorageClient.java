@@ -6,9 +6,8 @@ import com.heimuheimu.naiveredis.channel.RedisChannel;
 import com.heimuheimu.naiveredis.command.storage.GetCommand;
 import com.heimuheimu.naiveredis.command.storage.MGetCommand;
 import com.heimuheimu.naiveredis.command.storage.SetCommand;
-import com.heimuheimu.naiveredis.command.storage.SetNXCommand;
+import com.heimuheimu.naiveredis.constant.SetMode;
 import com.heimuheimu.naiveredis.data.RedisData;
-import com.heimuheimu.naiveredis.data.RedisDataParser;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
 import com.heimuheimu.naiveredis.facility.parameter.MethodParameterChecker;
@@ -94,12 +93,9 @@ public abstract class AbstractDirectRedisStorageClient extends AbstractDirectRed
 
     protected boolean setIfAbsent(String methodName, String key, Object value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         Map<String, Object> parameterMap = checkParameterForSet(methodName, key, value, expiry);
-        boolean isSuccess = (boolean) execute(methodName, parameterMap,
-                () -> new SetNXCommand(key, getTranscoder().encode(value)), RedisDataParser::parseBoolean);
-        if (isSuccess && expiry > 0) {
-            expire(key, expiry);
-        }
-        return isSuccess;
+        return (boolean) execute(methodName, parameterMap,
+                () -> new SetCommand(key, getTranscoder().encode(value), expiry, SetMode.SET_IF_ABSENT),
+                response -> response.getValueBytes() != null);
     }
 
     /**

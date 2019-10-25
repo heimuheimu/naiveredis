@@ -93,6 +93,17 @@ public class DirectRedisRawStorageClient extends AbstractDirectRedisStorageClien
     }
 
     @Override
+    public boolean setStringIfExist(String key, String value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return setStringIfExist(key, value, -1);
+    }
+
+    @Override
+    public boolean setStringIfExist(String key, String value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        String methodName = methodNamePrefix + "setStringIfExist(String key, String value, int expiry)";
+        return setIfExist(methodName, key, value, expiry);
+    }
+
+    @Override
     protected Transcoder getTranscoder() {
         return transcoder;
     }

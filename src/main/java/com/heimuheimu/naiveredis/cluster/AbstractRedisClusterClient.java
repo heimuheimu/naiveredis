@@ -370,6 +370,16 @@ public abstract class AbstractRedisClusterClient implements NaiveRedisClient, Cl
     }
 
     @Override
+    public boolean setStringIfExist(String key, String value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return execute(RedisClientMethod.SET_STRING_IF_EXIST, key, client -> client.setStringIfExist(key, value));
+    }
+
+    @Override
+    public boolean setStringIfExist(String key, String value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return execute(RedisClientMethod.SET_STRING_IF_EXIST_WITH_EXPIRE, key, client -> client.setStringIfExist(key, value, expiry));
+    }
+
+    @Override
     public Long getCount(String key) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         return execute(RedisClientMethod.GET_COUNT, key, client -> client.getCount(key));
     }

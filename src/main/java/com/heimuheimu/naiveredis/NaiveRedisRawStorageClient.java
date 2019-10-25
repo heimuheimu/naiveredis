@@ -124,4 +124,41 @@ public interface NaiveRedisRawStorageClient extends NaiveRedisKeysClient {
      * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
      */
     boolean setStringIfAbsent(String key, String value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
+
+    /**
+     * 仅在 Key 存在时，执行更新操作，永久保存，并返回 {@code true}，如果 Key 不存在，不执行任何操作，并返回 {@code false}。
+     *
+     * <p><strong>算法复杂度：</strong> O(1)</p>
+     *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/set">SET key value XX</a></p>
+     *
+     * @param key Redis key，不允许 {@code null} 或空
+     * @param value 字符串，不允许 {@code null}
+     * @return 是否更新成功
+     * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalArgumentException 如果 value 为 {@code null}，将会抛出此异常
+     * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
+     * @throws TimeoutException 如果操作超时，将会抛出此异常
+     * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
+     */
+    boolean setStringIfExist(String key, String value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
+
+    /**
+     * 仅在 Key 存在时，执行更新操作，并指定过期时间，返回 {@code true}，如果 Key 不存在，不执行任何操作，并返回 {@code false}。
+     *
+     * <p><strong>算法复杂度：</strong> O(1)</p>
+     *
+     * <p><strong>Redis 命令：</strong><a href="https://redis.io/commands/set">SET key value EX seconds XX</a></p>
+     *
+     * @param key Redis key，不允许 {@code null} 或空
+     * @param value 字符串，不允许 {@code null}
+     * @param expiry 过期时间，单位：秒，如果小于等于 0，则为永久保存
+     * @return 是否更新成功
+     * @throws IllegalArgumentException 如果 key 为 {@code null} 或空，将会抛出此异常
+     * @throws IllegalArgumentException 如果 value 为 {@code null}，将会抛出此异常
+     * @throws IllegalStateException 如果 Redis 服务不可用，将会抛出此异常
+     * @throws TimeoutException 如果操作超时，将会抛出此异常
+     * @throws RedisException 如果 Redis 命令执行出错，将会抛出此异常
+     */
+    boolean setStringIfExist(String key, String value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException;
 }

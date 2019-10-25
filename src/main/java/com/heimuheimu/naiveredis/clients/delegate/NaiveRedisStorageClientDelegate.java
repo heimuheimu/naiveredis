@@ -68,4 +68,14 @@ public interface NaiveRedisStorageClientDelegate extends NaiveRedisStorageClient
     default boolean setIfAbsent(String key, Object value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
         return getNaiveRedisStorageClient().setIfAbsent(key, value, expiry);
     }
+
+    @Override
+    default boolean setIfExist(String key, Object value) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return getNaiveRedisStorageClient().setIfExist(key, value);
+    }
+
+    @Override
+    default boolean setIfExist(String key, Object value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        return getNaiveRedisStorageClient().setIfExist(key, value, expiry);
+    }
 }

@@ -98,6 +98,13 @@ public abstract class AbstractDirectRedisStorageClient extends AbstractDirectRed
                 response -> response.getValueBytes() != null);
     }
 
+    protected boolean setIfExist(String methodName, String key, Object value, int expiry) throws IllegalArgumentException, IllegalStateException, TimeoutException, RedisException {
+        Map<String, Object> parameterMap = checkParameterForSet(methodName, key, value, expiry);
+        return (boolean) execute(methodName, parameterMap,
+                () -> new SetCommand(key, getTranscoder().encode(value), expiry, SetMode.SET_IF_EXIST),
+                response -> response.getValueBytes() != null);
+    }
+
     /**
      * 执行 Set 相关方法执行参数有效性检查，如果有效，则返回执行参数 Map，否则将抛出 IllegalArgumentException 异常。
      *

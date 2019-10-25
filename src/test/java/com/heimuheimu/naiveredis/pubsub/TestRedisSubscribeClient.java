@@ -32,7 +32,7 @@ public class TestRedisSubscribeClient {
     @Test
     public void testConstructor() {
         try {
-            new RedisSubscribeClient(HOST, null, 30, null,
+            new RedisSubscribeClient(HOST, null, 30, null, 50,
                     null, null, null);
             Assert.fail("Expected throw `IllegalArgumentException`.");
         } catch (IllegalArgumentException ignored) {}
@@ -41,10 +41,10 @@ public class TestRedisSubscribeClient {
         List<NaiveRedisPatternSubscriber> patternSubscriberList = new ArrayList<>();
         patternSubscriberList.add(new DummyPatternSubscriber(("d*")));
         try {
-            new RedisSubscribeClient("impossible.redis.host:6179", null, 5, null,
+            new RedisSubscribeClient("impossible.redis.host:6179", null, 5, null, 50,
                     channelSubscriberList, patternSubscriberList, null);
         } catch (IllegalStateException ignored) {}
-        RedisSubscribeClient client = new RedisSubscribeClient(HOST, null, 5, null,
+        RedisSubscribeClient client = new RedisSubscribeClient(HOST, null, 5, null, 50,
                 channelSubscriberList, patternSubscriberList, null);
         client.init();
         client.close();

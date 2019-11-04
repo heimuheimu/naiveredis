@@ -15,7 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 自动重连 Redis 消息发布客户端，当运行过程中出现因网络原因或其它异常错误导致订阅中断，会触发自动重连机制。
+ * 自动重连 Redis 消息发布客户端，当运行过程中出现因网络原因或其它异常错误导致连接断开，会触发自动重连机制。
  *
  * <p><strong>说明：</strong>AutoReconnectRedisPublishClient 类是线程安全的，可在多个线程中使用同一个实例。</p>
  *

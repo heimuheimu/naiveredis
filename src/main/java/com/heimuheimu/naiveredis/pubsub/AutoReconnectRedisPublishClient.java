@@ -103,6 +103,11 @@ public class AutoReconnectRedisPublishClient implements Closeable {
     private final Object rescueLock = new Object();
 
     /**
+     * 当前实例使用的私有锁
+     */
+    private final Object lock = new Object();
+
+    /**
      * 构造一个 AutoReconnectRedisPublishClient 实例，Socket 配置信息将会使用 {@link SocketConfiguration#DEFAULT}，
      * Redis 操作超时时间为 5 秒，执行过慢最小时间为 50 毫秒，PING 命令发送时间间隔为 30 秒，
      * Java 对象与字节数组转换器将会使用 {@link RedisPublishClient} 实现指定的默认转换器。
@@ -138,26 +143,28 @@ public class AutoReconnectRedisPublishClient implements Closeable {
         this.pingPeriod = pingPeriod;
         this.transcoder = transcoder;
         this.listener = listener;
-        try {
-            this.redisPublishClient = new RedisPublishClient(this.host, this.configuration, this.timeout,
-                    this.slowExecutionThreshold, this.pingPeriod, this.transcoder, this::startRescueTask);
-        } catch (Exception e) {
-            String errorMessage = "Fails to construct AutoReconnectRedisPublishClient: `create RedisPublishClient failed`."
-                    + LogBuildUtil.build(buildParameterMap());
-            REDIS_PUBLISHER_LOG.error(errorMessage, e);
-            LOGGER.error(errorMessage, e);
-            throw new IllegalStateException(errorMessage, e);
-        }
-        if (this.redisPublishClient.isAvailable()) {
-            state = BeanStatusEnum.NORMAL;
-            Methods.invokeIfNotNull("AutoReconnectRedisPublishClientListener#onCreated(String host)",
-                    buildParameterMap(), this.listener, () -> this.listener.onCreated(this.host));
-        } else {
-            String errorMessage = "Fails to construct AutoReconnectRedisPublishClient: `RedisPublishClient is not available`."
-                    + LogBuildUtil.build(buildParameterMap());
-            REDIS_PUBLISHER_LOG.error(errorMessage);
-            LOGGER.error(errorMessage);
-            throw new IllegalStateException(errorMessage);
+        synchronized (lock) {
+            try {
+                this.redisPublishClient = new RedisPublishClient(this.host, this.configuration, this.timeout,
+                        this.slowExecutionThreshold, this.pingPeriod, this.transcoder, this::startRescueTask);
+            } catch (Exception e) {
+                String errorMessage = "Fails to construct AutoReconnectRedisPublishClient: `create RedisPublishClient failed`."
+                        + LogBuildUtil.build(buildParameterMap());
+                REDIS_PUBLISHER_LOG.error(errorMessage, e);
+                LOGGER.error(errorMessage, e);
+                throw new IllegalStateException(errorMessage, e);
+            }
+            if (this.redisPublishClient.isAvailable()) {
+                state = BeanStatusEnum.NORMAL;
+                Methods.invokeIfNotNull("AutoReconnectRedisPublishClientListener#onCreated(String host)",
+                        buildParameterMap(), this.listener, () -> this.listener.onCreated(this.host));
+            } else {
+                String errorMessage = "Fails to construct AutoReconnectRedisPublishClient: `RedisPublishClient is not available`."
+                        + LogBuildUtil.build(buildParameterMap());
+                REDIS_PUBLISHER_LOG.error(errorMessage);
+                LOGGER.error(errorMessage);
+                throw new IllegalStateException(errorMessage);
+            }
         }
     }
 
@@ -183,11 +190,13 @@ public class AutoReconnectRedisPublishClient implements Closeable {
     }
 
     @Override
-    public synchronized void close() {
-        if (state != BeanStatusEnum.CLOSED) {
-            state = BeanStatusEnum.CLOSED;
-            if (redisPublishClient != null) {
-                redisPublishClient.close();
+    public void close() {
+        synchronized (lock) {
+            if (state != BeanStatusEnum.CLOSED) {
+                state = BeanStatusEnum.CLOSED;
+                if (redisPublishClient != null) {
+                    redisPublishClient.close();
+                }
             }
         }
     }
@@ -214,46 +223,55 @@ public class AutoReconnectRedisPublishClient implements Closeable {
      * @param unavailablePublishClient 不可用的 Redis 消息发布客户端
      */
     private void startRescueTask(RedisPublishClient unavailablePublishClient) {
-        if (state == BeanStatusEnum.NORMAL && unavailablePublishClient == redisPublishClient) {
-            Thread rescueThread = new Thread(() -> {
-                synchronized (rescueLock) {
-                    if (state == BeanStatusEnum.NORMAL && unavailablePublishClient == redisPublishClient) {
-                        Methods.invokeIfNotNull("AutoReconnectRedisPublishClientListener#onClosed(String host)",
-                                buildParameterMap(), this.listener,
-                                () -> this.listener.onClosed(this.host));
-                        long startTime = System.currentTimeMillis();
-                        REDIS_PUBLISHER_LOG.info("RedisPublishClient rescue task has been started.{}",
-                                LogBuildUtil.build(buildParameterMap()));
-                        while (state == BeanStatusEnum.NORMAL) {
-                            RedisPublishClient client;
-                            try {
-                                client = new RedisPublishClient(this.host, this.configuration, this.timeout,
-                                        this.slowExecutionThreshold, this.pingPeriod, this.transcoder, this::startRescueTask);
-                                if (client.isAvailable()) {
-                                    this.redisPublishClient = client;
-                                }
-                            } catch (Exception e) {
-                                REDIS_PUBLISHER_LOG.error("Fails to rescue `RedisPublishClient`." +
-                                        LogBuildUtil.build(buildParameterMap()), e);
-                            }
-                            if (this.redisPublishClient.isAvailable()) {
-                                REDIS_PUBLISHER_LOG.info("RedisPublishClient rescue task has been finished. `cost`:`{}ms`.{}",
-                                        System.currentTimeMillis() - startTime, LogBuildUtil.build(buildParameterMap()));
-                                Methods.invokeIfNotNull("AutoReconnectRedisPublishClientListener#onRecovered(String host)",
-                                        buildParameterMap(), this.listener, () -> this.listener.onRecovered(this.host));
-                                break;
-                            } else {
+        synchronized (lock) {
+            if (state == BeanStatusEnum.NORMAL && unavailablePublishClient == redisPublishClient) {
+                Thread rescueThread = new Thread(() -> {
+                    synchronized (rescueLock) {
+                        if (state == BeanStatusEnum.NORMAL && unavailablePublishClient == redisPublishClient) {
+                            Methods.invokeIfNotNull("AutoReconnectRedisPublishClientListener#onClosed(String host)",
+                                    buildParameterMap(), this.listener,
+                                    () -> this.listener.onClosed(this.host));
+                            long startTime = System.currentTimeMillis();
+                            REDIS_PUBLISHER_LOG.info("RedisPublishClient rescue task has been started.{}",
+                                    LogBuildUtil.build(buildParameterMap()));
+                            while (state == BeanStatusEnum.NORMAL) {
+                                RedisPublishClient client;
                                 try {
-                                    Thread.sleep(500);
-                                } catch (InterruptedException ignored) {}
+                                    client = new RedisPublishClient(this.host, this.configuration, this.timeout,
+                                            this.slowExecutionThreshold, this.pingPeriod, this.transcoder, this::startRescueTask);
+                                    synchronized (lock) {
+                                        if (client.isAvailable()) {
+                                            if (state == BeanStatusEnum.NORMAL) {
+                                                this.redisPublishClient = client;
+                                            } else {
+                                                client.close();
+                                            }
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    REDIS_PUBLISHER_LOG.error("Fails to rescue `RedisPublishClient`." +
+                                            LogBuildUtil.build(buildParameterMap()), e);
+                                }
+                                if (this.redisPublishClient.isAvailable()) {
+                                    REDIS_PUBLISHER_LOG.info("RedisPublishClient rescue task has been finished. `cost`:`{}ms`.{}",
+                                            System.currentTimeMillis() - startTime, LogBuildUtil.build(buildParameterMap()));
+                                    Methods.invokeIfNotNull("AutoReconnectRedisPublishClientListener#onRecovered(String host)",
+                                            buildParameterMap(), this.listener, () -> this.listener.onRecovered(this.host));
+                                    break;
+                                } else {
+                                    try {
+                                        Thread.sleep(500);
+                                    } catch (InterruptedException ignored) {
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            });
-            rescueThread.setName("naiveredis-publish-client-rescue-task");
-            rescueThread.setDaemon(true);
-            rescueThread.start();
+                });
+                rescueThread.setName("naiveredis-publish-client-rescue-task");
+                rescueThread.setDaemon(true);
+                rescueThread.start();
+            }
         }
     }
 }

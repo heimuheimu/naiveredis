@@ -107,6 +107,11 @@ public class AutoReconnectRedisSubscribeClient implements Closeable {
     private final Object rescueLock = new Object();
 
     /**
+     * 当前实例使用的私有锁
+     */
+    private final Object lock = new Object();
+
+    /**
      * 构造一个 AutoReconnectRedisSubscribeClient 实例，Socket 配置信息将会使用 {@link SocketConfiguration#DEFAULT}，
      * PING 命令发送时间间隔为 30 秒，Java 对象与字节数组转换器将会使用 {@link RedisSubscribeClient} 实现指定的默认转换器，
      * 单个 Redis 消息订阅者消费过慢最小时间为 50 毫秒。
@@ -149,29 +154,31 @@ public class AutoReconnectRedisSubscribeClient implements Closeable {
         this.channelSubscriberList = channelSubscriberList;
         this.patternSubscriberList = patternSubscriberList;
         this.listener = listener;
-        try {
-            this.redisSubscribeClient = new RedisSubscribeClient(this.host, this.configuration, this.pingPeriod,
-                    this.transcoder, this.slowConsumeThreshold, this.channelSubscriberList, this.patternSubscriberList,
-                    this::startRescueTask);
-            this.redisSubscribeClient.init();
-        } catch (Exception e) {
-            String errorMessage = "Fails to construct AutoReconnectRedisSubscribeClient: `create RedisSubscribeClient failed`."
-                    + LogBuildUtil.build(buildParameterMap());
-            REDIS_SUBSCRIBER_LOG.error(errorMessage, e);
-            LOGGER.error(errorMessage, e);
-            throw new IllegalStateException(errorMessage, e);
-        }
-        if (this.redisSubscribeClient.isAvailable()) {
-            state = BeanStatusEnum.NORMAL;
-            Methods.invokeIfNotNull("AutoReconnectRedisSubscribeClientListener#onCreated(String host, List<NaiveRedisChannelSubscriber> channelSubscriberList, List<NaiveRedisPatternSubscriber> patternSubscriberList)",
-                    buildParameterMap(), this.listener,
-                    () -> this.listener.onCreated(this.host, this.channelSubscriberList, this.patternSubscriberList));
-        } else {
-            String errorMessage = "Fails to construct AutoReconnectRedisSubscribeClient: `RedisSubscribeClient is not available`."
-                    + LogBuildUtil.build(buildParameterMap());
-            REDIS_SUBSCRIBER_LOG.error(errorMessage);
-            LOGGER.error(errorMessage);
-            throw new IllegalStateException(errorMessage);
+        synchronized (lock) {
+            try {
+                this.redisSubscribeClient = new RedisSubscribeClient(this.host, this.configuration, this.pingPeriod,
+                        this.transcoder, this.slowConsumeThreshold, this.channelSubscriberList, this.patternSubscriberList,
+                        this::startRescueTask);
+                this.redisSubscribeClient.init();
+            } catch (Exception e) {
+                String errorMessage = "Fails to construct AutoReconnectRedisSubscribeClient: `create RedisSubscribeClient failed`."
+                        + LogBuildUtil.build(buildParameterMap());
+                REDIS_SUBSCRIBER_LOG.error(errorMessage, e);
+                LOGGER.error(errorMessage, e);
+                throw new IllegalStateException(errorMessage, e);
+            }
+            if (this.redisSubscribeClient.isAvailable()) {
+                state = BeanStatusEnum.NORMAL;
+                Methods.invokeIfNotNull("AutoReconnectRedisSubscribeClientListener#onCreated(String host, List<NaiveRedisChannelSubscriber> channelSubscriberList, List<NaiveRedisPatternSubscriber> patternSubscriberList)",
+                        buildParameterMap(), this.listener,
+                        () -> this.listener.onCreated(this.host, this.channelSubscriberList, this.patternSubscriberList));
+            } else {
+                String errorMessage = "Fails to construct AutoReconnectRedisSubscribeClient: `RedisSubscribeClient is not available`."
+                        + LogBuildUtil.build(buildParameterMap());
+                REDIS_SUBSCRIBER_LOG.error(errorMessage);
+                LOGGER.error(errorMessage);
+                throw new IllegalStateException(errorMessage);
+            }
         }
     }
 
@@ -197,58 +204,69 @@ public class AutoReconnectRedisSubscribeClient implements Closeable {
      * @param unavailableSubscribeClient 不可用的 Redis 订阅客户端
      */
     private void startRescueTask(RedisSubscribeClient unavailableSubscribeClient) {
-        if (state == BeanStatusEnum.NORMAL && unavailableSubscribeClient == redisSubscribeClient) {
-            Thread rescueThread = new Thread(() -> {
-                synchronized (rescueLock) {
-                    if (state == BeanStatusEnum.NORMAL && unavailableSubscribeClient == redisSubscribeClient) {
-                        Methods.invokeIfNotNull("AutoReconnectRedisSubscribeClientListener#onClosed(String host, List<NaiveRedisChannelSubscriber> channelSubscriberList, List<NaiveRedisPatternSubscriber> patternSubscriberList)",
-                                buildParameterMap(), this.listener,
-                                () -> this.listener.onClosed(this.host, this.channelSubscriberList, this.patternSubscriberList));
-                        long startTime = System.currentTimeMillis();
-                        REDIS_SUBSCRIBER_LOG.info("RedisSubscribeClient rescue task has been started.{}",
-                                LogBuildUtil.build(buildParameterMap()));
-                        while (state == BeanStatusEnum.NORMAL) {
-                            RedisSubscribeClient client;
-                            try {
-                                client = new RedisSubscribeClient(this.host, this.configuration, this.pingPeriod,
-                                        this.transcoder, this.slowConsumeThreshold, this.channelSubscriberList,
-                                        this.patternSubscriberList, this::startRescueTask);
-                                client.init();
-                                if (client.isAvailable()) {
-                                    this.redisSubscribeClient = client;
-                                }
-                            } catch (Exception e) {
-                                REDIS_SUBSCRIBER_LOG.error("Fails to rescue `RedisSubscribeClient`." +
-                                        LogBuildUtil.build(buildParameterMap()), e);
-                            }
-                            if (this.redisSubscribeClient.isAvailable()) {
-                                REDIS_SUBSCRIBER_LOG.info("RedisSubscribeClient rescue task has been finished. `cost`:`{}ms`.{}",
-                                        System.currentTimeMillis() - startTime, LogBuildUtil.build(buildParameterMap()));
-                                Methods.invokeIfNotNull("AutoReconnectRedisSubscribeClientListener#onRecovered(String host, List<NaiveRedisChannelSubscriber> channelSubscriberList, List<NaiveRedisPatternSubscriber> patternSubscriberList)",
-                                        buildParameterMap(), this.listener,
-                                        () -> this.listener.onRecovered(this.host, this.channelSubscriberList, this.patternSubscriberList));
-                                break;
-                            } else {
+        synchronized (lock) {
+            if (state == BeanStatusEnum.NORMAL && unavailableSubscribeClient == redisSubscribeClient) {
+                Thread rescueThread = new Thread(() -> {
+                    synchronized (rescueLock) {
+                        if (state == BeanStatusEnum.NORMAL && unavailableSubscribeClient == redisSubscribeClient) {
+                            Methods.invokeIfNotNull("AutoReconnectRedisSubscribeClientListener#onClosed(String host, List<NaiveRedisChannelSubscriber> channelSubscriberList, List<NaiveRedisPatternSubscriber> patternSubscriberList)",
+                                    buildParameterMap(), this.listener,
+                                    () -> this.listener.onClosed(this.host, this.channelSubscriberList, this.patternSubscriberList));
+                            long startTime = System.currentTimeMillis();
+                            REDIS_SUBSCRIBER_LOG.info("RedisSubscribeClient rescue task has been started.{}",
+                                    LogBuildUtil.build(buildParameterMap()));
+                            while (state == BeanStatusEnum.NORMAL) {
+                                RedisSubscribeClient client;
                                 try {
-                                    Thread.sleep(500);
-                                } catch (InterruptedException ignored) {}
+                                    client = new RedisSubscribeClient(this.host, this.configuration, this.pingPeriod,
+                                            this.transcoder, this.slowConsumeThreshold, this.channelSubscriberList,
+                                            this.patternSubscriberList, this::startRescueTask);
+                                    client.init();
+                                    synchronized (lock) {
+                                        if (client.isAvailable()) {
+                                            if (state == BeanStatusEnum.NORMAL) {
+                                                this.redisSubscribeClient = client;
+                                            } else {
+                                                client.close();
+                                            }
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    REDIS_SUBSCRIBER_LOG.error("Fails to rescue `RedisSubscribeClient`." +
+                                            LogBuildUtil.build(buildParameterMap()), e);
+                                }
+                                if (this.redisSubscribeClient.isAvailable()) {
+                                    REDIS_SUBSCRIBER_LOG.info("RedisSubscribeClient rescue task has been finished. `cost`:`{}ms`.{}",
+                                            System.currentTimeMillis() - startTime, LogBuildUtil.build(buildParameterMap()));
+                                    Methods.invokeIfNotNull("AutoReconnectRedisSubscribeClientListener#onRecovered(String host, List<NaiveRedisChannelSubscriber> channelSubscriberList, List<NaiveRedisPatternSubscriber> patternSubscriberList)",
+                                            buildParameterMap(), this.listener,
+                                            () -> this.listener.onRecovered(this.host, this.channelSubscriberList, this.patternSubscriberList));
+                                    break;
+                                } else {
+                                    try {
+                                        Thread.sleep(500);
+                                    } catch (InterruptedException ignored) {
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            });
-            rescueThread.setName("naiveredis-subscribe-client-rescue-task");
-            rescueThread.setDaemon(true);
-            rescueThread.start();
+                });
+                rescueThread.setName("naiveredis-subscribe-client-rescue-task");
+                rescueThread.setDaemon(true);
+                rescueThread.start();
+            }
         }
     }
 
     @Override
-    public synchronized void close() {
-        if (state != BeanStatusEnum.CLOSED) {
-            state = BeanStatusEnum.CLOSED;
-            if (redisSubscribeClient != null) {
-                redisSubscribeClient.close();
+    public void close() {
+        synchronized (lock) {
+            if (state != BeanStatusEnum.CLOSED) {
+                state = BeanStatusEnum.CLOSED;
+                if (redisSubscribeClient != null) {
+                    redisSubscribeClient.close();
+                }
             }
         }
     }

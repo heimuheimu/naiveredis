@@ -41,4 +41,14 @@ public class TimeoutException extends RuntimeException {
 	public TimeoutException(String message) {
 		super(message);
 	}
+
+	/**
+	 * 构造一个 Redis 命令执行超时异常。
+	 *
+	 * @param message 超时错误信息
+	 * @param cause 上层异常
+	 */
+	public TimeoutException(String message, Throwable cause) {
+		super(message, cause);
+	}
 }

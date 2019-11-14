@@ -114,19 +114,26 @@ public class RedisChannel implements Closeable {
     private final LinkedBlockingQueue<Command> commandQueue = new LinkedBlockingQueue<>();
 
     /**
-     * IO 线程
+     * IO 线程，访问此变量需获取 this 锁
      */
     private RedisIOTask ioTask = null;
 
     /**
-     * 连续 {@link TimeoutException} 异常出现次数
+     * 连续 {@link TimeoutException} 异常出现次数，访问此变量需获取 {@link #timeoutExceptionLock} 锁
      */
-    private volatile long continuousTimeoutExceptionTimes = 0;
+    private long continuousTimeoutExceptionTimes = 0;
 
     /**
-     * 最后一次出现 {@link TimeoutException} 异常的时间戳
+     * 最后一次出现 {@link TimeoutException} 异常的时间戳，访问此变量需获取 {@link #timeoutExceptionLock} 锁
      */
-    private volatile long lastTimeoutExceptionTime = 0;
+    private long lastTimeoutExceptionTime = 0;
+
+    /**
+     * 监控 {@link TimeoutException} 异常时使用的锁
+     *
+     * @see #onTimeout()
+     */
+    private final Object timeoutExceptionLock = new Object();
 
     /**
      * 构造一个与 Redis 服务进行数据交互的管道。
@@ -168,7 +175,7 @@ public class RedisChannel implements Closeable {
     /**
      * 发送一个 Redis 命令，并返回响应数据。
      *
-     * @param command Redis 命令
+     * @param command Redis 命令，不允许为 {@code null}
      * @param timeout 超时时间，单位：毫秒
      * @return 该命令对应的响应数据，不会返回 {@code null}
      * @throws NullPointerException Redis 命令为 {@code null}，将抛出此异常
@@ -177,34 +184,59 @@ public class RedisChannel implements Closeable {
      * @throws TimeoutException Redis 命令等待响应数据超时，将抛出此异常
      */
     public RedisData send(Command command, long timeout) throws NullPointerException, IllegalStateException, TimeoutException {
+        asyncSend(command);
+        try {
+            return command.getResponseData(timeout);
+        } catch (TimeoutException e) {
+            onTimeout();
+            throw new TimeoutException("Send redis command failed: `wait response timeout`. Host: `" + host
+                    + "`. State: `" + state + "`. Command: `" + command + "`. Timeout: `" + timeout + "ms`.", e);
+        } catch (IllegalStateException e) {
+            throw new IllegalStateException("Send redis command failed: `command has been closed`. Host: `" + host
+                    + "`. State: `" + state + "`. Command: `" + command + "`. Timeout: `" + timeout + "ms`.", e);
+        }
+    }
+
+    /**
+     * 发送一个 Redis 命令，不等待响应数据返回，使用方需自行调用 {@link Command#getResponseData(long)} 来获取响应数据。
+     *
+     * @param command Redis 命令，不允许为 {@code null}
+     * @throws NullPointerException Redis 命令为 {@code null}，将抛出此异常
+     * @throws IllegalStateException 当前 {@code RedisChannel} 未初始化或已被关闭，将抛出此异常
+     */
+    public void asyncSend(Command command) throws NullPointerException, IllegalStateException {
         if (command == null) {
-            throw new NullPointerException("Send redis command failed: `null command`. Host: `" + host + "`. Timeout: `"
-                + timeout + "ms`. State: `" + state + "`. Command: `null`.");
+            throw new NullPointerException("Send redis command failed: `null command`. Host: `" + host + "`. State: `"
+                    + state + "`. Command: `null`.");
         }
         if (state == BeanStatusEnum.NORMAL) {
             commandQueue.add(command);
         } else {
             throw new IllegalStateException("Send redis command failed: `channel has been closed`. Host: `" + host
-                    + "`. Timeout: `" + timeout + "ms`. State: `" + state + "`. Command: `" + command + "`.");
+                    + "`. State: `" + state + "`. Command: `" + command + "`.");
         }
-        try {
-            return command.getResponseData(timeout);
-        } catch (TimeoutException e) {
+    }
+
+    /**
+     * 当调用 {@link Command#getResponseData(long)} 方法出现 {@link TimeoutException} 异常时，可通过此方法进行监控，
+     * 如果连续超时异常出现次数大于 50 次，则认为当前连接出现异常，将会关闭当前连接。
+     *
+     * <p><strong>说明：</strong>如果两次超时异常发生在 1s 以内，则认为是连续失败。</p>
+     */
+    public void onTimeout() {
+        synchronized (timeoutExceptionLock) {
             //如果两次超时异常发生在 1s 以内，则认为是连续失败
             if (System.currentTimeMillis() - lastTimeoutExceptionTime < 1000) {
-                //noinspection NonAtomicOperationOnVolatileField
-                continuousTimeoutExceptionTimes ++;
+                continuousTimeoutExceptionTimes++;
             } else {
                 continuousTimeoutExceptionTimes = 1;
             }
             lastTimeoutExceptionTime = System.currentTimeMillis();
             //如果连续超时异常出现次数大于 50 次，认为当前连接出现异常，关闭当前连接
-            if (continuousTimeoutExceptionTimes > 50) {
-                REDIS_CONNECTION_LOG.error("RedisChannel need to be closed due to: `too many timeout exceptions[{}]`. Host: `{}`.",
-                        continuousTimeoutExceptionTimes, host);
+            if (continuousTimeoutExceptionTimes == 50) {
+                REDIS_CONNECTION_LOG.error("RedisChannel need to be closed due to: `too many timeout exceptions`. Host: `{}`.", host);
                 close();
             }
-            throw e;
         }
     }
 

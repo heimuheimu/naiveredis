@@ -144,6 +144,15 @@ public class AutoReconnectRedisLockClient implements Closeable {
     }
 
     /**
+     * 获得当前 Redis 分布式锁客户端使用的 Redis 服务主机地址。
+     *
+     * @return Redis 服务主机地址
+     */
+    public String getHost() {
+        return host;
+    }
+
+    /**
      * 提供可异步获取的 Redis 分布式锁，该方法不会返回 {@code null}。
      *
      * @param name 锁名称，不允许为 {@code null} 或空字符串

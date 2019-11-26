@@ -159,7 +159,7 @@ public class SingleInstanceLock implements RedisDistributedLock, Closeable {
                 long holdingTime = System.currentTimeMillis() - lockInfo.getCreatedTime();
                 monitor.onUnlockSuccess(holdingTime);
             } catch (Exception e) {
-                monitor.onUnlockErrorCount();
+                monitor.onUnlockError();
                 String errorMessage = "Release redis distributed lock failed. `host`:`" + host + "`. `lockInfo`:`" + lockInfo + "`.";
                 throw new RedisDistributedLockException(errorMessage, e);
             }

@@ -112,8 +112,15 @@ public class RedisDistributedLockMonitor {
     /**
      * 对 Redis 分布式锁释放异常的次数进行监控。
      */
-    public void onUnlockErrorCount() {
+    public void onUnlockError() {
         unlockErrorCount.incrementAndGet();
+    }
+
+    /**
+     * 重置 Redis 分布式锁单次被持有的最大时间，单位：毫秒。
+     */
+    public void resetMaxHoldingTime() {
+        maxHoldingTime = 0;
     }
 
     /**
@@ -141,6 +148,55 @@ public class RedisDistributedLockMonitor {
      */
     public long getErrorCount() {
         return errorCount.get();
+    }
+
+    /**
+     * 获得 Redis 分布式锁释放成功的次数。
+     *
+     * @return Redis 分布式锁释放成功的次数
+     */
+    public long getUnlockSuccessCount() {
+        return unlockSuccessCount.get();
+    }
+
+    /**
+     * 获得 Redis 分布式锁被持有的总时间，单位：毫秒。
+     *
+     * @return Redis 分布式锁被持有的总时间，单位：毫秒
+     */
+    public long getTotalHoldingTime() {
+        return totalHoldingTime.get();
+    }
+
+    /**
+     * 获得 Redis 分布式锁单次被持有的最大时间，单位：毫秒。
+     *
+     * @return Redis 分布式锁单次被持有的最大时间，单位：毫秒
+     */
+    public long getMaxHoldingTime() {
+        return maxHoldingTime;
+    }
+
+    /**
+     * 获得 Redis 分布式锁释放异常的次数。
+     *
+     * @return Redis 分布式锁释放异常的次数
+     */
+    public long getUnlockErrorCount() {
+        return unlockErrorCount.get();
+    }
+
+    @Override
+    public String toString() {
+        return "RedisDistributedLockMonitor{" +
+                "successCount=" + successCount +
+                ", failCount=" + failCount +
+                ", errorCount=" + errorCount +
+                ", unlockSuccessCount=" + unlockSuccessCount +
+                ", totalHoldingTime=" + totalHoldingTime +
+                ", maxHoldingTime=" + maxHoldingTime +
+                ", unlockErrorCount=" + unlockErrorCount +
+                '}';
     }
 
     /**

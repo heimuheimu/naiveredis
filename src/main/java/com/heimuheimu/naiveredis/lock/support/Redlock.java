@@ -66,6 +66,11 @@ public class Redlock implements RedisDistributedLock, Closeable {
     private final AutoReconnectRedisLockClient[] clients;
 
     /**
+     * 最低限度需要获取成功的锁数量
+     */
+    private final int minimumLockCount;
+
+    /**
      * Redis 分布式锁信息监控器
      */
     private final RedisDistributedLockMonitor monitor = RedisDistributedLockMonitor.getInstance();
@@ -83,7 +88,7 @@ public class Redlock implements RedisDistributedLock, Closeable {
     public Redlock(String[] hosts, SocketConfiguration configuration, int pingPeriod,
                    AutoReconnectRedisLockClientListener listener) throws IllegalArgumentException {
         if (hosts.length < 3) {
-            String errorMessage = "Fails to construct Redlock: `hosts length must greater than 2`. `hosts`:`"
+            String errorMessage = "Fails to construct Redlock: `hosts length must equal or greater than 3`. `hosts`:`"
                     + Arrays.toString(hosts) + "`.";
             REDIS_DISTRIBUTED_LOCK_LOG.error(errorMessage);
             LOGGER.error(errorMessage);
@@ -98,10 +103,12 @@ public class Redlock implements RedisDistributedLock, Closeable {
         } catch (Exception e) {
             String errorMessage = "Fails to construct Redlock: `create AutoReconnectRedisLockClient failed`. `hosts`:`"
                     + Arrays.toString(hosts) + "`.";
-            REDIS_DISTRIBUTED_LOCK_LOG.error(errorMessage);
-            LOGGER.error(errorMessage);
-            throw new IllegalStateException(errorMessage);
+            REDIS_DISTRIBUTED_LOCK_LOG.error(errorMessage, e);
+            LOGGER.error(errorMessage, e);
+            close();
+            throw new IllegalStateException(errorMessage, e);
         }
+        this.minimumLockCount = this.hosts.length / 2 + 1;
     }
 
     @Override
@@ -171,15 +178,31 @@ public class Redlock implements RedisDistributedLock, Closeable {
 
     @Override
     public void unlock(LockInfo lockInfo) throws RedisDistributedLockException {
+        ArrayList<String> errorHosts = new ArrayList<>();
         for (AutoReconnectRedisLockClient client : clients) {
-            client.unlock(lockInfo.getName(), lockInfo.getToken());
+            try {
+                client.unlock(lockInfo.getName(), lockInfo.getToken());
+            } catch (Exception ignored) {
+                errorHosts.add(client.getHost());
+            }
+        }
+        if (isClusterCrashed(errorHosts.size())) {
+            monitor.onUnlockError();
+            String errorMessage = "Release redis distributed lock failed. `errorHosts`:`" + errorHosts + "`. `hosts`:`"
+                    + Arrays.toString(hosts) + "`. `lockInfo`:`" + lockInfo + "`.";
+            throw new RedisDistributedLockException(errorMessage);
+        } else {
+            long holdingTime = System.currentTimeMillis() - lockInfo.getCreatedTime();
+            monitor.onUnlockSuccess(holdingTime);
         }
     }
 
     @Override
     public void close() {
         for (AutoReconnectRedisLockClient client : clients) {
-            client.close();
+            if (client != null) {
+                client.close();
+            }
         }
     }
 
@@ -213,11 +236,20 @@ public class Redlock implements RedisDistributedLock, Closeable {
         try {
             LockInfo lockInfo = new LockInfo(name, token, validity);
             FutureLock[] futureLocks = new FutureLock[clients.length];
+            ArrayList<String> errorHosts = new ArrayList<>();
             for (int i = 0; i < clients.length; i++) {
                 try {
                     futureLocks[i] = clients[i].submit(name, token, validity);
                 } catch (IllegalStateException | RedisException ignored) {
+                    errorHosts.add(hosts[i]);
                 }
+            }
+            if (isClusterCrashed(errorHosts.size())) {
+                String errorMessage = "Acquire redis distributed lock failed. `errorHosts`:`" + errorHosts + "`. `hosts`:`"
+                        + Arrays.toString(hosts) + "`. `name`:`" + name + "`. `token`:`" + token + "`. `validity`:`"
+                        + validity + "`. `timeout`:`" + timeout + "`.";
+                REDIS_DISTRIBUTED_LOCK_LOG.error(errorMessage);
+                throw new RedisDistributedLockException(errorMessage);
             }
             ArrayList<AutoReconnectRedisLockClient> successClients = new ArrayList<>();
             long startTime = System.currentTimeMillis();
@@ -229,26 +261,35 @@ public class Redlock implements RedisDistributedLock, Closeable {
                             successClients.add(clients[i]);
                         }
                     } catch (IllegalStateException ignored) {
+                        errorHosts.add(hosts[i]);
                     } catch (TimeoutException e) { // try to release lock due to timeout
+                        errorHosts.add(hosts[i]);
                         try {
                             clients[i].unlock(name, token);
-                        } catch (IllegalStateException | RedisException ignored) {
-                        }
+                        } catch (IllegalStateException | RedisException ignored) {}
                     }
                 }
             }
 
-            if (successClients.size() > (clients.length / 2)) {
+            if (successClients.size() >= minimumLockCount) {
                 return lockInfo;
             } else {
                 for (AutoReconnectRedisLockClient successClient : successClients) { // try to release lock due to fails to acquire
                     try {
                         successClient.unlock(name, token);
-                    } catch (IllegalStateException | RedisException ignored) {
-                    }
+                    } catch (IllegalStateException | RedisException ignored) {}
+                }
+                if (isClusterCrashed(errorHosts.size())) {
+                    String errorMessage = "Acquire redis distributed lock failed. `errorHosts`:`" + errorHosts + "`. `hosts`:`"
+                            + Arrays.toString(hosts) + "`. `name`:`" + name + "`. `token`:`" + token + "`. `validity`:`"
+                            + validity + "`. `timeout`:`" + timeout + "`.";
+                    REDIS_DISTRIBUTED_LOCK_LOG.error(errorMessage);
+                    throw new RedisDistributedLockException(errorMessage);
                 }
                 return null;
             }
+        } catch (RedisDistributedLockException e) {
+            throw e;
         } catch (Exception e) { // unexpected error
             String errorMessage = "Acquire redis distributed lock failed. `hosts`:`" + Arrays.toString(hosts)
                     + "`. `name`:`" + name + "`. `token`:`" + token + "`. `validity`:`" + validity + "`. `timeout`:`"
@@ -256,5 +297,9 @@ public class Redlock implements RedisDistributedLock, Closeable {
             REDIS_DISTRIBUTED_LOCK_LOG.error(errorMessage, e);
             throw new RedisDistributedLockException(errorMessage, e);
         }
+    }
+
+    private boolean isClusterCrashed(int errorHostsCount) {
+        return hosts.length - errorHostsCount < minimumLockCount;
     }
 }

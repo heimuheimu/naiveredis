@@ -37,8 +37,10 @@ import java.util.List;
  * <ul>
  *     <li>naiveredis_socket_read_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Socket 读取的总字节数</li>
  *     <li>naiveredis_socket_avg_read_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Socket 每次读取的平均字节数</li>
+ *     <li>naiveredis_socket_max_read_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Socket 单次读取的最大字节数</li>
  *     <li>naiveredis_socket_written_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Socket 写入的总字节数</li>
  *     <li>naiveredis_socket_avg_written_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Socket 每次写入的平均字节数</li>
+ *     <li>naiveredis_socket_max_written_bytes/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Socket 单次写入的最大字节数</li>
  * </ul>
  *
  * @author heimuheimu

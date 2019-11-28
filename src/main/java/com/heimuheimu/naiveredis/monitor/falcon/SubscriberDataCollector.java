@@ -38,7 +38,7 @@ import java.util.*;
  * <ul>
  *     <li>naiveredis_subscriber_decode_error/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内发生的消息解码失败次数</li>
  *     <li>naiveredis_subscriber_consume_error/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内发生的消息消费失败次数</li>
- *     <li>naiveredis_subscriber_unexpected_error/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内发生的预期外异常次数</li>
+ *     <li>naiveredis_subscriber_unexpected_error/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内订阅期间发生的预期外异常次数</li>
  *     <li>naiveredis_subscriber_slow_consumption/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内发生的单个 Redis 消息订阅者消费信息过慢次数</li>
  *     <li>naiveredis_subscriber_count/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内消费消息总数</li>
  *     <li>naiveredis_subscriber_tps/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内每秒平均消费消息数量</li>

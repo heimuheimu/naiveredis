@@ -24,6 +24,7 @@
 
 package com.heimuheimu.naiveredis.lock.support;
 
+import com.heimuheimu.naiveredis.constant.BeanStatusEnum;
 import com.heimuheimu.naiveredis.exception.RedisDistributedLockException;
 import com.heimuheimu.naiveredis.exception.RedisException;
 import com.heimuheimu.naiveredis.exception.TimeoutException;
@@ -76,6 +77,24 @@ public class Redlock implements RedisDistributedLock, Closeable {
     private final RedisDistributedLockMonitor monitor = RedisDistributedLockMonitor.getInstance();
 
     /**
+     * 当前实例所处状态，访问此变量需获取 this 锁
+     */
+    private BeanStatusEnum state = BeanStatusEnum.NORMAL;
+
+    /**
+     * 构造一个 Redlock 实例，Socket 配置信息将会使用 {@link SocketConfiguration#DEFAULT}，PING 命令发送时间间隔为 30 秒。
+     *
+     * @param hosts Redis 地址数组，数组长度必须大于等于 3，Redis 地址由主机名和端口组成，":"符号分割，例如：localhost:6379
+     * @param listener 自动重连 Redis 分布式锁客户端事件监听器，允许为 {@code null}
+     * @throws IllegalArgumentException 如果 Redis 地址数组长度小于 3，将会抛出此异常
+     * @throws IllegalStateException 如果 Redlock 创建过程中发生错误，将会抛出此异常
+     */
+    public Redlock(String[] hosts, AutoReconnectRedisLockClientListener listener)
+            throws IllegalArgumentException, IllegalStateException {
+        this(hosts, null, 30, listener);
+    }
+
+    /**
      * 构造一个 Redlock 实例。
      *
      * @param hosts Redis 地址数组，数组长度必须大于等于 3，Redis 地址由主机名和端口组成，":"符号分割，例如：localhost:6379
@@ -86,7 +105,7 @@ public class Redlock implements RedisDistributedLock, Closeable {
      * @throws IllegalStateException 如果 Redlock 创建过程中发生错误，将会抛出此异常
      */
     public Redlock(String[] hosts, SocketConfiguration configuration, int pingPeriod,
-                   AutoReconnectRedisLockClientListener listener) throws IllegalArgumentException {
+                   AutoReconnectRedisLockClientListener listener) throws IllegalArgumentException, IllegalStateException {
         if (hosts.length < 3) {
             String errorMessage = "Fails to construct Redlock: `hosts length must equal or greater than 3`. `hosts`:`"
                     + Arrays.toString(hosts) + "`.";
@@ -109,6 +128,8 @@ public class Redlock implements RedisDistributedLock, Closeable {
             throw new IllegalStateException(errorMessage, e);
         }
         this.minimumLockCount = this.hosts.length / 2 + 1;
+        REDIS_DISTRIBUTED_LOCK_LOG.info("Redlock init success. `hosts`:`" + Arrays.toString(hosts) + "`. `configuration`:`"
+                + configuration + "`. `pingPeriod`:`" + pingPeriod + "`. `listener`:`" + listener + "`.");
     }
 
     @Override
@@ -178,31 +199,37 @@ public class Redlock implements RedisDistributedLock, Closeable {
 
     @Override
     public void unlock(LockInfo lockInfo) throws RedisDistributedLockException {
-        ArrayList<String> errorHosts = new ArrayList<>();
-        for (AutoReconnectRedisLockClient client : clients) {
-            try {
-                client.unlock(lockInfo.getName(), lockInfo.getToken());
-            } catch (Exception ignored) {
-                errorHosts.add(client.getHost());
+        if (lockInfo != null) {
+            ArrayList<String> errorHosts = new ArrayList<>();
+            for (AutoReconnectRedisLockClient client : clients) {
+                try {
+                    client.unlock(lockInfo.getName(), lockInfo.getToken());
+                } catch (Exception ignored) {
+                    errorHosts.add(client.getHost());
+                }
             }
-        }
-        if (isClusterCrashed(errorHosts.size())) {
-            monitor.onUnlockError();
-            String errorMessage = "Release redis distributed lock failed. `errorHosts`:`" + errorHosts + "`. `hosts`:`"
-                    + Arrays.toString(hosts) + "`. `lockInfo`:`" + lockInfo + "`.";
-            throw new RedisDistributedLockException(errorMessage);
-        } else {
-            long holdingTime = System.currentTimeMillis() - lockInfo.getCreatedTime();
-            monitor.onUnlockSuccess(holdingTime);
+            if (isClusterCrashed(errorHosts.size())) {
+                monitor.onUnlockError();
+                String errorMessage = "Release redis distributed lock failed. `errorHosts`:`" + errorHosts + "`. `hosts`:`"
+                        + Arrays.toString(hosts) + "`. `lockInfo`:`" + lockInfo + "`.";
+                throw new RedisDistributedLockException(errorMessage);
+            } else {
+                long holdingTime = System.currentTimeMillis() - lockInfo.getCreatedTime();
+                monitor.onUnlockSuccess(holdingTime);
+            }
         }
     }
 
     @Override
-    public void close() {
-        for (AutoReconnectRedisLockClient client : clients) {
-            if (client != null) {
-                client.close();
+    public synchronized void close() {
+        if (state != BeanStatusEnum.CLOSED) {
+            state = BeanStatusEnum.CLOSED;
+            for (AutoReconnectRedisLockClient client : clients) {
+                if (client != null) {
+                    client.close();
+                }
             }
+            REDIS_DISTRIBUTED_LOCK_LOG.info("Redlock has been closed. `hosts`:`" + Arrays.toString(hosts) + "`. ");
         }
     }
 

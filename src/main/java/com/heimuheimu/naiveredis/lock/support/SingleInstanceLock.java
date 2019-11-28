@@ -24,6 +24,7 @@
 
 package com.heimuheimu.naiveredis.lock.support;
 
+import com.heimuheimu.naiveredis.constant.BeanStatusEnum;
 import com.heimuheimu.naiveredis.exception.RedisDistributedLockException;
 import com.heimuheimu.naiveredis.lock.LockConfiguration;
 import com.heimuheimu.naiveredis.lock.LockInfo;
@@ -67,6 +68,22 @@ public class SingleInstanceLock implements RedisDistributedLock, Closeable {
     private final RedisDistributedLockMonitor monitor = RedisDistributedLockMonitor.getInstance();
 
     /**
+     * 当前实例所处状态，访问此变量需获取 this 锁
+     */
+    private BeanStatusEnum state = BeanStatusEnum.NORMAL;
+
+    /**
+     * 构造一个 SingleInstanceLock 实例，Socket 配置信息将会使用 {@link SocketConfiguration#DEFAULT}，PING 命令发送时间间隔为 30 秒。
+     *
+     * @param host Redis 服务主机地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
+     * @param listener 自动重连 Redis 分布式锁客户端事件监听器，允许为 {@code null}
+     * @throws IllegalStateException 如果 SingleInstanceLock 创建过程中发生错误，将会抛出此异常
+     */
+    public SingleInstanceLock(String host, AutoReconnectRedisLockClientListener listener) throws IllegalStateException {
+        this(host, null, 30, listener);
+    }
+
+    /**
      * 构造一个 SingleInstanceLock 实例。
      *
      * @param host Redis 服务主机地址，由主机名和端口组成，":"符号分割，例如：localhost:6379
@@ -87,6 +104,8 @@ public class SingleInstanceLock implements RedisDistributedLock, Closeable {
             LOGGER.error(errorMessage, e);
             throw new IllegalStateException(errorMessage, e);
         }
+        REDIS_DISTRIBUTED_LOCK_LOG.info("SingleInstanceLock init success. `host`:`" + host + "`. `configuration`:`"
+                + configuration + "`. `pingPeriod`:`" + pingPeriod + "`. `listener`:`" + listener + "`.");
     }
 
     @Override
@@ -167,8 +186,12 @@ public class SingleInstanceLock implements RedisDistributedLock, Closeable {
     }
 
     @Override
-    public void close() {
-        client.close();
+    public synchronized void close() {
+        if (state != BeanStatusEnum.CLOSED) {
+            state = BeanStatusEnum.CLOSED;
+            client.close();
+            REDIS_DISTRIBUTED_LOCK_LOG.info("SingleInstanceLock has been closed. `host`:`" + host + "`. ");
+        }
     }
 
     @Override

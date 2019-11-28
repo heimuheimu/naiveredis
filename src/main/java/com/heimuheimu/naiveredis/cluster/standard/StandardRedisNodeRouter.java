@@ -128,6 +128,7 @@ public class StandardRedisNodeRouter implements Closeable {
      * @param slowExecutionThreshold Redis 操作过慢最小时间，单位：毫秒，不能小于等于 0
      * @param pingPeriod PING 命令发送时间间隔，单位：秒，用于心跳检测，如果该值小于等于 0，则不进行心跳检测
      * @param listener Redis 直连客户端列表事件监听器，允许为 {@code null}
+     * @param isSlaveActive 是否启用 Redis 集群中的 Slave 节点，用于执行已读操作
      * @throws IllegalStateException 如果 Redis 集群节点信息加载失败或所有的 Redis 直连客户端均不可用，将会抛出此异常
      */
     public StandardRedisNodeRouter(String[] bootstrapHosts, SocketConfiguration configuration, int timeout,

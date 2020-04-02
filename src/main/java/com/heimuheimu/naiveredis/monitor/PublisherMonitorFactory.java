@@ -26,6 +26,9 @@
 package com.heimuheimu.naiveredis.monitor;
 
 import com.heimuheimu.naivemonitor.monitor.ExecutionMonitor;
+import com.heimuheimu.naivemonitor.monitor.factory.NaiveExecutionMonitorFactory;
+
+import java.util.List;
 
 /**
  * Redis 消息发布客户端使用的执行信息监控工厂类。
@@ -33,15 +36,6 @@ import com.heimuheimu.naivemonitor.monitor.ExecutionMonitor;
  * @author heimuheimu
  */
 public class PublisherMonitorFactory {
-
-    private PublisherMonitorFactory() {
-        //private constructor
-    }
-
-    /**
-     * Redis 消息发布客户端使用的执行信息监控器
-     */
-    private static final ExecutionMonitor MONITOR = new ExecutionMonitor();
 
     /**
      * Redis 消息发布客户端错误码：消息发布失败
@@ -53,12 +47,28 @@ public class PublisherMonitorFactory {
      */
     public static final int ERROR_CODE_NO_CLIENT = -2;
 
+    private static final String NAME_PREFIX = "NaiveRedis_PUB_";
+
+    private PublisherMonitorFactory() {
+        //private constructor
+    }
+
     /**
-     * 获得 Redis 消息发布客户端使用的执行信息监控器，该方法不会返回 {@code null}。
+     * 根据 Redis 主机地址获得对应的 Redis 消息发布客户端使用的执行信息监控器，该方法不会返回 {@code null}。
      *
+     * @param host Redis 主机地址
      * @return Redis 消息发布客户端使用的执行信息监控器
      */
-    public static ExecutionMonitor get() {
-        return MONITOR;
+    public static ExecutionMonitor get(String host) {
+        return NaiveExecutionMonitorFactory.get(NAME_PREFIX + host);
+    }
+
+    /**
+     * 获得 Redis 消息发布客户端使用的执行信息监控器列表，该方法不会返回 {@code null}。
+     *
+     * @return Redis 消息发布客户端使用的执行信息监控器列表，不会为 {@code null}
+     */
+    public static List<ExecutionMonitor> getAll() {
+        return NaiveExecutionMonitorFactory.getListByPrefix(NAME_PREFIX);
     }
 }

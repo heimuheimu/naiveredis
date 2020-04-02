@@ -78,7 +78,7 @@ public class RedisPublishClient implements Closeable {
     /**
      * Redis 消息发布客户端使用的执行信息监控器
      */
-    private final ExecutionMonitor monitor = PublisherMonitorFactory.get();
+    private final ExecutionMonitor monitor;
 
     /**
      * 构造一个 RedisPublishClient 实例。
@@ -115,6 +115,7 @@ public class RedisPublishClient implements Closeable {
             channel.init();
             client = new DirectRedisPublishClient(channel, timeout,
                     TimeUnit.NANOSECONDS.convert(slowExecutionThreshold, TimeUnit.MILLISECONDS));
+            monitor = PublisherMonitorFactory.get(host);
             REDIS_PUBLISHER_LOG.info("RedisPublishClient init success.{}", LogBuildUtil.build(parameterMap));
         } catch (Exception e) {
             String errorMessage = "Fails to construct RedisPublishClient." + LogBuildUtil.build(parameterMap);

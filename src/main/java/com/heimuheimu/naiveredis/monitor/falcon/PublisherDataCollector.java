@@ -60,7 +60,7 @@ public class PublisherDataCollector extends AbstractExecutionDataCollector {
     
     @Override
     protected List<ExecutionMonitor> getExecutionMonitorList() {
-        return Collections.singletonList(PublisherMonitorFactory.get());
+        return PublisherMonitorFactory.getAll();
     }
 
     @Override
@@ -81,7 +81,10 @@ public class PublisherDataCollector extends AbstractExecutionDataCollector {
     @Override
     public List<FalconData> getList() {
         List<FalconData> falconDataList = new ArrayList<>(super.getList());
-        long totalExecutionCount = PublisherMonitorFactory.get().getTotalCount();
+        long totalExecutionCount = 0;
+        for (ExecutionMonitor executionMonitor : getExecutionMonitorList()) {
+            totalExecutionCount += executionMonitor.getTotalCount();
+        }
         falconDataList.add(create("_count", totalExecutionCount - lastExecutionCount));
         lastExecutionCount = totalExecutionCount;
         return falconDataList;

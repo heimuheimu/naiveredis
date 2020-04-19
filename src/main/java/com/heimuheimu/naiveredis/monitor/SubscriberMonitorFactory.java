@@ -25,6 +25,9 @@
 package com.heimuheimu.naiveredis.monitor;
 
 import com.heimuheimu.naivemonitor.monitor.ExecutionMonitor;
+import com.heimuheimu.naivemonitor.monitor.factory.NaiveExecutionMonitorFactory;
+
+import java.util.List;
 
 /**
  * Redis 订阅客户端使用的执行信息监控工厂类。
@@ -32,15 +35,6 @@ import com.heimuheimu.naivemonitor.monitor.ExecutionMonitor;
  * @author heimuheimu
  */
 public class SubscriberMonitorFactory {
-
-    private SubscriberMonitorFactory() {
-        //private constructor
-    }
-
-    /**
-     * Redis 订阅客户端使用的执行信息监控器。
-     */
-    private static final ExecutionMonitor MONITOR = new ExecutionMonitor();
 
     /**
      * Redis 订阅客户端消费信息错误码：消息解码失败
@@ -62,12 +56,27 @@ public class SubscriberMonitorFactory {
      */
     public static final int ERROR_CODE_SLOW_CONSUMPTION = -4;
 
+    private static final String NAME_PREFIX = "NaiveRedis_SUB_";
+
+    private SubscriberMonitorFactory() {
+        //private constructor
+    }
+
     /**
-     * 获得 Redis 订阅客户端使用的执行信息监控器，该方法不会返回 {@code null}。
+     * 根据 Redis 主机地址获得 Redis 订阅客户端使用的执行信息监控器，该方法不会返回 {@code null}。
      *
      * @return Redis 订阅客户端使用的执行信息监控器
      */
-    public static ExecutionMonitor get() {
-        return MONITOR;
+    public static ExecutionMonitor get(String host) {
+        return NaiveExecutionMonitorFactory.get(NAME_PREFIX + host);
+    }
+
+    /**
+     * 获得 Redis 消息订阅客户端使用的执行信息监控器列表，该方法不会返回 {@code null}。
+     *
+     * @return Redis 消息订阅客户端使用的执行信息监控器列表，不会为 {@code null}
+     */
+    public static List<ExecutionMonitor> getAll() {
+        return NaiveExecutionMonitorFactory.getListByPrefix(NAME_PREFIX);
     }
 }

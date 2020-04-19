@@ -31,7 +31,10 @@ import com.heimuheimu.naivemonitor.monitor.ExecutionMonitor;
 import com.heimuheimu.naiveredis.constant.FalconDataCollectorConstant;
 import com.heimuheimu.naiveredis.monitor.SubscriberMonitorFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Redis 订阅客户端使用的执行信息 Falcon 监控数据采集器。该采集器采集周期为 30 秒，每次采集将会返回以下数据项：
@@ -65,7 +68,7 @@ public class SubscriberDataCollector extends AbstractExecutionDataCollector {
 
     @Override
     protected List<ExecutionMonitor> getExecutionMonitorList() {
-        return Collections.singletonList(SubscriberMonitorFactory.get());
+        return SubscriberMonitorFactory.getAll();
     }
 
     @Override
@@ -86,7 +89,10 @@ public class SubscriberDataCollector extends AbstractExecutionDataCollector {
     @Override
     public List<FalconData> getList() {
         List<FalconData> falconDataList = new ArrayList<>(super.getList());
-        long totalExecutionCount = SubscriberMonitorFactory.get().getTotalCount();
+        long totalExecutionCount = 0;
+        for (ExecutionMonitor executionMonitor : getExecutionMonitorList()) {
+            totalExecutionCount += executionMonitor.getTotalCount();
+        }
         falconDataList.add(create("_count", totalExecutionCount - lastExecutionCount));
         lastExecutionCount = totalExecutionCount;
         return falconDataList;

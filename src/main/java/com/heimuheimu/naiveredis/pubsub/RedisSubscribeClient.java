@@ -122,7 +122,7 @@ public class RedisSubscribeClient implements Closeable {
     /**
      * Redis 订阅客户端使用的执行信息监控器
      */
-    private final ExecutionMonitor monitor = SubscriberMonitorFactory.get();
+    private final ExecutionMonitor monitor;
 
     /**
      * 当前实例所处状态
@@ -190,6 +190,7 @@ public class RedisSubscribeClient implements Closeable {
                     configuration.getReceiveBufferSize() != null ? configuration.getReceiveBufferSize() : 64 * 1024);
             this.outputStream = new MonitoredSocketOutputStream(socket.getOutputStream(), monitor);
             this.unusableServiceNotifier = unusableServiceNotifier;
+            this.monitor = SubscriberMonitorFactory.get(host);
         } catch (Exception e) {
             String errorMessage = "Fails to construct RedisSubscribeClient: `unexpected error`."
                     + LogBuildUtil.build(buildParameterMap(-1));

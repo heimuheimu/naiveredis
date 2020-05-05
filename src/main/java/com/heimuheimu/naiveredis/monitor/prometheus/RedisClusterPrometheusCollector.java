@@ -36,7 +36,8 @@ import java.util.List;
 /**
  * Redis 集群客户端信息采集器，采集时会返回以下数据：
  * <ul>
- *     <li>naiveredis_cluster_unavailable_client_count/module=naiveredis &nbsp;&nbsp;&nbsp;&nbsp; 30 秒内 Redis 集群客户端获取到不可用 Redis 客户端的次数</li>
+ *     <li>naiveredis_cluster_unavailable_client_count 相邻两次采集周期内 Redis 集群客户端获取到不可用 Redis 客户端的次数</li>
+ *     <li>naiveredis_cluster_multi_get_error_count 相邻两次采集周期内 Redis 集群客户端调用 multiGet 方法出现错误的次数</li>
  * </ul>
  *
  * @author heimuheimu
